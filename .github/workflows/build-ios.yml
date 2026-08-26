@@ -15,6 +15,9 @@ jobs:
       - name: Install XcodeGen
         run: which xcodegen || brew install xcodegen
 
+      - name: Ensure 1024x1024 AppIcon
+        run: sips -z 1024 1024 App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
+
       - name: Generate Xcode Project
         run: xcodegen generate
 
