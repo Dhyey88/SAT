@@ -256,7 +256,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
         let subtitleLabel = UILabel()
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Please connect to Wi-Fi or Mobile Data to use SAT App."
+        subtitleLabel.text = "Please connect to Wi-Fi or Mobile Data to use SAT."
         subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.75)
         subtitleLabel.font = UIFont.systemFont(ofSize: 15)
         subtitleLabel.textAlignment = .center

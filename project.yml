@@ -16,7 +16,7 @@ targets:
       base:
         INFOPLIST_FILE: App/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.latitudetechnolabs.satapp
-        PRODUCT_NAME: "SAT App"
+        PRODUCT_NAME: "SAT"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_VERSION: "5.0"
         CODE_SIGNING_REQUIRED: "NO"
