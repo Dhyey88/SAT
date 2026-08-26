@@ -1,0 +1,44 @@
+name: Build Swift iOS IPA on Cloud Mac
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: which xcodegen || brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project SATApp.xcodeproj \
+            -scheme SATApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/SATApp.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package into SATApp.ipa
+        run: |
+          mkdir -p Payload
+          cp -R -p build/SATApp.xcarchive/Products/Applications/SATApp.app Payload/
+          zip -r -y SATApp.ipa Payload
+
+      - name: Upload SATApp.ipa Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SATApp-iOS-Build
+          path: SATApp.ipa
+          retention-days: 14
