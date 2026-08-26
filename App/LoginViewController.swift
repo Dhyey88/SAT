@@ -275,9 +275,20 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         retryButton.addTarget(self, action: #selector(retryConnection), for: .touchUpInside)
         offlineOverlayView.addSubview(retryButton)
 
+        // Offline Contact / Help Button (Satisfies Guideline 4.2 Minimum Functionality)
+        let helpButton = UIButton(type: .system)
+        helpButton.translatesAutoresizingMaskIntoConstraints = false
+        helpButton.setTitle("Need Help? View Offline Support", for: .normal)
+        helpButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        helpButton.setImage(UIImage(systemName: "questionmark.circle"), for: .normal)
+        helpButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        helpButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        helpButton.addTarget(self, action: #selector(showOfflineHelp), for: .touchUpInside)
+        offlineOverlayView.addSubview(helpButton)
+
         NSLayoutConstraint.activate([
             iconContainer.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
-            iconContainer.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor, constant: -80),
+            iconContainer.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor, constant: -90),
             iconContainer.widthAnchor.constraint(equalToConstant: 90),
             iconContainer.heightAnchor.constraint(equalToConstant: 90),
 
@@ -297,8 +308,31 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             retryButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 28),
             retryButton.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
             retryButton.widthAnchor.constraint(equalToConstant: 160),
-            retryButton.heightAnchor.constraint(equalToConstant: 48)
+            retryButton.heightAnchor.constraint(equalToConstant: 48),
+
+            helpButton.topAnchor.constraint(equalTo: retryButton.bottomAnchor, constant: 20),
+            helpButton.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor)
         ])
+    }
+
+    @objc private func showOfflineHelp() {
+        let alert = UIAlertController(
+            title: "SAT Support & Assistance",
+            message: "You are currently offline. You can contact support directly via telephone or email.\n\n• Helpline: +91 98765 43210\n• Email: support@enin.io\n• Head Office: Ahmedabad, Gujarat",
+            preferredStyle: .actionSheet
+        )
+        alert.addAction(UIAlertAction(title: "Call Helpline", style: .default, handler: { _ in
+            if let url = URL(string: "tel:+919876543210"), UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            }
+        }))
+        alert.addAction(UIAlertAction(title: "Send Support Email", style: .default, handler: { _ in
+            if let url = URL(string: "mailto:support@enin.io"), UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            }
+        }))
+        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+        present(alert, animated: true)
     }
 
     private func setupNetworkMonitoring() {

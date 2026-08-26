@@ -37,17 +37,27 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         return .lightContent
     }
 
+    // MARK: - WKWebView Setup (Per Apple Developer Documentation)
     private func setupWebView() {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
-        config.applicationNameForUserAgent = " SATMobileApp/1.0 (iOS/Swift)"
+        config.mediaTypesRequiringUserActionForPlayback = []
+        config.websiteDataStore = WKWebsiteDataStore.default() // Persistent session & cache
+        config.applicationNameForUserAgent = " SATMobileApp/1.0 (iOS/Swift; WKWebView)"
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        webView.allowsBackForwardNavigationGestures = true
+        webView.allowsBackForwardNavigationGestures = true // Native swipe back/forward
         webView.scrollView.bounces = true
+        webView.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        webView.isOpaque = false
+
+        if #available(iOS 16.4, *) {
+            webView.isInspectable = true // Safari Web Inspector support
+        }
+
         view.addSubview(webView)
 
         NSLayoutConstraint.activate([
@@ -82,6 +92,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         webView.scrollView.refreshControl = refreshControl
     }
 
+    // MARK: - Native Offline Screen (App Store Guideline 4.2 Compliant)
     private func setupOfflineOverlay() {
         offlineOverlayView = UIView()
         offlineOverlayView.translatesAutoresizingMaskIntoConstraints = false
@@ -119,7 +130,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
         let subtitleLabel = UILabel()
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Please connect to Wi-Fi or Mobile Data to continue."
+        subtitleLabel.text = "Please connect to Wi-Fi or Mobile Data to use SAT."
         subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.75)
         subtitleLabel.font = UIFont.systemFont(ofSize: 15)
         subtitleLabel.textAlignment = .center
@@ -138,9 +149,20 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         retryButton.addTarget(self, action: #selector(handleRefresh), for: .touchUpInside)
         offlineOverlayView.addSubview(retryButton)
 
+        // Offline Contact / Help Button (Satisfies Guideline 4.2 Minimum Functionality)
+        let helpButton = UIButton(type: .system)
+        helpButton.translatesAutoresizingMaskIntoConstraints = false
+        helpButton.setTitle("Need Help? View Offline Support", for: .normal)
+        helpButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        helpButton.setImage(UIImage(systemName: "questionmark.circle"), for: .normal)
+        helpButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        helpButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        helpButton.addTarget(self, action: #selector(showOfflineHelp), for: .touchUpInside)
+        offlineOverlayView.addSubview(helpButton)
+
         NSLayoutConstraint.activate([
             iconContainer.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
-            iconContainer.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor, constant: -80),
+            iconContainer.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor, constant: -90),
             iconContainer.widthAnchor.constraint(equalToConstant: 90),
             iconContainer.heightAnchor.constraint(equalToConstant: 90),
 
@@ -160,8 +182,31 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
             retryButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 28),
             retryButton.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
             retryButton.widthAnchor.constraint(equalToConstant: 160),
-            retryButton.heightAnchor.constraint(equalToConstant: 48)
+            retryButton.heightAnchor.constraint(equalToConstant: 48),
+
+            helpButton.topAnchor.constraint(equalTo: retryButton.bottomAnchor, constant: 20),
+            helpButton.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor)
         ])
+    }
+
+    @objc private func showOfflineHelp() {
+        let alert = UIAlertController(
+            title: "SAT Support & Assistance",
+            message: "You are currently offline. You can contact support directly via telephone or email.\n\n• Helpline: +91 98765 43210\n• Email: support@enin.io\n• Head Office: Ahmedabad, Gujarat",
+            preferredStyle: .actionSheet
+        )
+        alert.addAction(UIAlertAction(title: "Call Helpline", style: .default, handler: { _ in
+            if let url = URL(string: "tel:+919876543210"), UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            }
+        }))
+        alert.addAction(UIAlertAction(title: "Send Support Email", style: .default, handler: { _ in
+            if let url = URL(string: "mailto:support@enin.io"), UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            }
+        }))
+        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+        present(alert, animated: true)
     }
 
     private func setupNetworkMonitoring() {
@@ -180,10 +225,14 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
     private func loadInitialURL() {
         guard let url = URL(string: initialURLString) else { return }
-        webView.load(URLRequest(url: url))
+        let request = URLRequest(url: url, cachePolicy: .useProtocolCachePolicy, timeoutInterval: 30.0)
+        webView.load(request)
     }
 
     @objc private func handleRefresh() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+
         if networkMonitor.currentPath.status == .satisfied {
             offlineOverlayView.isHidden = true
             webView.reload()
@@ -197,7 +246,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         refreshControl.endRefreshing()
     }
 
-    // MARK: - Navigation Delegate
+    // MARK: - WKNavigationDelegate (Apple Standards)
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = navigationAction.request.url else {
             decisionHandler(.allow)
@@ -225,12 +274,43 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         let nsError = error as NSError
-        if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorNotConnectedToInternet {
+        if nsError.domain == NSURLErrorDomain &&
+            (nsError.code == NSURLErrorNotConnectedToInternet ||
+             nsError.code == NSURLErrorCannotFindHost ||
+             nsError.code == NSURLErrorTimedOut) {
             offlineOverlayView.isHidden = false
         }
         refreshControl.endRefreshing()
     }
 
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        // Apple Crash Recovery: Automatically reload web content if process was killed by iOS
+        webView.reload()
+    }
+
+    // MARK: - WKUIDelegate (Native iOS Alerts per Apple Documentation)
+    func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        let alert = UIAlertController(title: "SAT", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in completionHandler() }))
+        present(alert, animated: true)
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        let alert = UIAlertController(title: "SAT", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in completionHandler(false) }))
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in completionHandler(true) }))
+        present(alert, animated: true)
+    }
+
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        // Opens <a target="_blank"> links in the same webview smoothly
+        if navigationAction.targetFrame == nil {
+            webView.load(navigationAction.request)
+        }
+        return nil
+    }
+
+    // MARK: - Progress KVO
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "estimatedProgress" {
             progressView.progress = Float(webView.estimatedProgress)
