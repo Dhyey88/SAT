@@ -36,7 +36,7 @@ jobs:
       - name: Package into SATApp.ipa
         run: |
           mkdir -p Payload
-          cp -R -p build/SATApp.xcarchive/Products/Applications/SATApp.app Payload/
+          cp -R -p build/SATApp.xcarchive/Products/Applications/*.app Payload/
           zip -r -y SATApp.ipa Payload
 
       - name: Upload SATApp.ipa Artifact
