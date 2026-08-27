@@ -19,7 +19,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
     // Central Card
     private let cardView = UIView()
-    private let roleSegmentedControl = UISegmentedControl(items: ["HO User", "Branch Incharge", "Rahbar"])
     
     // User ID & Password
     private let userIdTitleLabel = UILabel()
@@ -246,16 +245,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         cardView.layer.borderColor = UIColor.white.withAlphaComponent(0.1).cgColor
         contentView.addSubview(cardView)
 
-        // Role Segmented Control
-        roleSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
-        roleSegmentedControl.selectedSegmentIndex = 0
-        roleSegmentedControl.backgroundColor = UIColor(red: 35/255, green: 42/255, blue: 50/255, alpha: 1.0)
-        roleSegmentedControl.selectedSegmentTintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        roleSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
-        roleSegmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white.withAlphaComponent(0.65)], for: .normal)
-        roleSegmentedControl.addTarget(self, action: #selector(roleChanged), for: .valueChanged)
-        cardView.addSubview(roleSegmentedControl)
-
         // User ID Label & Field
         userIdTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         userIdTitleLabel.text = "Enter User ID"
@@ -287,12 +276,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         cardView.addSubview(cardBottomBar)
 
         NSLayoutConstraint.activate([
-            roleSegmentedControl.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
-            roleSegmentedControl.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
-            roleSegmentedControl.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            roleSegmentedControl.heightAnchor.constraint(equalToConstant: 36),
-
-            userIdTitleLabel.topAnchor.constraint(equalTo: roleSegmentedControl.bottomAnchor, constant: 16),
+            userIdTitleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
             userIdTitleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 18),
 
             emailContainer.topAnchor.constraint(equalTo: userIdTitleLabel.bottomAnchor, constant: 6),
@@ -558,28 +542,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
 
     // MARK: - Actions
-    @objc private func roleChanged() {
-        let isHO = roleSegmentedControl.selectedSegmentIndex == 0
-        emailTextField.text = ""
-        passwordTextField.text = ""
-        errorLabel.isHidden = true
-
-        if isHO {
-            userIdTitleLabel.text = "Enter User ID"
-            emailTextField.placeholder = "Enter your Userid"
-            passwordTitleLabel.text = "Password"
-            passwordTextField.placeholder = "Type Your Password"
-            showPasswordTrailingButton.isHidden = false
-        } else {
-            userIdTitleLabel.text = "Branch Code"
-            emailTextField.placeholder = "Enter Branch Code"
-            passwordTitleLabel.text = "Mobile Number"
-            passwordTextField.placeholder = "Enter Mobile Number"
-            passwordTextField.isSecureTextEntry = false
-            showPasswordTrailingButton.isHidden = true
-        }
-    }
-
     @objc private func toggleShowPassword() {
         passwordTextField.isSecureTextEntry.toggle()
         let title = passwordTextField.isSecureTextEntry ? "Show" : "Hide"
@@ -606,8 +568,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         let signUpVC = SignUpViewController()
         signUpVC.onSignUpSuccess = { [weak self] registeredEmail in
             self?.emailTextField.text = registeredEmail
-            self?.roleSegmentedControl.selectedSegmentIndex = 0
-            self?.roleChanged()
         }
         signUpVC.modalPresentationStyle = .formSheet
         present(signUpVC, animated: true)
@@ -723,12 +683,12 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         let password = passwordTextField.text ?? ""
 
         guard !email.isEmpty else {
-            showError(message: roleSegmentedControl.selectedSegmentIndex == 0 ? "Please enter your User ID" : "Branch Code is required")
+            showError(message: "Please enter your User ID")
             return
         }
 
         guard !password.isEmpty else {
-            showError(message: roleSegmentedControl.selectedSegmentIndex == 0 ? "Please enter your password" : "Mobile number is required")
+            showError(message: "Please enter your password")
             return
         }
 
@@ -737,21 +697,14 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         activityIndicator.startAnimating()
         loginButton.isEnabled = false
 
-        let loginByValue = roleSegmentedControl.selectedSegmentIndex == 0 ? "ho_user" :
-                          (roleSegmentedControl.selectedSegmentIndex == 1 ? "branch-incharge" : "rahbar")
-
-        var bodyParams: [String: String] = [
+        let bodyParams: [String: String] = [
             "email": email,
             "password": password,
             "device_type": "1", // 1 for iOS
             "device_id": "SAT_IOS_DEVICE",
             "mobile_device_id": "SAT_IOS_DEVICE",
-            "login_by": loginByValue
+            "login_by": "ho_user"
         ]
-
-        if loginByValue != "ho_user" {
-            bodyParams["asharm_id"] = email
-        }
 
         performLoginRequest(params: bodyParams, userEmail: email)
     }
