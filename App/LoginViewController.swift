@@ -341,7 +341,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         textField.autocorrectionType = .no
         textField.delegate = self
         textField.returnKeyType = .next
-        textField.inputAccessoryView = createKeyboardToolbar()
         textField.attributedPlaceholder = NSAttributedString(
             string: placeholder,
             attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.4)]
@@ -380,7 +379,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         passwordTextField.isSecureTextEntry = true
         passwordTextField.delegate = self
         passwordTextField.returnKeyType = .go
-        passwordTextField.inputAccessoryView = createKeyboardToolbar()
         passwordTextField.attributedPlaceholder = NSAttributedString(
             string: "Type Your Password",
             attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.4)]
@@ -528,18 +526,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         // Observe keyboard will show and hide
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
-    }
-
-    private func createKeyboardToolbar() -> UIToolbar {
-        let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
-        toolbar.barStyle = .black
-        toolbar.isTranslucent = true
-        toolbar.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-        let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
-        toolbar.items = [flexSpace, doneButton]
-        toolbar.sizeToFit()
-        return toolbar
     }
 
     @objc private func dismissKeyboard() {
