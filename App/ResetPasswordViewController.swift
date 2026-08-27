@@ -94,20 +94,30 @@ class ResetPasswordViewController: UIViewController {
         cardView.addSubview(errorLabel)
 
         // Setup text fields
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+
+        let toolbar = createKeyboardToolbar()
+
         styleTextField(emailField, placeholder: "Enter registered email", iconName: "envelope.fill")
         emailField.keyboardType = .emailAddress
+        emailField.inputAccessoryView = toolbar
         cardView.addSubview(emailField)
 
         styleTextField(otpField, placeholder: "Enter 6-digit OTP", iconName: "number")
         otpField.keyboardType = .numberPad
+        otpField.inputAccessoryView = toolbar
         cardView.addSubview(otpField)
 
         styleTextField(newPasswordField, placeholder: "New Password", iconName: "lock.fill")
         newPasswordField.isSecureTextEntry = true
+        newPasswordField.inputAccessoryView = toolbar
         cardView.addSubview(newPasswordField)
 
         styleTextField(confirmPasswordField, placeholder: "Confirm New Password", iconName: "lock.shield.fill")
         confirmPasswordField.isSecureTextEntry = true
+        confirmPasswordField.inputAccessoryView = toolbar
         cardView.addSubview(confirmPasswordField)
 
         // Action Button
@@ -424,5 +434,21 @@ class ResetPasswordViewController: UIViewController {
 
     @objc private func dismissModal() {
         dismiss(animated: true)
+    }
+
+    private func createKeyboardToolbar() -> UIToolbar {
+        let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
+        toolbar.barStyle = .black
+        toolbar.isTranslucent = true
+        toolbar.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
+        toolbar.items = [flexSpace, doneButton]
+        toolbar.sizeToFit()
+        return toolbar
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
 }

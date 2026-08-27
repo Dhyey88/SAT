@@ -29,16 +29,23 @@ class SignUpViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupKeyboardHandling()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     private func setupUI() {
         view.backgroundColor = UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 0.95)
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.keyboardDismissMode = .interactive
+        scrollView.alwaysBounceVertical = true
         contentView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
@@ -312,5 +319,51 @@ class SignUpViewController: UIViewController {
 
     @objc private func dismissModal() {
         dismiss(animated: true)
+    }
+
+    // MARK: - Keyboard Handling
+    private func setupKeyboardHandling() {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+
+        let toolbar = createKeyboardToolbar()
+        firstNameField.inputAccessoryView = toolbar
+        lastNameField.inputAccessoryView = toolbar
+        mobileField.inputAccessoryView = toolbar
+        emailField.inputAccessoryView = toolbar
+        passwordField.inputAccessoryView = toolbar
+    }
+
+    private func createKeyboardToolbar() -> UIToolbar {
+        let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
+        toolbar.barStyle = .black
+        toolbar.isTranslucent = true
+        toolbar.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
+        toolbar.items = [flexSpace, doneButton]
+        toolbar.sizeToFit()
+        return toolbar
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        let keyboardHeight = keyboardFrame.height
+        scrollView.contentInset.bottom = keyboardHeight + 20
+        scrollView.verticalScrollIndicatorInsets.bottom = keyboardHeight + 20
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        scrollView.contentInset.bottom = 0
+        scrollView.verticalScrollIndicatorInsets.bottom = 0
     }
 }

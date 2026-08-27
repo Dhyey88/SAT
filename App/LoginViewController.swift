@@ -72,11 +72,16 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupKeyboardHandling()
         setupNetworkMonitoring()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: - UI Setup
@@ -85,6 +90,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
         // ScrollView Setup
         scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.keyboardDismissMode = .interactive
+        scrollView.alwaysBounceVertical = true
         contentView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
@@ -332,6 +339,9 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         textField.font = UIFont.systemFont(ofSize: 15)
         textField.autocapitalizationType = .none
         textField.autocorrectionType = .no
+        textField.delegate = self
+        textField.returnKeyType = .next
+        textField.inputAccessoryView = createKeyboardToolbar()
         textField.attributedPlaceholder = NSAttributedString(
             string: placeholder,
             attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.4)]
@@ -368,6 +378,9 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         passwordTextField.textColor = .white
         passwordTextField.font = UIFont.systemFont(ofSize: 15)
         passwordTextField.isSecureTextEntry = true
+        passwordTextField.delegate = self
+        passwordTextField.returnKeyType = .go
+        passwordTextField.inputAccessoryView = createKeyboardToolbar()
         passwordTextField.attributedPlaceholder = NSAttributedString(
             string: "Type Your Password",
             attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.4)]
@@ -503,6 +516,59 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         versionLabel.textColor = UIColor.white.withAlphaComponent(0.5)
         versionLabel.font = UIFont.systemFont(ofSize: 13)
         footerStack.addArrangedSubview(versionLabel)
+    }
+
+    // MARK: - Keyboard Handling
+    private func setupKeyboardHandling() {
+        // Tap anywhere on screen to dismiss keyboard
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+
+        // Observe keyboard will show and hide
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    private func createKeyboardToolbar() -> UIToolbar {
+        let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
+        toolbar.barStyle = .black
+        toolbar.isTranslucent = true
+        toolbar.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
+        toolbar.items = [flexSpace, doneButton]
+        toolbar.sizeToFit()
+        return toolbar
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        let keyboardHeight = keyboardFrame.height
+        let bottomPadding: CGFloat = 20
+        scrollView.contentInset.bottom = keyboardHeight + bottomPadding
+        scrollView.verticalScrollIndicatorInsets.bottom = keyboardHeight + bottomPadding
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        scrollView.contentInset.bottom = 0
+        scrollView.verticalScrollIndicatorInsets.bottom = 0
+    }
+
+    // MARK: - UITextFieldDelegate
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        if textField == emailTextField {
+            passwordTextField.becomeFirstResponder()
+        } else if textField == passwordTextField {
+            textField.resignFirstResponder()
+            handleLoginTap()
+        }
+        return true
     }
 
     // MARK: - Actions
