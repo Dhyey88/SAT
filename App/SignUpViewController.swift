@@ -15,10 +15,10 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private var isParentCodeVerified = false
 
     private var availableTitles: [String] = ["Mr", "Mrs", "Ms", "Mh", "Bai", "Bh"]
-    private var selectedTitle: String = "Mr"
+    private var selectedTitle: String = ""
 
     private let idDocumentOptions: [String] = ["Aadhar Card", "PAN Card", "Voter ID Card", "Driving License", "Passport"]
-    private var selectedIdDocument: String = "Aadhar Card"
+    private var selectedIdDocument: String = ""
 
     private var selectedGender: Int = 1 // 1 = Male, 2 = Female
     private var uploadedDocumentImage: UIImage?
@@ -379,7 +379,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         initTrustCodeField.translatesAutoresizingMaskIntoConstraints = false
         initTrustCodeField.placeholder = "Type your trust code"
-        initTrustCodeField.text = "SAT6677"
+        initTrustCodeField.text = "" // User enters value
         initTrustCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
         initTrustCodeField.font = UIFont.systemFont(ofSize: 15.5, weight: .semibold)
         initTrustCodeField.autocapitalizationType = .allCharacters
@@ -502,7 +502,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midTrustRowView.addSubview(midTrustTitleLabel)
 
         midTrustCodeField.translatesAutoresizingMaskIntoConstraints = false
-        midTrustCodeField.text = "SAT6677"
+        midTrustCodeField.placeholder = "Type your trust code"
+        midTrustCodeField.text = ""
         midTrustCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
         midTrustCodeField.font = UIFont.systemFont(ofSize: 15.5, weight: .semibold)
         midTrustCodeField.isEnabled = false
@@ -554,7 +555,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         midEmailField.translatesAutoresizingMaskIntoConstraints = false
         midEmailField.placeholder = "Type your email address"
-        midEmailField.text = "dhyey.khanpara26087@gmail.com"
+        midEmailField.text = "" // User enters value
         midEmailField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
         midEmailField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         midEmailField.keyboardType = .emailAddress
@@ -608,7 +609,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         midMobileField.translatesAutoresizingMaskIntoConstraints = false
         midMobileField.placeholder = "Type your 10-digit mobile"
-        midMobileField.text = "7894562130"
+        midMobileField.text = "" // User enters value
         midMobileField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
         midMobileField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         midMobileField.keyboardType = .phonePad
@@ -660,7 +661,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         midParentCodeField.translatesAutoresizingMaskIntoConstraints = false
         midParentCodeField.placeholder = "0001"
-        midParentCodeField.text = "0001"
+        midParentCodeField.text = "" // User enters value
         midParentCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
         midParentCodeField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         midParentCodeField.keyboardType = .asciiCapable
@@ -916,7 +917,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         contentView.addSubview(detailsCardView)
 
         // 1. Trust Code Row
-        buildDetailRow(container: dtTrustRow, iconView: dtTrustBadgeIcon, iconWrapper: dtTrustBadge, isBadge: true, label: dtTrustTitleLabel, title: "Trust/Institution code*", field: dtTrustCodeField, text: "SAT6677", underline: dtTrustUnderline, isEnabled: false)
+        buildDetailRow(container: dtTrustRow, iconView: dtTrustBadgeIcon, iconWrapper: dtTrustBadge, isBadge: true, label: dtTrustTitleLabel, title: "Trust/Institution code*", field: dtTrustCodeField, placeholder: "Type your trust code", underline: dtTrustUnderline, isEnabled: false)
         dtTrustCheckmark.translatesAutoresizingMaskIntoConstraints = false
         dtTrustCheckmark.image = UIImage(systemName: "checkmark")
         dtTrustCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
@@ -955,7 +956,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         // 2. Title*
         buildDetailRow(container: dtTitleRow, iconView: dtTitleIcon, iconName: "person.crop.circle.fill", iconColor: UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0), label: dtTitleLabel, title: "Title*", field: dtTitleField, placeholder: "Choose Title", underline: dtTitleUnderline)
-        dtTitleField.text = selectedTitle
         let titleTap = UITapGestureRecognizer(target: self, action: #selector(presentTitlePickerSheet))
         dtTitleField.addGestureRecognizer(titleTap)
         dtTitleField.isUserInteractionEnabled = true
@@ -997,7 +997,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         detailsCardView.addSubview(dtEmblemImageView)
 
         // 7. Email*
-        buildDetailRow(container: dtEmailRow, iconView: dtEmailIcon, iconName: "envelope.fill", iconColor: UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0), label: dtEmailLabel, title: "Email*", field: dtEmailField, text: "dhyey.khanpara26087@gmail.com", underline: dtEmailUnderline, hasCustomTrailing: true)
+        buildDetailRow(container: dtEmailRow, iconView: dtEmailIcon, iconName: "envelope.fill", iconColor: UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0), label: dtEmailLabel, title: "Email*", field: dtEmailField, placeholder: "Type your email address", underline: dtEmailUnderline, hasCustomTrailing: true)
         dtEmailCheckmark.translatesAutoresizingMaskIntoConstraints = false
         dtEmailCheckmark.image = UIImage(systemName: "checkmark")
         dtEmailCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
@@ -1012,7 +1012,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         detailsCardView.addSubview(dtEmailRow)
 
         // 8. Mobile phone*
-        buildDetailRow(container: dtMobileRow, iconView: dtMobileIcon, iconName: "hand.tap.fill", iconColor: UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0), label: dtMobileLabel, title: "Mobile phone*", field: dtMobileField, text: "7894562130", underline: dtMobileUnderline, hasCustomTrailing: true)
+        buildDetailRow(container: dtMobileRow, iconView: dtMobileIcon, iconName: "hand.tap.fill", iconColor: UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0), label: dtMobileLabel, title: "Mobile phone*", field: dtMobileField, placeholder: "Type your 10-digit mobile", underline: dtMobileUnderline, hasCustomTrailing: true)
         dtMobileInfoButton.translatesAutoresizingMaskIntoConstraints = false
         dtMobileInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
         dtMobileInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
@@ -1050,7 +1050,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         detailsCardView.addSubview(dtMobileRow)
 
         // 9. Mobile phone # for OTP
-        buildDetailRow(container: dtOtpMobileRow, iconView: dtOtpMobileIcon, iconName: "hand.tap.fill", iconColor: UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0), label: dtOtpMobileLabel, title: "Mobile phone # for OTP", field: dtOtpMobileField, text: "7894562130", underline: dtOtpMobileUnderline)
+        buildDetailRow(container: dtOtpMobileRow, iconView: dtOtpMobileIcon, iconName: "hand.tap.fill", iconColor: UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0), label: dtOtpMobileLabel, title: "Mobile phone # for OTP", field: dtOtpMobileField, placeholder: "Mobile phone # for OTP", underline: dtOtpMobileUnderline)
         detailsCardView.addSubview(dtOtpMobileRow)
 
         // 10. Gender
@@ -1100,7 +1100,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         detailsCardView.addSubview(dtGenderRow)
 
         // 11. Enter Main/Parent Branch Code#
-        buildDetailRow(container: dtParentRow, iconView: dtParentIcon, iconName: "person.crop.circle.badge.checkmark", iconColor: UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0), label: dtParentLabel, title: "Enter Main/Parent Branch Code#", field: dtParentCodeField, text: "0001", underline: dtParentUnderline, hasCustomTrailing: true)
+        buildDetailRow(container: dtParentRow, iconView: dtParentIcon, iconName: "person.crop.circle.badge.checkmark", iconColor: UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0), label: dtParentLabel, title: "Enter Main/Parent Branch Code#", field: dtParentCodeField, placeholder: "0001", underline: dtParentUnderline, hasCustomTrailing: true)
         dtParentInfoButton.translatesAutoresizingMaskIntoConstraints = false
         dtParentInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
         dtParentInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
@@ -1139,7 +1139,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         // 12. Id Document
         buildDetailRow(container: dtIdDocRow, iconView: dtIdDocIcon, iconName: "person.crop.circle.fill", iconColor: UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0), label: dtIdDocLabel, title: "Id Document", field: dtIdDocField, placeholder: "Choose Id Document", underline: dtIdDocUnderline)
-        dtIdDocField.text = selectedIdDocument
         let idDocTap = UITapGestureRecognizer(target: self, action: #selector(presentIdDocumentPickerSheet))
         dtIdDocField.addGestureRecognizer(idDocTap)
         dtIdDocField.isUserInteractionEnabled = true
@@ -1627,8 +1626,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                         let parsed = titles.compactMap { $0["title"] as? String }.filter { !$0.isEmpty }
                         if !parsed.isEmpty {
                             self.availableTitles = parsed
-                            self.selectedTitle = parsed[0]
-                            self.dtTitleField.text = parsed[0]
                         }
                     }
 
@@ -1924,6 +1921,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                 self.midParentSpinner.stopAnimating()
 
                 // Sync verified values to details card
+                self.dtTrustCodeField.text = self.midTrustCodeField.text
                 self.dtEmailField.text = self.midEmailField.text
                 self.dtMobileField.text = self.midMobileField.text
                 self.dtOtpMobileField.text = self.midMobileField.text
@@ -2156,7 +2154,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         showHelpAlert(
             title: "Trust/Institution Code",
-            message: "A unique identification code assigned to your trust or branch (e.g. SAT6677). Contact your Trust Head Office if you do not have one."
+            message: "A unique identification code assigned to your trust or branch. Contact your Trust Head Office if you do not have one."
         )
     }
 
@@ -2180,7 +2178,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         showHelpAlert(
             title: "Main/Parent Branch Code",
-            message: "Enter the code or ID of your parent Head Office branch (e.g. 0001 or 6)."
+            message: "Enter the code or ID of your parent Head Office branch."
         )
     }
 
