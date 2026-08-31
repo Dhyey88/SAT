@@ -85,7 +85,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
     // MARK: - UI Setup
     private func setupUI() {
-        view.backgroundColor = UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 1.0)
+        view.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
 
         // ScrollView Setup
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -118,16 +118,16 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
         // 2. Avatar Placeholder
         avatarContainer.translatesAutoresizingMaskIntoConstraints = false
-        avatarContainer.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        avatarContainer.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
         avatarContainer.layer.cornerRadius = 35
         avatarContainer.layer.masksToBounds = true
         avatarContainer.layer.borderWidth = 2
-        avatarContainer.layer.borderColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.6).cgColor
+        avatarContainer.layer.borderColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.8).cgColor
         contentView.addSubview(avatarContainer)
 
         avatarImageView.translatesAutoresizingMaskIntoConstraints = false
         avatarImageView.image = UIImage(systemName: "person.fill")
-        avatarImageView.tintColor = UIColor.white.withAlphaComponent(0.8)
+        avatarImageView.tintColor = UIColor.white.withAlphaComponent(0.85)
         avatarImageView.contentMode = .scaleAspectFit
         avatarContainer.addSubview(avatarImageView)
 
@@ -138,7 +138,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         googleLoginButton.tintColor = .white
         googleLoginButton.setTitleColor(.white, for: .normal)
         googleLoginButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        googleLoginButton.backgroundColor = UIColor(red: 220/255, green: 60/255, blue: 50/255, alpha: 1.0)
+        googleLoginButton.backgroundColor = UIColor(red: 234/255, green: 67/255, blue: 53/255, alpha: 1.0)
         googleLoginButton.layer.cornerRadius = 8
         googleLoginButton.layer.shadowColor = UIColor.black.cgColor
         googleLoginButton.layer.shadowOpacity = 0.2
@@ -307,9 +307,11 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     private func setupInputContainer(container: UIView, badge: UIImageView, textField: UITextField,
                                      badgeColor: UIColor, iconName: String, placeholder: String) {
         container.translatesAutoresizingMaskIntoConstraints = false
-        container.backgroundColor = UIColor(red: 35/255, green: 42/255, blue: 50/255, alpha: 1.0)
-        container.layer.cornerRadius = 8
+        container.backgroundColor = .white
+        container.layer.cornerRadius = 6
         container.layer.masksToBounds = true
+        container.layer.borderWidth = 1
+        container.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
 
         badge.translatesAutoresizingMaskIntoConstraints = false
         badge.backgroundColor = badgeColor
@@ -319,15 +321,15 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         container.addSubview(badge)
 
         textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.textColor = .white
-        textField.font = UIFont.systemFont(ofSize: 15)
+        textField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        textField.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         textField.autocapitalizationType = .none
         textField.autocorrectionType = .no
         textField.delegate = self
         textField.returnKeyType = .next
         textField.attributedPlaceholder = NSAttributedString(
             string: placeholder,
-            attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.4)]
+            attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
         )
         container.addSubview(textField)
 
@@ -346,26 +348,28 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
     private func setupPasswordContainer() {
         passwordContainer.translatesAutoresizingMaskIntoConstraints = false
-        passwordContainer.backgroundColor = UIColor(red: 35/255, green: 42/255, blue: 50/255, alpha: 1.0)
-        passwordContainer.layer.cornerRadius = 8
+        passwordContainer.backgroundColor = .white
+        passwordContainer.layer.cornerRadius = 6
         passwordContainer.layer.masksToBounds = true
+        passwordContainer.layer.borderWidth = 1
+        passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
 
         passwordBadge.translatesAutoresizingMaskIntoConstraints = false
-        passwordBadge.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        passwordBadge.backgroundColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Web Amber Gold #FFB848
         passwordBadge.image = UIImage(systemName: "lock.fill")
         passwordBadge.tintColor = .white
         passwordBadge.contentMode = .center
         passwordContainer.addSubview(passwordBadge)
 
         passwordTextField.translatesAutoresizingMaskIntoConstraints = false
-        passwordTextField.textColor = .white
-        passwordTextField.font = UIFont.systemFont(ofSize: 15)
+        passwordTextField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        passwordTextField.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         passwordTextField.isSecureTextEntry = true
         passwordTextField.delegate = self
         passwordTextField.returnKeyType = .go
         passwordTextField.attributedPlaceholder = NSAttributedString(
             string: "Type Your Password",
-            attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.4)]
+            attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
         )
         passwordContainer.addSubview(passwordTextField)
 
@@ -399,22 +403,22 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         actionLinksStack.distribution = .equalSpacing
         actionLinksStack.alignment = .center
 
-        // Tutorial Button
+        // Tutorial Button (Web Sky Blue #27A9E3)
         tutorialButton.translatesAutoresizingMaskIntoConstraints = false
         tutorialButton.setImage(UIImage(systemName: "play.circle.fill"), for: .normal)
-        tutorialButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        tutorialButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         tutorialButton.setTitle(" Tutorial", for: .normal)
-        tutorialButton.setTitleColor(UIColor.white.withAlphaComponent(0.9), for: .normal)
+        tutorialButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
         tutorialButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         tutorialButton.addTarget(self, action: #selector(openTutorial), for: .touchUpInside)
         actionLinksStack.addArrangedSubview(tutorialButton)
 
-        // Reset Password Button
+        // Reset Password Button (Web Terracotta Orange #DA542E)
         resetPasswordButton.translatesAutoresizingMaskIntoConstraints = false
         resetPasswordButton.setImage(UIImage(systemName: "key.fill"), for: .normal)
-        resetPasswordButton.tintColor = UIColor(red: 233/255, green: 50/255, blue: 45/255, alpha: 1.0)
+        resetPasswordButton.tintColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
         resetPasswordButton.setTitle(" Reset Password", for: .normal)
-        resetPasswordButton.setTitleColor(UIColor(red: 233/255, green: 80/255, blue: 75/255, alpha: 1.0), for: .normal)
+        resetPasswordButton.setTitleColor(UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0), for: .normal)
         resetPasswordButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         resetPasswordButton.addTarget(self, action: #selector(openResetPasswordModal), for: .touchUpInside)
         actionLinksStack.addArrangedSubview(resetPasswordButton)
@@ -422,7 +426,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
     private func setupCardBottomBar() {
         cardBottomBar.translatesAutoresizingMaskIntoConstraints = false
-        cardBottomBar.backgroundColor = UIColor(red: 35/255, green: 42/255, blue: 50/255, alpha: 1.0)
+        cardBottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
 
         // Info Button (i)
         infoButton.translatesAutoresizingMaskIntoConstraints = false

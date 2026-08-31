@@ -187,15 +187,17 @@ class ResetPasswordViewController: UIViewController {
 
     private func styleTextField(_ tf: UITextField, placeholder: String, iconName: String) {
         tf.translatesAutoresizingMaskIntoConstraints = false
-        tf.backgroundColor = UIColor(red: 35/255, green: 42/255, blue: 50/255, alpha: 1.0)
-        tf.layer.cornerRadius = 8
-        tf.textColor = .white
-        tf.font = UIFont.systemFont(ofSize: 15)
+        tf.backgroundColor = .white
+        tf.layer.cornerRadius = 6
+        tf.layer.borderWidth = 1
+        tf.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
+        tf.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        tf.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         tf.autocapitalizationType = .none
         tf.autocorrectionType = .no
         tf.attributedPlaceholder = NSAttributedString(
             string: placeholder,
-            attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.4)]
+            attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
         )
 
         let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 44, height: 48))
