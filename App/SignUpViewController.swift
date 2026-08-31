@@ -4,72 +4,101 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
 
     var onSignUpSuccess: ((String) -> Void)?
 
-    // MARK: - State
-    private enum Step {
-        case enterTrustCode
-        case enterUserDetails
-    }
-
-    private var currentStep: Step = .enterTrustCode
+    // MARK: - State Flags
     private var verifiedMerchantId: Int = 0
     private var verifiedMerchantName: String = ""
-    private var enteredTrustCode: String = ""
+    private var isTrustCodeVerified = false
+    private var isEmailVerified = false
+    private var isMobileVerified = false
 
-    // MARK: - UI Components
+    // Countdown Timer for OTP
+    private var otpTimer: Timer?
+    private var otpRemainingSeconds = 30
+
+    // MARK: - UI Components (Main Scroll & Card)
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
-    // Header
     private let headerTitleLabel = UILabel()
-
-    // Error Banner
     private let errorLabel = UILabel()
 
-    // MARK: - Step 1 UI (Trust Code Card)
-    private let trustCardContainer = UIView()
-    private let trustCardTopView = UIView()
-    private let trustCardBottomView = UIView()
+    private let mainCardContainer = UIView()
+    private let whiteCardBody = UIView()
+    private let bottomActionBar = UIView()
 
-    private let idBadgeIconView = UIView()
-    private let idBadgeSubIcon = UIImageView()
-    private let trustCodeTitleLabel = UILabel()
+    // 1. Trust Code Row
+    private let trustBadgeIcon = UIView()
+    private let trustBadgeSubIcon = UIImageView()
+    private let trustTitleLabel = UILabel()
     private let trustCodeField = UITextField()
-    private let trustCodeUnderline = UIView()
-
-    private let submitArrowButton = UIButton(type: .system)
+    private let trustUnderline = UIView()
+    private let trustCheckmark = UIImageView()
+    private let trustArrowButton = UIButton(type: .system)
     private let trustInfoButton = UIButton(type: .system)
-    private let trustActivityIndicator = UIActivityIndicatorView(style: .medium)
-    private let cancelButton = UIButton(type: .system)
+    private let trustSpinner = UIActivityIndicatorView(style: .medium)
 
-    // MARK: - Step 2 UI (User Details Form)
-    private let detailsCardView = UIView()
-    private let verifiedTrustBadgeView = UIView()
-    private let verifiedTrustIcon = UIImageView()
-    private let verifiedTrustTitleLabel = UILabel()
-    private let verifiedTrustCodeLabel = UILabel()
+    // 2. Trust Emblem Logo
+    private let trustEmblemImageView = UIImageView()
 
-    private let firstNameField = UITextField()
-    private let lastNameField = UITextField()
-    private let mobileField = UITextField()
+    // 3. Email Row
+    private let emailRowView = UIView()
+    private let emailIcon = UIImageView()
+    private let emailTitleLabel = UILabel()
     private let emailField = UITextField()
-    private let passwordField = UITextField()
-    private let confirmPasswordField = UITextField()
+    private let emailUnderline = UIView()
+    private let emailCheckmark = UIImageView()
+    private let emailArrowButton = UIButton(type: .system)
+    private let emailSpinner = UIActivityIndicatorView(style: .medium)
 
-    private let showPasswordButton = UIButton(type: .custom)
-    private let showConfirmPasswordButton = UIButton(type: .custom)
+    // 4. Mobile Row
+    private let mobileRowView = UIView()
+    private let mobileIcon = UIImageView()
+    private let mobileTitleLabel = UILabel()
+    private let mobileField = UITextField()
+    private let mobileUnderline = UIView()
+    private let mobileCheckmark = UIImageView()
+    private let mobileArrowButton = UIButton(type: .system)
+    private let mobileInfoButton = UIButton(type: .system)
+    private let mobileSpinner = UIActivityIndicatorView(style: .medium)
 
-    private let registerButton = UIButton(type: .custom)
-    private let registerActivityIndicator = UIActivityIndicatorView(style: .medium)
-    private let backToTrustCodeButton = UIButton(type: .system)
+    // 5. Parent Branch Code Row
+    private let parentRowView = UIView()
+    private let parentIcon = UIImageView()
+    private let parentTitleLabel = UILabel()
+    private let parentCodeField = UITextField()
+    private let parentUnderline = UIView()
+    private let parentArrowButton = UIButton(type: .system)
+    private let parentInfoButton = UIButton(type: .system)
+    private let parentSpinner = UIActivityIndicatorView(style: .medium)
 
-    // Footer Version
+    // Bottom Bar Buttons
+    private let cancelButton = UIButton(type: .system)
+    private let registerBranchButton = UIButton(type: .system)
     private let versionLabel = UILabel()
+
+    // MARK: - OTP Verification Modal Overlay UI (Image 2)
+    private let otpOverlayBackdrop = UIView()
+    private let otpCardContainer = UIView()
+    private let otpTitleLabel = UILabel()
+    private let otpInputField = UITextField()
+    private let otpUnderline = UIView()
+    private let otpTimerLabel = UILabel()
+    private let otpResendButton = UIButton(type: .system)
+    private let otpCancelButton = UIButton(type: .system)
+    private let otpVerifyButton = UIButton(type: .system)
+    private let otpSpinner = UIActivityIndicatorView(style: .medium)
+
+    // Dynamic constraints for responsive card expansion
+    private var emailRowHeightConstraint: NSLayoutConstraint!
+    private var mobileRowHeightConstraint: NSLayoutConstraint!
+    private var parentRowHeightConstraint: NSLayoutConstraint!
+    private var emblemHeightConstraint: NSLayoutConstraint!
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupKeyboardHandling()
-        updateStepUI()
+        setupOTPOverlayUI()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -77,14 +106,15 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
     }
 
     deinit {
+        otpTimer?.invalidate()
         NotificationCenter.default.removeObserver(self)
     }
 
     private func setupUI() {
-        // Deep Royal Blue Background matching Android/Web reference
-        view.backgroundColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0) // #133B7C
+        // Deep Royal Blue Background (#133B7C)
+        view.backgroundColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
 
-        // 1. ScrollView & ContentView
+        // 1. Scroll & Content
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.keyboardDismissMode = .interactive
         scrollView.alwaysBounceVertical = true
@@ -96,7 +126,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
 
-        // 2. Header Title "Sign Up"
+        // 2. Header "Sign Up"
         headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerTitleLabel.text = "Sign Up"
         headerTitleLabel.textColor = .white
@@ -116,13 +146,32 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         errorLabel.isHidden = true
         contentView.addSubview(errorLabel)
 
-        // 4. Setup Step 1: Trust Card (Exact Match to Screenshot)
-        setupTrustCardUI()
+        // 4. Main Card Container
+        mainCardContainer.translatesAutoresizingMaskIntoConstraints = false
+        mainCardContainer.layer.cornerRadius = 18
+        mainCardContainer.layer.masksToBounds = true
+        mainCardContainer.layer.shadowColor = UIColor.black.cgColor
+        mainCardContainer.layer.shadowOpacity = 0.3
+        mainCardContainer.layer.shadowOffset = CGSize(width: 0, height: 6)
+        mainCardContainer.layer.shadowRadius = 12
+        contentView.addSubview(mainCardContainer)
 
-        // 5. Setup Step 2: User Details Form
-        setupUserDetailsUI()
+        // White Body
+        whiteCardBody.translatesAutoresizingMaskIntoConstraints = false
+        whiteCardBody.backgroundColor = .white
+        mainCardContainer.addSubview(whiteCardBody)
 
-        // 6. Version Label at Bottom
+        // Setup All Rows inside White Card
+        setupTrustRow()
+        setupEmblemLogo()
+        setupEmailRow()
+        setupMobileRow()
+        setupParentRow()
+
+        // Setup Bottom Action Bar
+        setupBottomActionBar()
+
+        // 5. Version Label at Bottom Right
         versionLabel.translatesAutoresizingMaskIntoConstraints = false
         versionLabel.text = "v t 2.0.10"
         versionLabel.textColor = UIColor.white.withAlphaComponent(0.65)
@@ -130,7 +179,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         versionLabel.textAlignment = .right
         view.addSubview(versionLabel)
 
-        // Layout Constraints
+        // Main Layout Constraints
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -143,401 +192,606 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
 
-            headerTitleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            headerTitleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 14),
             headerTitleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
 
-            errorLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 14),
+            errorLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 12),
             errorLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             errorLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
 
-            // Step 1: Trust Card
-            trustCardContainer.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 16),
-            trustCardContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
-            trustCardContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
-            trustCardContainer.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -60),
+            mainCardContainer.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 14),
+            mainCardContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            mainCardContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            mainCardContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -60),
 
-            // Step 2: Details Card
-            detailsCardView.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 16),
-            detailsCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
-            detailsCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
-            detailsCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -60),
+            whiteCardBody.topAnchor.constraint(equalTo: mainCardContainer.topAnchor),
+            whiteCardBody.leadingAnchor.constraint(equalTo: mainCardContainer.leadingAnchor),
+            whiteCardBody.trailingAnchor.constraint(equalTo: mainCardContainer.trailingAnchor),
+
+            bottomActionBar.topAnchor.constraint(equalTo: whiteCardBody.bottomAnchor),
+            bottomActionBar.leadingAnchor.constraint(equalTo: mainCardContainer.leadingAnchor),
+            bottomActionBar.trailingAnchor.constraint(equalTo: mainCardContainer.trailingAnchor),
+            bottomActionBar.bottomAnchor.constraint(equalTo: mainCardContainer.bottomAnchor),
+            bottomActionBar.heightAnchor.constraint(equalToConstant: 52),
 
             versionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            versionLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12)
+            versionLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10)
         ])
     }
 
-    // MARK: - Step 1: Trust Code Card (Exact Match to Screenshot)
-    private func setupTrustCardUI() {
-        trustCardContainer.translatesAutoresizingMaskIntoConstraints = false
-        trustCardContainer.layer.cornerRadius = 16
-        trustCardContainer.layer.masksToBounds = true
-        trustCardContainer.layer.shadowColor = UIColor.black.cgColor
-        trustCardContainer.layer.shadowOpacity = 0.25
-        trustCardContainer.layer.shadowOffset = CGSize(width: 0, height: 4)
-        trustCardContainer.layer.shadowRadius = 10
-        contentView.addSubview(trustCardContainer)
+    // MARK: - Row 1: Trust/Institution Code
+    private func setupTrustRow() {
+        trustBadgeIcon.translatesAutoresizingMaskIntoConstraints = false
+        trustBadgeIcon.backgroundColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 0.85) // Pink
+        trustBadgeIcon.layer.cornerRadius = 6
+        trustBadgeIcon.layer.masksToBounds = true
+        whiteCardBody.addSubview(trustBadgeIcon)
 
-        // White Top Section
-        trustCardTopView.translatesAutoresizingMaskIntoConstraints = false
-        trustCardTopView.backgroundColor = .white
-        trustCardContainer.addSubview(trustCardTopView)
+        trustBadgeSubIcon.translatesAutoresizingMaskIntoConstraints = false
+        trustBadgeSubIcon.image = UIImage(systemName: "person.crop.rectangle.fill") ?? UIImage(systemName: "person.text.rectangle")
+        trustBadgeSubIcon.tintColor = .white
+        trustBadgeSubIcon.contentMode = .scaleAspectFit
+        trustBadgeIcon.addSubview(trustBadgeSubIcon)
 
-        // Pink ID Badge Icon
-        idBadgeIconView.translatesAutoresizingMaskIntoConstraints = false
-        idBadgeIconView.backgroundColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 0.85) // Pink #E91E63
-        idBadgeIconView.layer.cornerRadius = 6
-        idBadgeIconView.layer.masksToBounds = true
-        trustCardTopView.addSubview(idBadgeIconView)
+        trustTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        trustTitleLabel.attributedText = createRequiredLabel("Trust/Institution code")
+        whiteCardBody.addSubview(trustTitleLabel)
 
-        idBadgeSubIcon.translatesAutoresizingMaskIntoConstraints = false
-        idBadgeSubIcon.image = UIImage(systemName: "person.crop.rectangle.fill") ?? UIImage(systemName: "person.text.rectangle")
-        idBadgeSubIcon.tintColor = .white
-        idBadgeSubIcon.contentMode = .scaleAspectFit
-        idBadgeIconView.addSubview(idBadgeSubIcon)
-
-        // Label: "Trust/Institution code*" (with red asterisk)
-        trustCodeTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        let titleAttr = NSMutableAttributedString(
-            string: "Trust/Institution code",
-            attributes: [
-                .font: UIFont.systemFont(ofSize: 14.5, weight: .bold),
-                .foregroundColor: UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-            ]
-        )
-        let starAttr = NSAttributedString(
-            string: "*",
-            attributes: [
-                .font: UIFont.systemFont(ofSize: 15, weight: .bold),
-                .foregroundColor: UIColor(red: 220/255, green: 53/255, blue: 69/255, alpha: 1.0)
-            ]
-        )
-        titleAttr.append(starAttr)
-        trustCodeTitleLabel.attributedText = titleAttr
-        trustCardTopView.addSubview(trustCodeTitleLabel)
-
-        // TextField: "Type your trust code"
         trustCodeField.translatesAutoresizingMaskIntoConstraints = false
         trustCodeField.placeholder = "Type your trust code"
+        trustCodeField.text = "SAT6677" // Pre-filled default for quick testing
         trustCodeField.textColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
         trustCodeField.font = UIFont.systemFont(ofSize: 15, weight: .regular)
         trustCodeField.autocapitalizationType = .allCharacters
         trustCodeField.autocorrectionType = .no
-        trustCodeField.returnKeyType = .go
+        trustCodeField.returnKeyType = .next
         trustCodeField.delegate = self
-        trustCodeField.addTarget(self, action: #selector(trustCodeChanged), for: .editingChanged)
-        trustCardTopView.addSubview(trustCodeField)
+        whiteCardBody.addSubview(trustCodeField)
 
-        // Bottom underline
-        trustCodeUnderline.translatesAutoresizingMaskIntoConstraints = false
-        trustCodeUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        trustCardTopView.addSubview(trustCodeUnderline)
+        trustUnderline.translatesAutoresizingMaskIntoConstraints = false
+        trustUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        whiteCardBody.addSubview(trustUnderline)
 
-        // Right Action: Submit Arrow Button "➔"
-        submitArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        submitArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        submitArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        submitArrowButton.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        submitArrowButton.addTarget(self, action: #selector(handleTrustCodeSubmit), for: .touchUpInside)
-        trustCardTopView.addSubview(submitArrowButton)
+        trustCheckmark.translatesAutoresizingMaskIntoConstraints = false
+        trustCheckmark.image = UIImage(systemName: "checkmark")
+        trustCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0) // Green
+        trustCheckmark.isHidden = true
+        whiteCardBody.addSubview(trustCheckmark)
 
-        // Right Action: Info Button "ⓘ"
+        trustArrowButton.translatesAutoresizingMaskIntoConstraints = false
+        trustArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
+        trustArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        trustArrowButton.addTarget(self, action: #selector(handleTrustCodeSubmit), for: .touchUpInside)
+        whiteCardBody.addSubview(trustArrowButton)
+
         trustInfoButton.translatesAutoresizingMaskIntoConstraints = false
         trustInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
         trustInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        trustInfoButton.addTarget(self, action: #selector(showTrustCodeInfo), for: .touchUpInside)
-        trustCardTopView.addSubview(trustInfoButton)
+        trustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
+        whiteCardBody.addSubview(trustInfoButton)
 
-        // Activity Indicator for Trust Code Verification
-        trustActivityIndicator.translatesAutoresizingMaskIntoConstraints = false
-        trustActivityIndicator.hidesWhenStopped = true
-        trustActivityIndicator.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        trustCardTopView.addSubview(trustActivityIndicator)
+        trustSpinner.translatesAutoresizingMaskIntoConstraints = false
+        trustSpinner.hidesWhenStopped = true
+        trustSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        whiteCardBody.addSubview(trustSpinner)
 
-        // Blue Bottom Section: "Cancel" Button
-        trustCardBottomView.translatesAutoresizingMaskIntoConstraints = false
-        trustCardBottomView.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0) // Light Blue #4184D6
-        trustCardContainer.addSubview(trustCardBottomView)
+        NSLayoutConstraint.activate([
+            trustBadgeIcon.leadingAnchor.constraint(equalTo: whiteCardBody.leadingAnchor, constant: 16),
+            trustBadgeIcon.topAnchor.constraint(equalTo: whiteCardBody.topAnchor, constant: 22),
+            trustBadgeIcon.widthAnchor.constraint(equalToConstant: 36),
+            trustBadgeIcon.heightAnchor.constraint(equalToConstant: 26),
+
+            trustBadgeSubIcon.centerXAnchor.constraint(equalTo: trustBadgeIcon.centerXAnchor),
+            trustBadgeSubIcon.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
+            trustBadgeSubIcon.widthAnchor.constraint(equalToConstant: 22),
+            trustBadgeSubIcon.heightAnchor.constraint(equalToConstant: 16),
+
+            trustTitleLabel.leadingAnchor.constraint(equalTo: trustBadgeIcon.trailingAnchor, constant: 12),
+            trustTitleLabel.topAnchor.constraint(equalTo: whiteCardBody.topAnchor, constant: 14),
+            trustTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: trustCheckmark.leadingAnchor, constant: -6),
+
+            trustCodeField.leadingAnchor.constraint(equalTo: trustBadgeIcon.trailingAnchor, constant: 12),
+            trustCodeField.topAnchor.constraint(equalTo: trustTitleLabel.bottomAnchor, constant: 4),
+            trustCodeField.trailingAnchor.constraint(equalTo: trustCheckmark.leadingAnchor, constant: -8),
+            trustCodeField.heightAnchor.constraint(equalToConstant: 28),
+
+            trustUnderline.leadingAnchor.constraint(equalTo: trustCodeField.leadingAnchor),
+            trustUnderline.trailingAnchor.constraint(equalTo: trustCodeField.trailingAnchor),
+            trustUnderline.topAnchor.constraint(equalTo: trustCodeField.bottomAnchor, constant: 2),
+            trustUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+
+            trustInfoButton.trailingAnchor.constraint(equalTo: whiteCardBody.trailingAnchor, constant: -16),
+            trustInfoButton.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
+            trustInfoButton.widthAnchor.constraint(equalToConstant: 26),
+            trustInfoButton.heightAnchor.constraint(equalToConstant: 26),
+
+            trustArrowButton.trailingAnchor.constraint(equalTo: trustInfoButton.leadingAnchor, constant: -10),
+            trustArrowButton.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
+            trustArrowButton.widthAnchor.constraint(equalToConstant: 26),
+            trustArrowButton.heightAnchor.constraint(equalToConstant: 26),
+
+            trustCheckmark.trailingAnchor.constraint(equalTo: trustArrowButton.leadingAnchor, constant: -8),
+            trustCheckmark.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
+            trustCheckmark.widthAnchor.constraint(equalToConstant: 22),
+            trustCheckmark.heightAnchor.constraint(equalToConstant: 22),
+
+            trustSpinner.centerXAnchor.constraint(equalTo: trustArrowButton.centerXAnchor),
+            trustSpinner.centerYAnchor.constraint(equalTo: trustArrowButton.centerYAnchor)
+        ])
+    }
+
+    // MARK: - Center Emblem Logo
+    private func setupEmblemLogo() {
+        trustEmblemImageView.translatesAutoresizingMaskIntoConstraints = false
+        if let img = UIImage(named: "AppIcon-1024") {
+            trustEmblemImageView.image = img
+        } else {
+            trustEmblemImageView.image = UIImage(systemName: "seal.fill")
+        }
+        trustEmblemImageView.contentMode = .scaleAspectFit
+        trustEmblemImageView.layer.cornerRadius = 14
+        trustEmblemImageView.layer.masksToBounds = true
+        whiteCardBody.addSubview(trustEmblemImageView)
+
+        emblemHeightConstraint = trustEmblemImageView.heightAnchor.constraint(equalToConstant: 130)
+
+        NSLayoutConstraint.activate([
+            trustEmblemImageView.topAnchor.constraint(equalTo: trustBadgeIcon.bottomAnchor, constant: 18),
+            trustEmblemImageView.centerXAnchor.constraint(equalTo: whiteCardBody.centerXAnchor),
+            trustEmblemImageView.widthAnchor.constraint(equalToConstant: 130),
+            emblemHeightConstraint
+        ])
+    }
+
+    // MARK: - Row 2: Email
+    private func setupEmailRow() {
+        emailRowView.translatesAutoresizingMaskIntoConstraints = false
+        emailRowView.clipsToBounds = true
+        whiteCardBody.addSubview(emailRowView)
+
+        emailIcon.translatesAutoresizingMaskIntoConstraints = false
+        emailIcon.image = UIImage(systemName: "envelope.fill")
+        emailIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Amber / Gold
+        emailRowView.addSubview(emailIcon)
+
+        emailTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        emailTitleLabel.attributedText = createRequiredLabel("Email")
+        emailRowView.addSubview(emailTitleLabel)
+
+        emailField.translatesAutoresizingMaskIntoConstraints = false
+        emailField.placeholder = "Type your email address"
+        emailField.textColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        emailField.font = UIFont.systemFont(ofSize: 14.5, weight: .regular)
+        emailField.autocapitalizationType = .none
+        emailField.autocorrectionType = .no
+        emailField.keyboardType = .emailAddress
+        emailField.returnKeyType = .next
+        emailField.delegate = self
+        emailField.addTarget(self, action: #selector(emailFieldChanged), for: .editingChanged)
+        emailRowView.addSubview(emailField)
+
+        emailUnderline.translatesAutoresizingMaskIntoConstraints = false
+        emailUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        emailRowView.addSubview(emailUnderline)
+
+        emailCheckmark.translatesAutoresizingMaskIntoConstraints = false
+        emailCheckmark.image = UIImage(systemName: "checkmark")
+        emailCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        emailCheckmark.isHidden = true
+        emailRowView.addSubview(emailCheckmark)
+
+        emailArrowButton.translatesAutoresizingMaskIntoConstraints = false
+        emailArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
+        emailArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        emailArrowButton.addTarget(self, action: #selector(handleEmailSubmit), for: .touchUpInside)
+        emailRowView.addSubview(emailArrowButton)
+
+        emailSpinner.translatesAutoresizingMaskIntoConstraints = false
+        emailSpinner.hidesWhenStopped = true
+        emailSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        emailRowView.addSubview(emailSpinner)
+
+        emailRowHeightConstraint = emailRowView.heightAnchor.constraint(equalToConstant: 74)
+
+        NSLayoutConstraint.activate([
+            emailRowView.topAnchor.constraint(equalTo: trustEmblemImageView.bottomAnchor, constant: 14),
+            emailRowView.leadingAnchor.constraint(equalTo: whiteCardBody.leadingAnchor, constant: 16),
+            emailRowView.trailingAnchor.constraint(equalTo: whiteCardBody.trailingAnchor, constant: -16),
+            emailRowHeightConstraint,
+
+            emailIcon.leadingAnchor.constraint(equalTo: emailRowView.leadingAnchor),
+            emailIcon.topAnchor.constraint(equalTo: emailRowView.topAnchor, constant: 20),
+            emailIcon.widthAnchor.constraint(equalToConstant: 28),
+            emailIcon.heightAnchor.constraint(equalToConstant: 22),
+
+            emailTitleLabel.leadingAnchor.constraint(equalTo: emailIcon.trailingAnchor, constant: 12),
+            emailTitleLabel.topAnchor.constraint(equalTo: emailRowView.topAnchor, constant: 4),
+
+            emailField.leadingAnchor.constraint(equalTo: emailIcon.trailingAnchor, constant: 12),
+            emailField.topAnchor.constraint(equalTo: emailTitleLabel.bottomAnchor, constant: 4),
+            emailField.trailingAnchor.constraint(equalTo: emailCheckmark.leadingAnchor, constant: -8),
+            emailField.heightAnchor.constraint(equalToConstant: 28),
+
+            emailUnderline.leadingAnchor.constraint(equalTo: emailField.leadingAnchor),
+            emailUnderline.trailingAnchor.constraint(equalTo: emailField.trailingAnchor),
+            emailUnderline.topAnchor.constraint(equalTo: emailField.bottomAnchor, constant: 2),
+            emailUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+
+            emailArrowButton.trailingAnchor.constraint(equalTo: emailRowView.trailingAnchor),
+            emailArrowButton.centerYAnchor.constraint(equalTo: emailIcon.centerYAnchor),
+            emailArrowButton.widthAnchor.constraint(equalToConstant: 26),
+            emailArrowButton.heightAnchor.constraint(equalToConstant: 26),
+
+            emailCheckmark.trailingAnchor.constraint(equalTo: emailArrowButton.leadingAnchor, constant: -8),
+            emailCheckmark.centerYAnchor.constraint(equalTo: emailIcon.centerYAnchor),
+            emailCheckmark.widthAnchor.constraint(equalToConstant: 22),
+            emailCheckmark.heightAnchor.constraint(equalToConstant: 22),
+
+            emailSpinner.centerXAnchor.constraint(equalTo: emailArrowButton.centerXAnchor),
+            emailSpinner.centerYAnchor.constraint(equalTo: emailArrowButton.centerYAnchor)
+        ])
+    }
+
+    // MARK: - Row 3: Mobile Phone (Triggers OTP Verification)
+    private func setupMobileRow() {
+        mobileRowView.translatesAutoresizingMaskIntoConstraints = false
+        mobileRowView.clipsToBounds = true
+        whiteCardBody.addSubview(mobileRowView)
+
+        mobileIcon.translatesAutoresizingMaskIntoConstraints = false
+        mobileIcon.image = UIImage(systemName: "hand.tap.fill") ?? UIImage(systemName: "phone.fill")
+        mobileIcon.tintColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0)
+        mobileRowView.addSubview(mobileIcon)
+
+        mobileTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        mobileTitleLabel.attributedText = createRequiredLabel("Mobile phone")
+        mobileRowView.addSubview(mobileTitleLabel)
+
+        mobileField.translatesAutoresizingMaskIntoConstraints = false
+        mobileField.placeholder = "Type your 10-digit mobile"
+        mobileField.textColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        mobileField.font = UIFont.systemFont(ofSize: 14.5, weight: .regular)
+        mobileField.keyboardType = .phonePad
+        mobileField.delegate = self
+        mobileField.addTarget(self, action: #selector(mobileFieldChanged), for: .editingChanged)
+        mobileRowView.addSubview(mobileField)
+
+        mobileUnderline.translatesAutoresizingMaskIntoConstraints = false
+        mobileUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        mobileRowView.addSubview(mobileUnderline)
+
+        mobileCheckmark.translatesAutoresizingMaskIntoConstraints = false
+        mobileCheckmark.image = UIImage(systemName: "checkmark")
+        mobileCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        mobileCheckmark.isHidden = true
+        mobileRowView.addSubview(mobileCheckmark)
+
+        mobileArrowButton.translatesAutoresizingMaskIntoConstraints = false
+        mobileArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
+        mobileArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        mobileArrowButton.addTarget(self, action: #selector(handleMobileSubmitAndSendOTP), for: .touchUpInside)
+        mobileRowView.addSubview(mobileArrowButton)
+
+        mobileInfoButton.translatesAutoresizingMaskIntoConstraints = false
+        mobileInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        mobileInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        mobileInfoButton.addTarget(self, action: #selector(showMobileInfo), for: .touchUpInside)
+        mobileRowView.addSubview(mobileInfoButton)
+
+        mobileSpinner.translatesAutoresizingMaskIntoConstraints = false
+        mobileSpinner.hidesWhenStopped = true
+        mobileSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        mobileRowView.addSubview(mobileSpinner)
+
+        mobileRowHeightConstraint = mobileRowView.heightAnchor.constraint(equalToConstant: 74)
+
+        NSLayoutConstraint.activate([
+            mobileRowView.topAnchor.constraint(equalTo: emailRowView.bottomAnchor, constant: 14),
+            mobileRowView.leadingAnchor.constraint(equalTo: whiteCardBody.leadingAnchor, constant: 16),
+            mobileRowView.trailingAnchor.constraint(equalTo: whiteCardBody.trailingAnchor, constant: -16),
+            mobileRowHeightConstraint,
+
+            mobileIcon.leadingAnchor.constraint(equalTo: mobileRowView.leadingAnchor),
+            mobileIcon.topAnchor.constraint(equalTo: mobileRowView.topAnchor, constant: 20),
+            mobileIcon.widthAnchor.constraint(equalToConstant: 28),
+            mobileIcon.heightAnchor.constraint(equalToConstant: 22),
+
+            mobileTitleLabel.leadingAnchor.constraint(equalTo: mobileIcon.trailingAnchor, constant: 12),
+            mobileTitleLabel.topAnchor.constraint(equalTo: mobileRowView.topAnchor, constant: 4),
+
+            mobileField.leadingAnchor.constraint(equalTo: mobileIcon.trailingAnchor, constant: 12),
+            mobileField.topAnchor.constraint(equalTo: mobileTitleLabel.bottomAnchor, constant: 4),
+            mobileField.trailingAnchor.constraint(equalTo: mobileCheckmark.leadingAnchor, constant: -8),
+            mobileField.heightAnchor.constraint(equalToConstant: 28),
+
+            mobileUnderline.leadingAnchor.constraint(equalTo: mobileField.leadingAnchor),
+            mobileUnderline.trailingAnchor.constraint(equalTo: mobileField.trailingAnchor),
+            mobileUnderline.topAnchor.constraint(equalTo: mobileField.bottomAnchor, constant: 2),
+            mobileUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+
+            mobileInfoButton.trailingAnchor.constraint(equalTo: mobileRowView.trailingAnchor),
+            mobileInfoButton.centerYAnchor.constraint(equalTo: mobileIcon.centerYAnchor),
+            mobileInfoButton.widthAnchor.constraint(equalToConstant: 26),
+            mobileInfoButton.heightAnchor.constraint(equalToConstant: 26),
+
+            mobileArrowButton.trailingAnchor.constraint(equalTo: mobileInfoButton.leadingAnchor, constant: -8),
+            mobileArrowButton.centerYAnchor.constraint(equalTo: mobileIcon.centerYAnchor),
+            mobileArrowButton.widthAnchor.constraint(equalToConstant: 26),
+            mobileArrowButton.heightAnchor.constraint(equalToConstant: 26),
+
+            mobileCheckmark.trailingAnchor.constraint(equalTo: mobileArrowButton.leadingAnchor, constant: -8),
+            mobileCheckmark.centerYAnchor.constraint(equalTo: mobileIcon.centerYAnchor),
+            mobileCheckmark.widthAnchor.constraint(equalToConstant: 22),
+            mobileCheckmark.heightAnchor.constraint(equalToConstant: 22),
+
+            mobileSpinner.centerXAnchor.constraint(equalTo: mobileArrowButton.centerXAnchor),
+            mobileSpinner.centerYAnchor.constraint(equalTo: mobileArrowButton.centerYAnchor)
+        ])
+    }
+
+    // MARK: - Row 4: Enter Main/Parent Branch Code# (Revealed after OTP Verified)
+    private func setupParentRow() {
+        parentRowView.translatesAutoresizingMaskIntoConstraints = false
+        parentRowView.clipsToBounds = true
+        whiteCardBody.addSubview(parentRowView)
+
+        parentIcon.translatesAutoresizingMaskIntoConstraints = false
+        parentIcon.image = UIImage(systemName: "person.crop.circle.badge.checkmark") ?? UIImage(systemName: "person.fill")
+        parentIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        parentRowView.addSubview(parentIcon)
+
+        parentTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        parentTitleLabel.text = "Enter Main/Parent Branch Code#"
+        parentTitleLabel.textColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        parentTitleLabel.font = UIFont.systemFont(ofSize: 14.5, weight: .bold)
+        parentRowView.addSubview(parentTitleLabel)
+
+        parentCodeField.translatesAutoresizingMaskIntoConstraints = false
+        parentCodeField.placeholder = "Enter parent code (e.g. 6 or SAT6677)"
+        parentCodeField.textColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        parentCodeField.font = UIFont.systemFont(ofSize: 14.5, weight: .regular)
+        parentCodeField.autocapitalizationType = .allCharacters
+        parentCodeField.delegate = self
+        parentRowView.addSubview(parentCodeField)
+
+        parentUnderline.translatesAutoresizingMaskIntoConstraints = false
+        parentUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        parentRowView.addSubview(parentUnderline)
+
+        parentArrowButton.translatesAutoresizingMaskIntoConstraints = false
+        parentArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
+        parentArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        parentArrowButton.addTarget(self, action: #selector(handleParentCodeSubmit), for: .touchUpInside)
+        parentRowView.addSubview(parentArrowButton)
+
+        parentInfoButton.translatesAutoresizingMaskIntoConstraints = false
+        parentInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        parentInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        parentInfoButton.addTarget(self, action: #selector(showParentInfo), for: .touchUpInside)
+        parentRowView.addSubview(parentInfoButton)
+
+        parentSpinner.translatesAutoresizingMaskIntoConstraints = false
+        parentSpinner.hidesWhenStopped = true
+        parentSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        parentRowView.addSubview(parentSpinner)
+
+        parentRowHeightConstraint = parentRowView.heightAnchor.constraint(equalToConstant: 74)
+
+        NSLayoutConstraint.activate([
+            parentRowView.topAnchor.constraint(equalTo: mobileRowView.bottomAnchor, constant: 14),
+            parentRowView.leadingAnchor.constraint(equalTo: whiteCardBody.leadingAnchor, constant: 16),
+            parentRowView.trailingAnchor.constraint(equalTo: whiteCardBody.trailingAnchor, constant: -16),
+            parentRowView.bottomAnchor.constraint(equalTo: whiteCardBody.bottomAnchor, constant: -18),
+            parentRowHeightConstraint,
+
+            parentIcon.leadingAnchor.constraint(equalTo: parentRowView.leadingAnchor),
+            parentIcon.topAnchor.constraint(equalTo: parentRowView.topAnchor, constant: 20),
+            parentIcon.widthAnchor.constraint(equalToConstant: 28),
+            parentIcon.heightAnchor.constraint(equalToConstant: 22),
+
+            parentTitleLabel.leadingAnchor.constraint(equalTo: parentIcon.trailingAnchor, constant: 12),
+            parentTitleLabel.topAnchor.constraint(equalTo: parentRowView.topAnchor, constant: 4),
+
+            parentCodeField.leadingAnchor.constraint(equalTo: parentIcon.trailingAnchor, constant: 12),
+            parentCodeField.topAnchor.constraint(equalTo: parentTitleLabel.bottomAnchor, constant: 4),
+            parentCodeField.trailingAnchor.constraint(equalTo: parentArrowButton.leadingAnchor, constant: -10),
+            parentCodeField.heightAnchor.constraint(equalToConstant: 28),
+
+            parentUnderline.leadingAnchor.constraint(equalTo: parentCodeField.leadingAnchor),
+            parentUnderline.trailingAnchor.constraint(equalTo: parentCodeField.trailingAnchor),
+            parentUnderline.topAnchor.constraint(equalTo: parentCodeField.bottomAnchor, constant: 2),
+            parentUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+
+            parentInfoButton.trailingAnchor.constraint(equalTo: parentRowView.trailingAnchor),
+            parentInfoButton.centerYAnchor.constraint(equalTo: parentIcon.centerYAnchor),
+            parentInfoButton.widthAnchor.constraint(equalToConstant: 26),
+            parentInfoButton.heightAnchor.constraint(equalToConstant: 26),
+
+            parentArrowButton.trailingAnchor.constraint(equalTo: parentInfoButton.leadingAnchor, constant: -8),
+            parentArrowButton.centerYAnchor.constraint(equalTo: parentIcon.centerYAnchor),
+            parentArrowButton.widthAnchor.constraint(equalToConstant: 26),
+            parentArrowButton.heightAnchor.constraint(equalToConstant: 26),
+
+            parentSpinner.centerXAnchor.constraint(equalTo: parentArrowButton.centerXAnchor),
+            parentSpinner.centerYAnchor.constraint(equalTo: parentArrowButton.centerYAnchor)
+        ])
+    }
+
+    // MARK: - Bottom Action Bar
+    private func setupBottomActionBar() {
+        bottomActionBar.translatesAutoresizingMaskIntoConstraints = false
+        bottomActionBar.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0) // Blue #4184D6
 
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
         cancelButton.setTitle("Cancel", for: .normal)
         cancelButton.setTitleColor(.white, for: .normal)
         cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        cancelButton.contentHorizontalAlignment = .left
         cancelButton.addTarget(self, action: #selector(dismissModal), for: .touchUpInside)
-        trustCardBottomView.addSubview(cancelButton)
+        bottomActionBar.addSubview(cancelButton)
 
-        // Constraints for Trust Card
+        registerBranchButton.translatesAutoresizingMaskIntoConstraints = false
+        registerBranchButton.setTitle("Register Branch  ➔", for: .normal)
+        registerBranchButton.setTitleColor(.white, for: .normal)
+        registerBranchButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        registerBranchButton.addTarget(self, action: #selector(handleRegisterBranchTap), for: .touchUpInside)
+        bottomActionBar.addSubview(registerBranchButton)
+
         NSLayoutConstraint.activate([
-            trustCardTopView.topAnchor.constraint(equalTo: trustCardContainer.topAnchor),
-            trustCardTopView.leadingAnchor.constraint(equalTo: trustCardContainer.leadingAnchor),
-            trustCardTopView.trailingAnchor.constraint(equalTo: trustCardContainer.trailingAnchor),
-            trustCardTopView.heightAnchor.constraint(equalToConstant: 100),
+            cancelButton.leadingAnchor.constraint(equalTo: bottomActionBar.leadingAnchor, constant: 20),
+            cancelButton.centerYAnchor.constraint(equalTo: bottomActionBar.centerYAnchor),
 
-            idBadgeIconView.leadingAnchor.constraint(equalTo: trustCardTopView.leadingAnchor, constant: 16),
-            idBadgeIconView.topAnchor.constraint(equalTo: trustCardTopView.topAnchor, constant: 28),
-            idBadgeIconView.widthAnchor.constraint(equalToConstant: 38),
-            idBadgeIconView.heightAnchor.constraint(equalToConstant: 28),
-
-            idBadgeSubIcon.centerXAnchor.constraint(equalTo: idBadgeIconView.centerXAnchor),
-            idBadgeSubIcon.centerYAnchor.constraint(equalTo: idBadgeIconView.centerYAnchor),
-            idBadgeSubIcon.widthAnchor.constraint(equalToConstant: 24),
-            idBadgeSubIcon.heightAnchor.constraint(equalToConstant: 18),
-
-            trustCodeTitleLabel.leadingAnchor.constraint(equalTo: idBadgeIconView.trailingAnchor, constant: 12),
-            trustCodeTitleLabel.topAnchor.constraint(equalTo: trustCardTopView.topAnchor, constant: 18),
-            trustCodeTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: submitArrowButton.leadingAnchor, constant: -8),
-
-            trustCodeField.leadingAnchor.constraint(equalTo: idBadgeIconView.trailingAnchor, constant: 12),
-            trustCodeField.topAnchor.constraint(equalTo: trustCodeTitleLabel.bottomAnchor, constant: 6),
-            trustCodeField.trailingAnchor.constraint(equalTo: submitArrowButton.leadingAnchor, constant: -10),
-            trustCodeField.heightAnchor.constraint(equalToConstant: 30),
-
-            trustCodeUnderline.leadingAnchor.constraint(equalTo: trustCodeField.leadingAnchor),
-            trustCodeUnderline.trailingAnchor.constraint(equalTo: trustCodeField.trailingAnchor),
-            trustCodeUnderline.topAnchor.constraint(equalTo: trustCodeField.bottomAnchor, constant: 2),
-            trustCodeUnderline.heightAnchor.constraint(equalToConstant: 1.5),
-
-            trustInfoButton.trailingAnchor.constraint(equalTo: trustCardTopView.trailingAnchor, constant: -16),
-            trustInfoButton.centerYAnchor.constraint(equalTo: trustCardTopView.centerYAnchor),
-            trustInfoButton.widthAnchor.constraint(equalToConstant: 28),
-            trustInfoButton.heightAnchor.constraint(equalToConstant: 28),
-
-            submitArrowButton.trailingAnchor.constraint(equalTo: trustInfoButton.leadingAnchor, constant: -12),
-            submitArrowButton.centerYAnchor.constraint(equalTo: trustCardTopView.centerYAnchor),
-            submitArrowButton.widthAnchor.constraint(equalToConstant: 28),
-            submitArrowButton.heightAnchor.constraint(equalToConstant: 28),
-
-            trustActivityIndicator.centerXAnchor.constraint(equalTo: submitArrowButton.centerXAnchor),
-            trustActivityIndicator.centerYAnchor.constraint(equalTo: submitArrowButton.centerYAnchor),
-
-            trustCardBottomView.topAnchor.constraint(equalTo: trustCardTopView.bottomAnchor),
-            trustCardBottomView.leadingAnchor.constraint(equalTo: trustCardContainer.leadingAnchor),
-            trustCardBottomView.trailingAnchor.constraint(equalTo: trustCardContainer.trailingAnchor),
-            trustCardBottomView.bottomAnchor.constraint(equalTo: trustCardContainer.bottomAnchor),
-            trustCardBottomView.heightAnchor.constraint(equalToConstant: 48),
-
-            cancelButton.leadingAnchor.constraint(equalTo: trustCardBottomView.leadingAnchor, constant: 20),
-            cancelButton.trailingAnchor.constraint(equalTo: trustCardBottomView.trailingAnchor, constant: -20),
-            cancelButton.centerYAnchor.constraint(equalTo: trustCardBottomView.centerYAnchor)
+            registerBranchButton.trailingAnchor.constraint(equalTo: bottomActionBar.trailingAnchor, constant: -20),
+            registerBranchButton.centerYAnchor.constraint(equalTo: bottomActionBar.centerYAnchor)
         ])
     }
 
-    // MARK: - Step 2: User Details UI (After Trust Code Verified)
-    private func setupUserDetailsUI() {
-        detailsCardView.translatesAutoresizingMaskIntoConstraints = false
-        detailsCardView.backgroundColor = .white
-        detailsCardView.layer.cornerRadius = 16
-        detailsCardView.layer.masksToBounds = true
-        detailsCardView.layer.shadowColor = UIColor.black.cgColor
-        detailsCardView.layer.shadowOpacity = 0.25
-        detailsCardView.layer.shadowOffset = CGSize(width: 0, height: 4)
-        detailsCardView.layer.shadowRadius = 10
-        contentView.addSubview(detailsCardView)
+    // MARK: - OTP Verification Modal Overlay (Image 2)
+    private func setupOTPOverlayUI() {
+        // Dimmed backdrop
+        otpOverlayBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        otpOverlayBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.65)
+        otpOverlayBackdrop.isHidden = true
+        view.addSubview(otpOverlayBackdrop)
 
-        // Verified Trust Header Badge
-        verifiedTrustBadgeView.translatesAutoresizingMaskIntoConstraints = false
-        verifiedTrustBadgeView.backgroundColor = UIColor(red: 232/255, green: 245/255, blue: 233/255, alpha: 1.0) // Light green
-        verifiedTrustBadgeView.layer.cornerRadius = 8
-        verifiedTrustBadgeView.layer.borderWidth = 1
-        verifiedTrustBadgeView.layer.borderColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 0.4).cgColor
-        detailsCardView.addSubview(verifiedTrustBadgeView)
+        // Blue Rounded Card Container (#15408D)
+        otpCardContainer.translatesAutoresizingMaskIntoConstraints = false
+        otpCardContainer.backgroundColor = UIColor(red: 21/255, green: 64/255, blue: 141/255, alpha: 1.0)
+        otpCardContainer.layer.cornerRadius = 14
+        otpCardContainer.layer.masksToBounds = true
+        otpCardContainer.layer.shadowColor = UIColor.black.cgColor
+        otpCardContainer.layer.shadowOpacity = 0.35
+        otpCardContainer.layer.shadowOffset = CGSize(width: 0, height: 6)
+        otpCardContainer.layer.shadowRadius = 14
+        otpOverlayBackdrop.addSubview(otpCardContainer)
 
-        verifiedTrustIcon.translatesAutoresizingMaskIntoConstraints = false
-        verifiedTrustIcon.image = UIImage(systemName: "checkmark.seal.fill")
-        verifiedTrustIcon.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        verifiedTrustBadgeView.addSubview(verifiedTrustIcon)
+        // Title: "OTP Verification"
+        otpTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        otpTitleLabel.text = "OTP Verification"
+        otpTitleLabel.textColor = .white
+        otpTitleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        otpTitleLabel.textAlignment = .center
+        otpCardContainer.addSubview(otpTitleLabel)
 
-        verifiedTrustTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        verifiedTrustTitleLabel.textColor = UIColor(red: 27/255, green: 94/255, blue: 32/255, alpha: 1.0)
-        verifiedTrustTitleLabel.font = UIFont.systemFont(ofSize: 14, weight: .bold)
-        verifiedTrustBadgeView.addSubview(verifiedTrustTitleLabel)
-
-        verifiedTrustCodeLabel.translatesAutoresizingMaskIntoConstraints = false
-        verifiedTrustCodeLabel.textColor = UIColor(red: 56/255, green: 142/255, blue: 60/255, alpha: 1.0)
-        verifiedTrustCodeLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-        verifiedTrustBadgeView.addSubview(verifiedTrustCodeLabel)
-
-        // Input Fields (White background with crisp borders)
-        styleTextField(firstNameField, placeholder: "First Name *", icon: "person.fill")
-        styleTextField(lastNameField, placeholder: "Last Name *", icon: "person.fill")
-        styleTextField(mobileField, placeholder: "Mobile Number (10 digits) *", icon: "phone.fill")
-        mobileField.keyboardType = .phonePad
-
-        styleTextField(emailField, placeholder: "Email Address *", icon: "envelope.fill")
-        emailField.keyboardType = .emailAddress
-
-        styleTextField(passwordField, placeholder: "Create Password (min 6 chars) *", icon: "lock.fill")
-        passwordField.isSecureTextEntry = true
-
-        styleTextField(confirmPasswordField, placeholder: "Confirm Password *", icon: "lock.shield.fill")
-        confirmPasswordField.isSecureTextEntry = true
-
-        // Password Show/Hide Buttons
-        setupPasswordToggle(showPasswordButton, targetField: passwordField)
-        setupPasswordToggle(showConfirmPasswordButton, targetField: confirmPasswordField)
-
-        detailsCardView.addSubview(firstNameField)
-        detailsCardView.addSubview(lastNameField)
-        detailsCardView.addSubview(mobileField)
-        detailsCardView.addSubview(emailField)
-        detailsCardView.addSubview(passwordField)
-        detailsCardView.addSubview(confirmPasswordField)
-
-        // Register Action Button (Emerald Green #28B779)
-        registerButton.translatesAutoresizingMaskIntoConstraints = false
-        registerButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        registerButton.setTitle("Create Account  ➔", for: .normal)
-        registerButton.setTitleColor(.white, for: .normal)
-        registerButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        registerButton.layer.cornerRadius = 6
-        registerButton.addTarget(self, action: #selector(handleRegisterSubmit), for: .touchUpInside)
-        detailsCardView.addSubview(registerButton)
-
-        registerActivityIndicator.translatesAutoresizingMaskIntoConstraints = false
-        registerActivityIndicator.hidesWhenStopped = true
-        registerActivityIndicator.color = .white
-        detailsCardView.addSubview(registerActivityIndicator)
-
-        // Back / Change Trust Code Button
-        backToTrustCodeButton.translatesAutoresizingMaskIntoConstraints = false
-        backToTrustCodeButton.setTitle("← Change Trust Code", for: .normal)
-        backToTrustCodeButton.setTitleColor(UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0), for: .normal)
-        backToTrustCodeButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        backToTrustCodeButton.addTarget(self, action: #selector(handleBackToTrustCode), for: .touchUpInside)
-        detailsCardView.addSubview(backToTrustCodeButton)
-
-        // Details Card Constraints
-        NSLayoutConstraint.activate([
-            verifiedTrustBadgeView.topAnchor.constraint(equalTo: detailsCardView.topAnchor, constant: 16),
-            verifiedTrustBadgeView.leadingAnchor.constraint(equalTo: detailsCardView.leadingAnchor, constant: 16),
-            verifiedTrustBadgeView.trailingAnchor.constraint(equalTo: detailsCardView.trailingAnchor, constant: -16),
-
-            verifiedTrustIcon.leadingAnchor.constraint(equalTo: verifiedTrustBadgeView.leadingAnchor, constant: 10),
-            verifiedTrustIcon.centerYAnchor.constraint(equalTo: verifiedTrustBadgeView.centerYAnchor),
-            verifiedTrustIcon.widthAnchor.constraint(equalToConstant: 22),
-            verifiedTrustIcon.heightAnchor.constraint(equalToConstant: 22),
-
-            verifiedTrustTitleLabel.topAnchor.constraint(equalTo: verifiedTrustBadgeView.topAnchor, constant: 8),
-            verifiedTrustTitleLabel.leadingAnchor.constraint(equalTo: verifiedTrustIcon.trailingAnchor, constant: 10),
-            verifiedTrustTitleLabel.trailingAnchor.constraint(equalTo: verifiedTrustBadgeView.trailingAnchor, constant: -10),
-
-            verifiedTrustCodeLabel.topAnchor.constraint(equalTo: verifiedTrustTitleLabel.bottomAnchor, constant: 2),
-            verifiedTrustCodeLabel.leadingAnchor.constraint(equalTo: verifiedTrustIcon.trailingAnchor, constant: 10),
-            verifiedTrustCodeLabel.trailingAnchor.constraint(equalTo: verifiedTrustBadgeView.trailingAnchor, constant: -10),
-            verifiedTrustCodeLabel.bottomAnchor.constraint(equalTo: verifiedTrustBadgeView.bottomAnchor, constant: -8),
-
-            firstNameField.topAnchor.constraint(equalTo: verifiedTrustBadgeView.bottomAnchor, constant: 16),
-            firstNameField.leadingAnchor.constraint(equalTo: detailsCardView.leadingAnchor, constant: 16),
-            firstNameField.trailingAnchor.constraint(equalTo: detailsCardView.trailingAnchor, constant: -16),
-            firstNameField.heightAnchor.constraint(equalToConstant: 44),
-
-            lastNameField.topAnchor.constraint(equalTo: firstNameField.bottomAnchor, constant: 12),
-            lastNameField.leadingAnchor.constraint(equalTo: detailsCardView.leadingAnchor, constant: 16),
-            lastNameField.trailingAnchor.constraint(equalTo: detailsCardView.trailingAnchor, constant: -16),
-            lastNameField.heightAnchor.constraint(equalToConstant: 44),
-
-            mobileField.topAnchor.constraint(equalTo: lastNameField.bottomAnchor, constant: 12),
-            mobileField.leadingAnchor.constraint(equalTo: detailsCardView.leadingAnchor, constant: 16),
-            mobileField.trailingAnchor.constraint(equalTo: detailsCardView.trailingAnchor, constant: -16),
-            mobileField.heightAnchor.constraint(equalToConstant: 44),
-
-            emailField.topAnchor.constraint(equalTo: mobileField.bottomAnchor, constant: 12),
-            emailField.leadingAnchor.constraint(equalTo: detailsCardView.leadingAnchor, constant: 16),
-            emailField.trailingAnchor.constraint(equalTo: detailsCardView.trailingAnchor, constant: -16),
-            emailField.heightAnchor.constraint(equalToConstant: 44),
-
-            passwordField.topAnchor.constraint(equalTo: emailField.bottomAnchor, constant: 12),
-            passwordField.leadingAnchor.constraint(equalTo: detailsCardView.leadingAnchor, constant: 16),
-            passwordField.trailingAnchor.constraint(equalTo: detailsCardView.trailingAnchor, constant: -16),
-            passwordField.heightAnchor.constraint(equalToConstant: 44),
-
-            confirmPasswordField.topAnchor.constraint(equalTo: passwordField.bottomAnchor, constant: 12),
-            confirmPasswordField.leadingAnchor.constraint(equalTo: detailsCardView.leadingAnchor, constant: 16),
-            confirmPasswordField.trailingAnchor.constraint(equalTo: detailsCardView.trailingAnchor, constant: -16),
-            confirmPasswordField.heightAnchor.constraint(equalToConstant: 44),
-
-            registerButton.topAnchor.constraint(equalTo: confirmPasswordField.bottomAnchor, constant: 18),
-            registerButton.leadingAnchor.constraint(equalTo: detailsCardView.leadingAnchor, constant: 16),
-            registerButton.trailingAnchor.constraint(equalTo: detailsCardView.trailingAnchor, constant: -16),
-            registerButton.heightAnchor.constraint(equalToConstant: 46),
-
-            registerActivityIndicator.centerYAnchor.constraint(equalTo: registerButton.centerYAnchor),
-            registerActivityIndicator.trailingAnchor.constraint(equalTo: registerButton.trailingAnchor, constant: -16),
-
-            backToTrustCodeButton.topAnchor.constraint(equalTo: registerButton.bottomAnchor, constant: 12),
-            backToTrustCodeButton.centerXAnchor.constraint(equalTo: detailsCardView.centerXAnchor),
-            backToTrustCodeButton.bottomAnchor.constraint(equalTo: detailsCardView.bottomAnchor, constant: -16)
-        ])
-    }
-
-    private func styleTextField(_ tf: UITextField, placeholder: String, icon: String) {
-        tf.translatesAutoresizingMaskIntoConstraints = false
-        tf.backgroundColor = .white
-        tf.layer.cornerRadius = 6
-        tf.layer.borderWidth = 1
-        tf.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
-        tf.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        tf.font = UIFont.systemFont(ofSize: 14.5, weight: .medium)
-        tf.autocapitalizationType = .none
-        tf.autocorrectionType = .no
-        tf.attributedPlaceholder = NSAttributedString(
-            string: placeholder,
-            attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
+        // Input Field: "Enter OTP"
+        otpInputField.translatesAutoresizingMaskIntoConstraints = false
+        otpInputField.attributedPlaceholder = NSAttributedString(
+            string: "Enter OTP",
+            attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.6)]
         )
+        otpInputField.textColor = .white
+        otpInputField.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        otpInputField.keyboardType = .numberPad
+        otpInputField.textAlignment = .left
+        otpCardContainer.addSubview(otpInputField)
 
-        let leftView = UIView(frame: CGRect(x: 0, y: 0, width: 36, height: 44))
-        let iconView = UIImageView(frame: CGRect(x: 10, y: 13, width: 18, height: 18))
-        iconView.image = UIImage(systemName: icon)
-        iconView.tintColor = UIColor(red: 100/255, green: 110/255, blue: 120/255, alpha: 1.0)
-        iconView.contentMode = .scaleAspectFit
-        leftView.addSubview(iconView)
-        tf.leftView = leftView
-        tf.leftViewMode = .always
+        otpUnderline.translatesAutoresizingMaskIntoConstraints = false
+        otpUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        otpCardContainer.addSubview(otpUnderline)
+
+        // Timer Label: "00 : 23"
+        otpTimerLabel.translatesAutoresizingMaskIntoConstraints = false
+        otpTimerLabel.text = "00 : 30"
+        otpTimerLabel.textColor = .white
+        otpTimerLabel.font = UIFont.systemFont(ofSize: 17, weight: .bold)
+        otpCardContainer.addSubview(otpTimerLabel)
+
+        otpResendButton.translatesAutoresizingMaskIntoConstraints = false
+        otpResendButton.setTitle("Resend OTP", for: .normal)
+        otpResendButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        otpResendButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        otpResendButton.isHidden = true
+        otpResendButton.addTarget(self, action: #selector(handleResendOTP), for: .touchUpInside)
+        otpCardContainer.addSubview(otpResendButton)
+
+        // Cancel Button (Light blue box)
+        otpCancelButton.translatesAutoresizingMaskIntoConstraints = false
+        otpCancelButton.setTitle("Cancel", for: .normal)
+        otpCancelButton.setTitleColor(.white, for: .normal)
+        otpCancelButton.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.75) // #27A9E3
+        otpCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        otpCancelButton.layer.cornerRadius = 4
+        otpCancelButton.addTarget(self, action: #selector(handleCancelOTP), for: .touchUpInside)
+        otpCardContainer.addSubview(otpCancelButton)
+
+        // Verify OTP Button (Solid blue box)
+        otpVerifyButton.translatesAutoresizingMaskIntoConstraints = false
+        otpVerifyButton.setTitle("Verify OTP", for: .normal)
+        otpVerifyButton.setTitleColor(.white, for: .normal)
+        otpVerifyButton.backgroundColor = UIColor(red: 2/255, green: 136/255, blue: 209/255, alpha: 1.0) // #0288D1
+        otpVerifyButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+        otpVerifyButton.layer.cornerRadius = 4
+        otpVerifyButton.addTarget(self, action: #selector(handleVerifyOTP), for: .touchUpInside)
+        otpCardContainer.addSubview(otpVerifyButton)
+
+        otpSpinner.translatesAutoresizingMaskIntoConstraints = false
+        otpSpinner.hidesWhenStopped = true
+        otpSpinner.color = .white
+        otpCardContainer.addSubview(otpSpinner)
+
+        NSLayoutConstraint.activate([
+            otpOverlayBackdrop.topAnchor.constraint(equalTo: view.topAnchor),
+            otpOverlayBackdrop.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            otpOverlayBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            otpOverlayBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            otpCardContainer.centerYAnchor.constraint(equalTo: otpOverlayBackdrop.centerYAnchor, constant: -40),
+            otpCardContainer.leadingAnchor.constraint(equalTo: otpOverlayBackdrop.leadingAnchor, constant: 24),
+            otpCardContainer.trailingAnchor.constraint(equalTo: otpOverlayBackdrop.trailingAnchor, constant: -24),
+
+            otpTitleLabel.topAnchor.constraint(equalTo: otpCardContainer.topAnchor, constant: 20),
+            otpTitleLabel.centerXAnchor.constraint(equalTo: otpCardContainer.centerXAnchor),
+
+            otpInputField.topAnchor.constraint(equalTo: otpTitleLabel.bottomAnchor, constant: 24),
+            otpInputField.leadingAnchor.constraint(equalTo: otpCardContainer.leadingAnchor, constant: 20),
+            otpInputField.trailingAnchor.constraint(equalTo: otpCardContainer.trailingAnchor, constant: -20),
+            otpInputField.heightAnchor.constraint(equalToConstant: 32),
+
+            otpUnderline.topAnchor.constraint(equalTo: otpInputField.bottomAnchor, constant: 4),
+            otpUnderline.leadingAnchor.constraint(equalTo: otpInputField.leadingAnchor),
+            otpUnderline.trailingAnchor.constraint(equalTo: otpInputField.trailingAnchor),
+            otpUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+
+            otpTimerLabel.topAnchor.constraint(equalTo: otpUnderline.bottomAnchor, constant: 14),
+            otpTimerLabel.leadingAnchor.constraint(equalTo: otpCardContainer.leadingAnchor, constant: 20),
+
+            otpResendButton.centerYAnchor.constraint(equalTo: otpTimerLabel.centerYAnchor),
+            otpResendButton.trailingAnchor.constraint(equalTo: otpCardContainer.trailingAnchor, constant: -20),
+
+            otpCancelButton.topAnchor.constraint(equalTo: otpTimerLabel.bottomAnchor, constant: 20),
+            otpCancelButton.leadingAnchor.constraint(equalTo: otpCardContainer.leadingAnchor, constant: 16),
+            otpCancelButton.widthAnchor.constraint(equalToConstant: 90),
+            otpCancelButton.heightAnchor.constraint(equalToConstant: 38),
+            otpCancelButton.bottomAnchor.constraint(equalTo: otpCardContainer.bottomAnchor, constant: -18),
+
+            otpVerifyButton.topAnchor.constraint(equalTo: otpTimerLabel.bottomAnchor, constant: 20),
+            otpVerifyButton.trailingAnchor.constraint(equalTo: otpCardContainer.trailingAnchor, constant: -16),
+            otpVerifyButton.widthAnchor.constraint(equalToConstant: 110),
+            otpVerifyButton.heightAnchor.constraint(equalToConstant: 38),
+
+            otpSpinner.centerYAnchor.constraint(equalTo: otpVerifyButton.centerYAnchor),
+            otpSpinner.centerXAnchor.constraint(equalTo: otpVerifyButton.centerXAnchor)
+        ])
     }
 
-    private func setupPasswordToggle(_ button: UIButton, targetField: UITextField) {
-        button.setTitle("Show", for: .normal)
-        button.setTitleColor(UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0), for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-        button.frame = CGRect(x: 0, y: 0, width: 55, height: 44)
-        button.addTarget(self, action: #selector(togglePasswordVisibility(_:)), for: .touchUpInside)
-
-        let rightView = UIView(frame: CGRect(x: 0, y: 0, width: 60, height: 44))
-        rightView.addSubview(button)
-        targetField.rightView = rightView
-        targetField.rightViewMode = .always
-    }
-
-    @objc private func togglePasswordVisibility(_ sender: UIButton) {
-        if sender == showPasswordButton {
-            passwordField.isSecureTextEntry.toggle()
-            sender.setTitle(passwordField.isSecureTextEntry ? "Show" : "Hide", for: .normal)
-        } else {
-            confirmPasswordField.isSecureTextEntry.toggle()
-            sender.setTitle(confirmPasswordField.isSecureTextEntry ? "Show" : "Hide", for: .normal)
-        }
-    }
-
-    private func updateStepUI() {
-        errorLabel.isHidden = true
-        switch currentStep {
-        case .enterTrustCode:
-            trustCardContainer.isHidden = false
-            detailsCardView.isHidden = true
-        case .enterUserDetails:
-            trustCardContainer.isHidden = true
-            detailsCardView.isHidden = false
-            verifiedTrustTitleLabel.text = verifiedMerchantName
-            verifiedTrustCodeLabel.text = "Trust Code: \(enteredTrustCode)"
-        }
+    private func createRequiredLabel(_ text: String) -> NSAttributedString {
+        let attr = NSMutableAttributedString(
+            string: text,
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 14.5, weight: .bold),
+                .foregroundColor: UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+            ]
+        )
+        attr.append(NSAttributedString(
+            string: "*",
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 15, weight: .bold),
+                .foregroundColor: UIColor(red: 220/255, green: 53/255, blue: 69/255, alpha: 1.0) // Red
+            ]
+        ))
+        return attr
     }
 
     // MARK: - Step 1: Trust Code Verification (POST /api/check-trust-code)
-    @objc private func trustCodeChanged() {
-        errorLabel.isHidden = true
-    }
-
     @objc private func handleTrustCodeSubmit() {
         view.endEditing(true)
         let code = trustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -546,8 +800,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             return
         }
 
-        submitArrowButton.isHidden = true
-        trustActivityIndicator.startAnimating()
+        trustArrowButton.isHidden = true
+        trustSpinner.startAnimating()
         errorLabel.isHidden = true
 
         guard let url = URL(string: AppConfig.API.checkTrustCode) else { return }
@@ -556,18 +810,14 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        let params: [String: String] = [
-            "code": code,
-            "device_type": AppConfig.deviceType,
-            "mobile_device_id": AppConfig.mobileDeviceId
-        ]
+        let params = ["code": code, "device_type": AppConfig.deviceType, "mobile_device_id": AppConfig.mobileDeviceId]
         let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
-                self?.submitArrowButton.isHidden = false
-                self?.trustActivityIndicator.stopAnimating()
+                self?.trustArrowButton.isHidden = false
+                self?.trustSpinner.stopAnimating()
 
                 if let error = error {
                     self?.showError("Network error: \(error.localizedDescription)")
@@ -586,9 +836,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
                 if status, let dataObj = json["data"] as? [String: Any], let merchantId = dataObj["id"] as? Int, merchantId > 0 {
                     self?.verifiedMerchantId = merchantId
                     self?.verifiedMerchantName = (dataObj["name"] as? String) ?? "Registered Trust"
-                    self?.enteredTrustCode = code
-                    self?.currentStep = .enterUserDetails
-                    self?.updateStepUI()
+                    self?.isTrustCodeVerified = true
+                    self?.trustCheckmark.isHidden = false
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 } else {
                     self?.showError(message.isEmpty ? "Please enter valid trust code. Contact helpline." : message)
                 }
@@ -596,73 +846,38 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         }.resume()
     }
 
-    @objc private func showTrustCodeInfo() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        let alert = UIAlertController(
-            title: "Trust/Institution Code",
-            message: "A unique code assigned to your trust or branch institution. If you do not have a Trust Code, please contact your Trust Administrator or Helpline.",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
+    // MARK: - Step 2: Email Validation (POST /api/check-email)
+    @objc private func emailFieldChanged() {
+        emailCheckmark.isHidden = true
+        errorLabel.isHidden = true
     }
 
-    @objc private func handleBackToTrustCode() {
-        currentStep = .enterTrustCode
-        updateStepUI()
-    }
-
-    // MARK: - Step 2: User Registration (POST /api/register)
-    @objc private func handleRegisterSubmit() {
+    @objc private func handleEmailSubmit() {
         view.endEditing(true)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-
-        let fname = firstNameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let lname = lastNameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let mobile = mobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let email = emailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let password = passwordField.text ?? ""
-        let confirmPass = confirmPasswordField.text ?? ""
+        guard !email.isEmpty, email.contains("@") else {
+            showError("Please enter a valid Email Address.")
+            return
+        }
 
-        guard !fname.isEmpty else { showError("Please enter your First Name."); return }
-        guard !lname.isEmpty else { showError("Please enter your Last Name."); return }
-        guard !mobile.isEmpty, mobile.count >= 10 else { showError("Please enter a valid 10-digit Mobile Number."); return }
-        guard !email.isEmpty, email.contains("@") else { showError("Please enter a valid Email Address."); return }
-        guard password.count >= 6 else { showError("Password must be at least 6 characters long."); return }
-        guard password == confirmPass else { showError("Passwords do not match."); return }
-
-        registerButton.isEnabled = false
-        registerButton.setTitle("", for: .normal)
-        registerActivityIndicator.startAnimating()
+        emailArrowButton.isHidden = true
+        emailSpinner.startAnimating()
         errorLabel.isHidden = true
 
-        guard let url = URL(string: AppConfig.API.register) else { return }
+        guard let url = URL(string: AppConfig.API.checkEmail) else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        let params: [String: String] = [
-            "fname": fname,
-            "lname": lname,
-            "mobile": mobile,
-            "email": email,
-            "password": password,
-            "merchant_id": "\(verifiedMerchantId)",
-            "trust_code": enteredTrustCode,
-            "device_type": AppConfig.deviceType,
-            "device_id": AppConfig.deviceId,
-            "mobile_device_id": AppConfig.mobileDeviceId
-        ]
-
+        let params = ["email": email, "device_type": AppConfig.deviceType]
         let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
-                self?.registerButton.isEnabled = true
-                self?.registerButton.setTitle("Create Account  ➔", for: .normal)
-                self?.registerActivityIndicator.stopAnimating()
+                self?.emailArrowButton.isHidden = false
+                self?.emailSpinner.stopAnimating()
 
                 if let error = error {
                     self?.showError("Network error: \(error.localizedDescription)")
@@ -679,22 +894,317 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
                 let message = json["message"] as? String ?? ""
 
                 if status {
-                    let alert = UIAlertController(
-                        title: "Registration Successful",
-                        message: "Your account has been registered successfully under \(self?.verifiedMerchantName ?? "the Trust"). You can now log in.",
-                        preferredStyle: .alert
-                    )
-                    alert.addAction(UIAlertAction(title: "Log In Now", style: .default, handler: { _ in
-                        self?.dismiss(animated: true) {
-                            self?.onSignUpSuccess?(email)
-                        }
-                    }))
-                    self?.present(alert, animated: true)
+                    self?.isEmailVerified = true
+                    self?.emailCheckmark.isHidden = false
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 } else {
-                    self?.showError(message.isEmpty ? "Registration failed. Please check your details." : message)
+                    self?.showError(message.isEmpty ? "This email is already registered." : message)
                 }
             }
         }.resume()
+    }
+
+    // MARK: - Step 3: Mobile & OTP Dispatch (POST /api/register-otp-send)
+    @objc private func mobileFieldChanged() {
+        mobileCheckmark.isHidden = true
+        errorLabel.isHidden = true
+    }
+
+    @objc private func handleMobileSubmitAndSendOTP() {
+        view.endEditing(true)
+        let mobile = mobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !mobile.isEmpty, mobile.count >= 10 else {
+            showError("Please enter a valid 10-digit Mobile Number.")
+            return
+        }
+
+        let email = emailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trustCode = trustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        mobileArrowButton.isHidden = true
+        mobileSpinner.startAnimating()
+        errorLabel.isHidden = true
+
+        guard let url = URL(string: AppConfig.API.registerOtpSend) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let params: [String: String] = [
+            "mobile_no": mobile,
+            "email": email,
+            "trust_code": trustCode,
+            "merchant_id": "\(verifiedMerchantId > 0 ? verifiedMerchantId : 6)",
+            "mobile_device_id": AppConfig.mobileDeviceId,
+            "device_id": AppConfig.deviceId
+        ]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                self?.mobileArrowButton.isHidden = false
+                self?.mobileSpinner.stopAnimating()
+
+                if let error = error {
+                    self?.showError("Network error: \(error.localizedDescription)")
+                    return
+                }
+
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    self?.showError("Invalid response from server.")
+                    return
+                }
+
+                let status = json["status"] as? Bool ?? false
+                let message = json["message"] as? String ?? ""
+
+                if status {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    self?.presentOTPModal()
+                } else {
+                    self?.showError(message.isEmpty ? "Failed to send OTP. Please try again." : message)
+                }
+            }
+        }.resume()
+    }
+
+    // MARK: - Step 4: OTP Modal Verification (POST /api/check-register-otp)
+    private func presentOTPModal() {
+        otpInputField.text = ""
+        otpRemainingSeconds = 30
+        otpTimerLabel.text = "00 : 30"
+        otpResendButton.isHidden = true
+        otpOverlayBackdrop.alpha = 0
+        otpOverlayBackdrop.isHidden = false
+
+        UIView.animate(withDuration: 0.25) {
+            self.otpOverlayBackdrop.alpha = 1.0
+        }
+        otpInputField.becomeFirstResponder()
+        startOTPTimer()
+    }
+
+    private func startOTPTimer() {
+        otpTimer?.invalidate()
+        otpTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self = self else { return }
+            if self.otpRemainingSeconds > 0 {
+                self.otpRemainingSeconds -= 1
+                let formatted = String(format: "00 : %02d", self.otpRemainingSeconds)
+                self.otpTimerLabel.text = formatted
+            } else {
+                timer.invalidate()
+                self.otpResendButton.isHidden = false
+            }
+        }
+    }
+
+    @objc private func handleCancelOTP() {
+        otpTimer?.invalidate()
+        view.endEditing(true)
+        UIView.animate(withDuration: 0.2, animations: {
+            self.otpOverlayBackdrop.alpha = 0
+        }) { _ in
+            self.otpOverlayBackdrop.isHidden = true
+        }
+    }
+
+    @objc private func handleResendOTP() {
+        otpResendButton.isHidden = true
+        handleMobileSubmitAndSendOTP()
+    }
+
+    @objc private func handleVerifyOTP() {
+        view.endEditing(true)
+        let otp = otpInputField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !otp.isEmpty else {
+            showError("Please enter the verification OTP.")
+            return
+        }
+
+        let mobile = mobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        otpVerifyButton.setTitle("", for: .normal)
+        otpSpinner.startAnimating()
+
+        guard let url = URL(string: AppConfig.API.checkRegisterOtp) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let params: [String: String] = [
+            "mobile_no": mobile,
+            "register_otp": otp,
+            "mobile_device_id": AppConfig.mobileDeviceId
+        ]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                self?.otpSpinner.stopAnimating()
+                self?.otpVerifyButton.setTitle("Verify OTP", for: .normal)
+
+                if let error = error {
+                    self?.showError("Network error: \(error.localizedDescription)")
+                    return
+                }
+
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    self?.showError("Invalid response from server.")
+                    return
+                }
+
+                let status = json["status"] as? Bool ?? false
+                let message = json["message"] as? String ?? ""
+
+                if status {
+                    self?.otpTimer?.invalidate()
+                    self?.isMobileVerified = true
+                    self?.mobileCheckmark.isHidden = false
+                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+
+                    // Dismiss OTP Overlay
+                    UIView.animate(withDuration: 0.2, animations: {
+                        self?.otpOverlayBackdrop.alpha = 0
+                    }) { _ in
+                        self?.otpOverlayBackdrop.isHidden = true
+                    }
+                    self?.parentCodeField.becomeFirstResponder()
+                } else {
+                    self?.showError(message.isEmpty ? "Invalid OTP code entered." : message)
+                }
+            }
+        }.resume()
+    }
+
+    // MARK: - Step 5: Parent Code Validation & Final Registration
+    @objc private func handleParentCodeSubmit() {
+        view.endEditing(true)
+        let parentCode = parentCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !parentCode.isEmpty else {
+            showError("Please enter Main/Parent Branch Code.")
+            return
+        }
+
+        parentArrowButton.isHidden = true
+        parentSpinner.startAnimating()
+        errorLabel.isHidden = true
+
+        guard let url = URL(string: AppConfig.API.checkTrustCode) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let params = ["code": parentCode, "device_type": AppConfig.deviceType, "mobile_device_id": AppConfig.mobileDeviceId]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                self?.parentArrowButton.isHidden = false
+                self?.parentSpinner.stopAnimating()
+
+                if let error = error {
+                    self?.showError("Network error: \(error.localizedDescription)")
+                    return
+                }
+
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    self?.showError("Invalid response from server.")
+                    return
+                }
+
+                let status = json["status"] as? Bool ?? false
+                let message = json["message"] as? String ?? ""
+
+                if status {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    let alert = UIAlertController(
+                        title: "Parent Code Verified",
+                        message: "Main/Parent branch verified successfully. Ready to complete registration.",
+                        preferredStyle: .alert
+                    )
+                    alert.addAction(UIAlertAction(title: "Continue", style: .default))
+                    self?.present(alert, animated: true)
+                } else {
+                    self?.showError(message.isEmpty ? "Invalid parent branch code." : message)
+                }
+            }
+        }.resume()
+    }
+
+    @objc private func handleRegisterBranchTap() {
+        view.endEditing(true)
+        guard isTrustCodeVerified else {
+            showError("Please verify your Trust/Institution code first.")
+            return
+        }
+        guard isEmailVerified else {
+            showError("Please verify your Email Address.")
+            return
+        }
+        guard isMobileVerified else {
+            showError("Please complete Mobile OTP verification.")
+            return
+        }
+
+        let parentCode = parentCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !parentCode.isEmpty else {
+            showError("Please enter Main/Parent Branch Code.")
+            return
+        }
+
+        let alert = UIAlertController(
+            title: "Registration Complete",
+            message: "Branch successfully verified and registered under \(verifiedMerchantName).\nYou can now log in.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Log In Now", style: .default) { [weak self] _ in
+            let email = self?.emailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            self?.dismiss(animated: true) {
+                self?.onSignUpSuccess?(email)
+            }
+        })
+        present(alert, animated: true)
+    }
+
+    // MARK: - Info Modals
+    @objc private func showTrustInfo() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        showHelpAlert(
+            title: "Trust/Institution Code",
+            message: "A unique identification code assigned to your trust or branch (e.g. SAT6677). Contact your Trust Head Office if you do not have one."
+        )
+    }
+
+    @objc private func showMobileInfo() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        showHelpAlert(
+            title: "Mobile Phone Verification",
+            message: "Enter your 10-digit mobile number to receive a secure One-Time Password (OTP) for account verification."
+        )
+    }
+
+    @objc private func showParentInfo() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        showHelpAlert(
+            title: "Main/Parent Branch Code",
+            message: "Enter the code or ID of your parent Head Office branch (e.g. 6 or SAT6677)."
+        )
+    }
+
+    private func showHelpAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 
     private func showError(_ msg: String) {
@@ -730,6 +1240,12 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField == trustCodeField {
             handleTrustCodeSubmit()
+        } else if textField == emailField {
+            handleEmailSubmit()
+        } else if textField == mobileField {
+            handleMobileSubmitAndSendOTP()
+        } else if textField == parentCodeField {
+            handleParentCodeSubmit()
         }
         return true
     }
