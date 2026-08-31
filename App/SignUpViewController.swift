@@ -23,6 +23,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private var otpTimer: Timer?
     private var otpRemainingSeconds = 30
 
+    // Dynamic Content View Bottom Constraint
+    private var contentBottomConstraint: NSLayoutConstraint?
+
     // MARK: - Main UI Containers
     private let scrollView = UIScrollView()
     private let contentView = UIView()
@@ -33,7 +36,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let errorLabel = UILabel()
     private let versionLabel = UILabel()
 
-    // MARK: - Card 1: Initial State (Screenshot 1: Trust Code only)
+    // MARK: - Card 1: Initial State (Screenshot 1: Compact Trust Code only)
     private let initialCardView = UIView()
     private let initTrustBadge = UIView()
     private let initTrustBadgeIcon = UIImageView()
@@ -232,7 +235,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Setup UI
+    // MARK: - Main UI Construction
     private func setupUI() {
         // Deep Royal Blue Canvas (#133B7C)
         view.backgroundColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
@@ -262,7 +265,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         headerSubtitleLabel.textColor = .white
         headerSubtitleLabel.font = UIFont.systemFont(ofSize: 16.5, weight: .medium)
         headerSubtitleLabel.textAlignment = .center
-        headerSubtitleLabel.isHidden = true // Revealed on User Details Card
+        headerSubtitleLabel.isHidden = true
         contentView.addSubview(headerSubtitleLabel)
 
         // 3. Error Banner
@@ -280,7 +283,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         errorLabel.numberOfLines = 0
         errorBanner.addSubview(errorLabel)
 
-        // 4. Build 3 Progressive Cards
+        // 4. Build 3 Self-Sizing Cards
         buildInitialCard()
         buildMidCard()
         buildDetailsCard()
@@ -293,7 +296,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         versionLabel.textAlignment = .right
         view.addSubview(versionLabel)
 
-        // Layout Constraints
+        // Set initial dynamic bottom constraint to initialCardView
+        contentBottomConstraint = contentView.bottomAnchor.constraint(equalTo: initialCardView.bottomAnchor, constant: 50)
+        contentBottomConstraint?.isActive = true
+
+        // Base Layout Constraints
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -326,7 +333,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         ])
     }
 
-    // MARK: - Card 1: Initial Card (Trust Code only)
+    // MARK: - Card 1: Compact Initial Card (Screenshot 1: Trust Code only, Self-Sizing)
     private func buildInitialCard() {
         initialCardView.translatesAutoresizingMaskIntoConstraints = false
         initialCardView.backgroundColor = .white
@@ -347,7 +354,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         initTrustBadge.addSubview(initTrustBadgeIcon)
 
         initTrustTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        initTrustTitleLabel.attributedText = createRequiredLabel("Trust/Institution code")
+        initTrustTitleLabel.attributedText = createRequiredLabel("Trust/Institution code*")
         initialCardView.addSubview(initTrustTitleLabel)
 
         initTrustCodeField.translatesAutoresizingMaskIntoConstraints = false
@@ -394,13 +401,12 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         initBottomBar.addSubview(initCancelButton)
 
         NSLayoutConstraint.activate([
-            initialCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 12),
-            initialCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            initialCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            initialCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -50),
+            initialCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 14),
+            initialCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
+            initialCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
 
             initTrustBadge.leadingAnchor.constraint(equalTo: initialCardView.leadingAnchor, constant: 18),
-            initTrustBadge.topAnchor.constraint(equalTo: initialCardView.topAnchor, constant: 24),
+            initTrustBadge.topAnchor.constraint(equalTo: initialCardView.topAnchor, constant: 20),
             initTrustBadge.widthAnchor.constraint(equalToConstant: 34),
             initTrustBadge.heightAnchor.constraint(equalToConstant: 24),
 
@@ -410,7 +416,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             initTrustBadgeIcon.heightAnchor.constraint(equalToConstant: 16),
 
             initTrustTitleLabel.leadingAnchor.constraint(equalTo: initTrustBadge.trailingAnchor, constant: 12),
-            initTrustTitleLabel.topAnchor.constraint(equalTo: initialCardView.topAnchor, constant: 20),
+            initTrustTitleLabel.topAnchor.constraint(equalTo: initialCardView.topAnchor, constant: 18),
 
             initTrustCodeField.leadingAnchor.constraint(equalTo: initTrustBadge.trailingAnchor, constant: 12),
             initTrustCodeField.topAnchor.constraint(equalTo: initTrustTitleLabel.bottomAnchor, constant: 4),
@@ -423,19 +429,20 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             initTrustUnderline.heightAnchor.constraint(equalToConstant: 1.5),
 
             initTrustInfoButton.trailingAnchor.constraint(equalTo: initialCardView.trailingAnchor, constant: -18),
-            initTrustInfoButton.centerYAnchor.constraint(equalTo: initTrustBadge.centerYAnchor),
+            initTrustInfoButton.centerYAnchor.constraint(equalTo: initTrustCodeField.centerYAnchor),
             initTrustInfoButton.widthAnchor.constraint(equalToConstant: 26),
             initTrustInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
             initTrustArrowButton.trailingAnchor.constraint(equalTo: initTrustInfoButton.leadingAnchor, constant: -8),
-            initTrustArrowButton.centerYAnchor.constraint(equalTo: initTrustBadge.centerYAnchor),
+            initTrustArrowButton.centerYAnchor.constraint(equalTo: initTrustCodeField.centerYAnchor),
             initTrustArrowButton.widthAnchor.constraint(equalToConstant: 26),
             initTrustArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
             initTrustSpinner.centerXAnchor.constraint(equalTo: initTrustArrowButton.centerXAnchor),
             initTrustSpinner.centerYAnchor.constraint(equalTo: initTrustArrowButton.centerYAnchor),
 
-            initBottomBar.topAnchor.constraint(equalTo: initTrustUnderline.bottomAnchor, constant: 36),
+            // Bottom bar pinned tightly below input underline
+            initBottomBar.topAnchor.constraint(equalTo: initTrustUnderline.bottomAnchor, constant: 24),
             initBottomBar.leadingAnchor.constraint(equalTo: initialCardView.leadingAnchor),
             initBottomBar.trailingAnchor.constraint(equalTo: initialCardView.trailingAnchor),
             initBottomBar.bottomAnchor.constraint(equalTo: initialCardView.bottomAnchor),
@@ -446,7 +453,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         ])
     }
 
-    // MARK: - Card 2: Mid Card (Email + Mobile + Parent Code verification)
+    // MARK: - Card 2: Mid Card (Self-Sizing)
     private func buildMidCard() {
         midCardView.translatesAutoresizingMaskIntoConstraints = false
         midCardView.backgroundColor = .white
@@ -472,7 +479,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midTrustBadge.addSubview(midTrustBadgeIcon)
 
         midTrustTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        midTrustTitleLabel.attributedText = createRequiredLabel("Trust/Institution code")
+        midTrustTitleLabel.attributedText = createRequiredLabel("Trust/Institution code*")
         midTrustRowView.addSubview(midTrustTitleLabel)
 
         midTrustCodeField.translatesAutoresizingMaskIntoConstraints = false
@@ -522,7 +529,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midEmailRowView.addSubview(midEmailIcon)
 
         midEmailTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        midEmailTitleLabel.attributedText = createRequiredLabel("Email")
+        midEmailTitleLabel.attributedText = createRequiredLabel("Email*")
         midEmailRowView.addSubview(midEmailTitleLabel)
 
         midEmailField.translatesAutoresizingMaskIntoConstraints = false
@@ -556,7 +563,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midMobileRowView.addSubview(midMobileIcon)
 
         midMobileTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        midMobileTitleLabel.attributedText = createRequiredLabel("Mobile phone")
+        midMobileTitleLabel.attributedText = createRequiredLabel("Mobile phone*")
         midMobileRowView.addSubview(midMobileTitleLabel)
 
         midMobileField.translatesAutoresizingMaskIntoConstraints = false
@@ -597,7 +604,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         // 5. Parent Code Row
         midParentRowView.translatesAutoresizingMaskIntoConstraints = false
-        midParentRowView.isHidden = true // Unlocks after OTP verify
+        midParentRowView.isHidden = true
         midCardView.addSubview(midParentRowView)
 
         midParentIcon.translatesAutoresizingMaskIntoConstraints = false
@@ -652,17 +659,16 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midBottomBar.addSubview(midCancelButton)
 
         NSLayoutConstraint.activate([
-            midCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 12),
-            midCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            midCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            midCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -50),
+            midCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 14),
+            midCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
+            midCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
 
             midTrustRowView.topAnchor.constraint(equalTo: midCardView.topAnchor, constant: 20),
             midTrustRowView.leadingAnchor.constraint(equalTo: midCardView.leadingAnchor, constant: 18),
             midTrustRowView.trailingAnchor.constraint(equalTo: midCardView.trailingAnchor, constant: -18),
 
             midTrustBadge.leadingAnchor.constraint(equalTo: midTrustRowView.leadingAnchor),
-            midTrustBadge.topAnchor.constraint(equalTo: midTrustRowView.topAnchor, constant: 4),
+            midTrustBadge.topAnchor.constraint(equalTo: midTrustRowView.topAnchor, constant: 2),
             midTrustBadge.widthAnchor.constraint(equalToConstant: 34),
             midTrustBadge.heightAnchor.constraint(equalToConstant: 24),
 
@@ -686,25 +692,25 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             midTrustUnderline.bottomAnchor.constraint(equalTo: midTrustRowView.bottomAnchor),
 
             midTrustInfoButton.trailingAnchor.constraint(equalTo: midTrustRowView.trailingAnchor),
-            midTrustInfoButton.centerYAnchor.constraint(equalTo: midTrustBadge.centerYAnchor),
+            midTrustInfoButton.centerYAnchor.constraint(equalTo: midTrustCodeField.centerYAnchor),
             midTrustInfoButton.widthAnchor.constraint(equalToConstant: 26),
             midTrustInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
             midTrustArrowButton.trailingAnchor.constraint(equalTo: midTrustInfoButton.leadingAnchor, constant: -6),
-            midTrustArrowButton.centerYAnchor.constraint(equalTo: midTrustBadge.centerYAnchor),
+            midTrustArrowButton.centerYAnchor.constraint(equalTo: midTrustCodeField.centerYAnchor),
             midTrustArrowButton.widthAnchor.constraint(equalToConstant: 26),
             midTrustArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
             midTrustCheckmark.trailingAnchor.constraint(equalTo: midTrustArrowButton.leadingAnchor, constant: -6),
-            midTrustCheckmark.centerYAnchor.constraint(equalTo: midTrustBadge.centerYAnchor),
+            midTrustCheckmark.centerYAnchor.constraint(equalTo: midTrustCodeField.centerYAnchor),
             midTrustCheckmark.widthAnchor.constraint(equalToConstant: 20),
             midTrustCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
             // Emblem Logo
             midEmblemImageView.topAnchor.constraint(equalTo: midTrustRowView.bottomAnchor, constant: 14),
             midEmblemImageView.centerXAnchor.constraint(equalTo: midCardView.centerXAnchor),
-            midEmblemImageView.widthAnchor.constraint(equalToConstant: 135),
-            midEmblemImageView.heightAnchor.constraint(equalToConstant: 135),
+            midEmblemImageView.widthAnchor.constraint(equalToConstant: 130),
+            midEmblemImageView.heightAnchor.constraint(equalToConstant: 130),
 
             // Email Row
             midEmailRowView.topAnchor.constraint(equalTo: midEmblemImageView.bottomAnchor, constant: 14),
@@ -731,7 +737,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             midEmailUnderline.bottomAnchor.constraint(equalTo: midEmailRowView.bottomAnchor),
 
             midEmailCheckmark.trailingAnchor.constraint(equalTo: midEmailRowView.trailingAnchor),
-            midEmailCheckmark.centerYAnchor.constraint(equalTo: midEmailIcon.centerYAnchor),
+            midEmailCheckmark.centerYAnchor.constraint(equalTo: midEmailField.centerYAnchor),
             midEmailCheckmark.widthAnchor.constraint(equalToConstant: 20),
             midEmailCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
@@ -760,17 +766,17 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             midMobileUnderline.bottomAnchor.constraint(equalTo: midMobileRowView.bottomAnchor),
 
             midMobileInfoButton.trailingAnchor.constraint(equalTo: midMobileRowView.trailingAnchor),
-            midMobileInfoButton.centerYAnchor.constraint(equalTo: midMobileIcon.centerYAnchor),
+            midMobileInfoButton.centerYAnchor.constraint(equalTo: midMobileField.centerYAnchor),
             midMobileInfoButton.widthAnchor.constraint(equalToConstant: 26),
             midMobileInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
             midMobileArrowButton.trailingAnchor.constraint(equalTo: midMobileInfoButton.leadingAnchor, constant: -6),
-            midMobileArrowButton.centerYAnchor.constraint(equalTo: midMobileIcon.centerYAnchor),
+            midMobileArrowButton.centerYAnchor.constraint(equalTo: midMobileField.centerYAnchor),
             midMobileArrowButton.widthAnchor.constraint(equalToConstant: 26),
             midMobileArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
             midMobileCheckmark.trailingAnchor.constraint(equalTo: midMobileArrowButton.leadingAnchor, constant: -6),
-            midMobileCheckmark.centerYAnchor.constraint(equalTo: midMobileIcon.centerYAnchor),
+            midMobileCheckmark.centerYAnchor.constraint(equalTo: midMobileField.centerYAnchor),
             midMobileCheckmark.widthAnchor.constraint(equalToConstant: 20),
             midMobileCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
@@ -802,19 +808,19 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             midParentUnderline.bottomAnchor.constraint(equalTo: midParentRowView.bottomAnchor),
 
             midParentInfoButton.trailingAnchor.constraint(equalTo: midParentRowView.trailingAnchor),
-            midParentInfoButton.centerYAnchor.constraint(equalTo: midParentIcon.centerYAnchor),
+            midParentInfoButton.centerYAnchor.constraint(equalTo: midParentCodeField.centerYAnchor),
             midParentInfoButton.widthAnchor.constraint(equalToConstant: 26),
             midParentInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
             midParentArrowButton.trailingAnchor.constraint(equalTo: midParentInfoButton.leadingAnchor, constant: -6),
-            midParentArrowButton.centerYAnchor.constraint(equalTo: midParentIcon.centerYAnchor),
+            midParentArrowButton.centerYAnchor.constraint(equalTo: midParentCodeField.centerYAnchor),
             midParentArrowButton.widthAnchor.constraint(equalToConstant: 26),
             midParentArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
             midParentSpinner.centerXAnchor.constraint(equalTo: midParentArrowButton.centerXAnchor),
             midParentSpinner.centerYAnchor.constraint(equalTo: midParentArrowButton.centerYAnchor),
 
-            // Bottom Bar
+            // Bottom Bar pinned tightly below the last visible row
             midBottomBar.topAnchor.constraint(equalTo: midParentRowView.bottomAnchor, constant: 20),
             midBottomBar.leadingAnchor.constraint(equalTo: midCardView.leadingAnchor),
             midBottomBar.trailingAnchor.constraint(equalTo: midCardView.trailingAnchor),
@@ -826,13 +832,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         ])
     }
 
-    // MARK: - Card 3: Full User Details Card (Exact Match with New Screenshots)
+    // MARK: - Card 3: Full User Details Card (Self-Sizing & Scrollable)
     private func buildDetailsCard() {
         detailsCardView.translatesAutoresizingMaskIntoConstraints = false
         detailsCardView.backgroundColor = .white
         detailsCardView.layer.cornerRadius = 18
         detailsCardView.layer.masksToBounds = true
-        detailsCardView.isHidden = true // Revealed after Parent Code is verified
+        detailsCardView.isHidden = true
         contentView.addSubview(detailsCardView)
 
         // 1. Trust Code Row
@@ -855,17 +861,17 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         NSLayoutConstraint.activate([
             dtTrustInfoButton.trailingAnchor.constraint(equalTo: dtTrustRow.trailingAnchor),
-            dtTrustInfoButton.centerYAnchor.constraint(equalTo: dtTrustBadge.centerYAnchor),
+            dtTrustInfoButton.centerYAnchor.constraint(equalTo: dtTrustCodeField.centerYAnchor),
             dtTrustInfoButton.widthAnchor.constraint(equalToConstant: 26),
             dtTrustInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
             dtTrustArrowButton.trailingAnchor.constraint(equalTo: dtTrustInfoButton.leadingAnchor, constant: -6),
-            dtTrustArrowButton.centerYAnchor.constraint(equalTo: dtTrustBadge.centerYAnchor),
+            dtTrustArrowButton.centerYAnchor.constraint(equalTo: dtTrustCodeField.centerYAnchor),
             dtTrustArrowButton.widthAnchor.constraint(equalToConstant: 26),
             dtTrustArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
             dtTrustCheckmark.trailingAnchor.constraint(equalTo: dtTrustArrowButton.leadingAnchor, constant: -6),
-            dtTrustCheckmark.centerYAnchor.constraint(equalTo: dtTrustBadge.centerYAnchor),
+            dtTrustCheckmark.centerYAnchor.constraint(equalTo: dtTrustCodeField.centerYAnchor),
             dtTrustCheckmark.widthAnchor.constraint(equalToConstant: 20),
             dtTrustCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
@@ -1140,10 +1146,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         // Details Card Constraints
         NSLayoutConstraint.activate([
-            detailsCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 12),
-            detailsCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            detailsCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            detailsCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -50),
+            detailsCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 14),
+            detailsCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
+            detailsCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
 
             // 1. Trust Code Row
             dtTrustRow.topAnchor.constraint(equalTo: detailsCardView.topAnchor, constant: 18),
@@ -1173,8 +1178,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             // 6. Center Emblem Logo
             dtEmblemImageView.topAnchor.constraint(equalTo: dtPasswordRow.bottomAnchor, constant: 16),
             dtEmblemImageView.centerXAnchor.constraint(equalTo: detailsCardView.centerXAnchor),
-            dtEmblemImageView.widthAnchor.constraint(equalToConstant: 135),
-            dtEmblemImageView.heightAnchor.constraint(equalToConstant: 135),
+            dtEmblemImageView.widthAnchor.constraint(equalToConstant: 130),
+            dtEmblemImageView.heightAnchor.constraint(equalToConstant: 130),
 
             // 7. Email*
             dtEmailRow.topAnchor.constraint(equalTo: dtEmblemImageView.bottomAnchor, constant: 16),
@@ -1268,7 +1273,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
             NSLayoutConstraint.activate([
                 badge.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                badge.topAnchor.constraint(equalTo: container.topAnchor, constant: 4),
+                badge.topAnchor.constraint(equalTo: container.topAnchor, constant: 2),
                 badge.widthAnchor.constraint(equalToConstant: 34),
                 badge.heightAnchor.constraint(equalToConstant: 24),
 
@@ -1549,6 +1554,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
+                    // Update dynamic bottom constraint to midCardView
+                    self.contentBottomConstraint?.isActive = false
+                    self.contentBottomConstraint = self.contentView.bottomAnchor.constraint(equalTo: self.midCardView.bottomAnchor, constant: 50)
+                    self.contentBottomConstraint?.isActive = true
+
                     UIView.transition(with: self.contentView, duration: 0.35, options: .transitionCrossDissolve) {
                         self.initialCardView.isHidden = true
                         self.midCardView.isHidden = false
@@ -1797,6 +1807,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                 self.dtParentCodeField.text = parentCode
 
                 UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+
+                // Update dynamic bottom constraint to detailsCardView
+                self.contentBottomConstraint?.isActive = false
+                self.contentBottomConstraint = self.contentView.bottomAnchor.constraint(equalTo: self.detailsCardView.bottomAnchor, constant: 50)
+                self.contentBottomConstraint?.isActive = true
 
                 // Reveal Subtitle "Enter Detail Of User" and switch to Card 3 (Screenshot 1 & 2)
                 self.headerSubtitleLabel.isHidden = false
