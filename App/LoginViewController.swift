@@ -569,7 +569,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         signUpVC.onSignUpSuccess = { [weak self] registeredEmail in
             self?.emailTextField.text = registeredEmail
         }
-        signUpVC.modalPresentationStyle = .formSheet
+        signUpVC.modalPresentationStyle = .overFullScreen
+        signUpVC.modalTransitionStyle = .crossDissolve
         present(signUpVC, animated: true)
     }
 

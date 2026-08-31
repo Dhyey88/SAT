@@ -4,7 +4,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
 
     var onSignUpSuccess: ((String) -> Void)?
 
-    // MARK: - State Flags
+    // MARK: - State
     private var verifiedMerchantId: Int = 0
     private var verifiedMerchantName: String = ""
     private var isTrustCodeVerified = false
@@ -15,7 +15,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
     private var otpTimer: Timer?
     private var otpRemainingSeconds = 30
 
-    // MARK: - UI Components (Main Scroll & Card)
+    // MARK: - UI Components
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
@@ -88,12 +88,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
     private let otpVerifyButton = UIButton(type: .system)
     private let otpSpinner = UIActivityIndicatorView(style: .medium)
 
-    // Dynamic constraints for responsive card expansion
-    private var emailRowHeightConstraint: NSLayoutConstraint!
-    private var mobileRowHeightConstraint: NSLayoutConstraint!
-    private var parentRowHeightConstraint: NSLayoutConstraint!
-    private var emblemHeightConstraint: NSLayoutConstraint!
-
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -110,6 +104,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         NotificationCenter.default.removeObserver(self)
     }
 
+    // MARK: - Layout Setup
     private func setupUI() {
         // Deep Royal Blue Background (#133B7C)
         view.backgroundColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
@@ -150,10 +145,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         mainCardContainer.translatesAutoresizingMaskIntoConstraints = false
         mainCardContainer.layer.cornerRadius = 18
         mainCardContainer.layer.masksToBounds = true
-        mainCardContainer.layer.shadowColor = UIColor.black.cgColor
-        mainCardContainer.layer.shadowOpacity = 0.3
-        mainCardContainer.layer.shadowOffset = CGSize(width: 0, height: 6)
-        mainCardContainer.layer.shadowRadius = 12
+        mainCardContainer.backgroundColor = .white
         contentView.addSubview(mainCardContainer)
 
         // White Body
@@ -161,7 +153,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         whiteCardBody.backgroundColor = .white
         mainCardContainer.addSubview(whiteCardBody)
 
-        // Setup All Rows inside White Card
+        // Setup Rows inside White Card Body
         setupTrustRow()
         setupEmblemLogo()
         setupEmailRow()
@@ -179,7 +171,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         versionLabel.textAlignment = .right
         view.addSubview(versionLabel)
 
-        // Main Layout Constraints
+        // Main Layout Constraints (Safe and Non-conflicting)
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -195,14 +187,14 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             headerTitleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 14),
             headerTitleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
 
-            errorLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 12),
+            errorLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 10),
             errorLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             errorLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
 
-            mainCardContainer.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 14),
+            mainCardContainer.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 12),
             mainCardContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             mainCardContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            mainCardContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -60),
+            mainCardContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -50),
 
             whiteCardBody.topAnchor.constraint(equalTo: mainCardContainer.topAnchor),
             whiteCardBody.leadingAnchor.constraint(equalTo: mainCardContainer.leadingAnchor),
@@ -228,7 +220,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         whiteCardBody.addSubview(trustBadgeIcon)
 
         trustBadgeSubIcon.translatesAutoresizingMaskIntoConstraints = false
-        trustBadgeSubIcon.image = UIImage(systemName: "person.crop.rectangle.fill") ?? UIImage(systemName: "person.text.rectangle")
+        trustBadgeSubIcon.image = UIImage(systemName: "person.crop.rectangle.fill") ?? UIImage(systemName: "person.fill")
         trustBadgeSubIcon.tintColor = .white
         trustBadgeSubIcon.contentMode = .scaleAspectFit
         trustBadgeIcon.addSubview(trustBadgeSubIcon)
@@ -277,17 +269,17 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
 
         NSLayoutConstraint.activate([
             trustBadgeIcon.leadingAnchor.constraint(equalTo: whiteCardBody.leadingAnchor, constant: 16),
-            trustBadgeIcon.topAnchor.constraint(equalTo: whiteCardBody.topAnchor, constant: 22),
-            trustBadgeIcon.widthAnchor.constraint(equalToConstant: 36),
-            trustBadgeIcon.heightAnchor.constraint(equalToConstant: 26),
+            trustBadgeIcon.topAnchor.constraint(equalTo: whiteCardBody.topAnchor, constant: 18),
+            trustBadgeIcon.widthAnchor.constraint(equalToConstant: 34),
+            trustBadgeIcon.heightAnchor.constraint(equalToConstant: 24),
 
             trustBadgeSubIcon.centerXAnchor.constraint(equalTo: trustBadgeIcon.centerXAnchor),
             trustBadgeSubIcon.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
-            trustBadgeSubIcon.widthAnchor.constraint(equalToConstant: 22),
+            trustBadgeSubIcon.widthAnchor.constraint(equalToConstant: 20),
             trustBadgeSubIcon.heightAnchor.constraint(equalToConstant: 16),
 
             trustTitleLabel.leadingAnchor.constraint(equalTo: trustBadgeIcon.trailingAnchor, constant: 12),
-            trustTitleLabel.topAnchor.constraint(equalTo: whiteCardBody.topAnchor, constant: 14),
+            trustTitleLabel.topAnchor.constraint(equalTo: whiteCardBody.topAnchor, constant: 12),
             trustTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: trustCheckmark.leadingAnchor, constant: -6),
 
             trustCodeField.leadingAnchor.constraint(equalTo: trustBadgeIcon.trailingAnchor, constant: 12),
@@ -305,15 +297,15 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             trustInfoButton.widthAnchor.constraint(equalToConstant: 26),
             trustInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
-            trustArrowButton.trailingAnchor.constraint(equalTo: trustInfoButton.leadingAnchor, constant: -10),
+            trustArrowButton.trailingAnchor.constraint(equalTo: trustInfoButton.leadingAnchor, constant: -8),
             trustArrowButton.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
             trustArrowButton.widthAnchor.constraint(equalToConstant: 26),
             trustArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
             trustCheckmark.trailingAnchor.constraint(equalTo: trustArrowButton.leadingAnchor, constant: -8),
             trustCheckmark.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
-            trustCheckmark.widthAnchor.constraint(equalToConstant: 22),
-            trustCheckmark.heightAnchor.constraint(equalToConstant: 22),
+            trustCheckmark.widthAnchor.constraint(equalToConstant: 20),
+            trustCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
             trustSpinner.centerXAnchor.constraint(equalTo: trustArrowButton.centerXAnchor),
             trustSpinner.centerYAnchor.constraint(equalTo: trustArrowButton.centerYAnchor)
@@ -323,7 +315,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
     // MARK: - Center Emblem Logo
     private func setupEmblemLogo() {
         trustEmblemImageView.translatesAutoresizingMaskIntoConstraints = false
-        if let img = UIImage(named: "AppIcon-1024") {
+        if let img = UIImage(named: "AppIcon-1024") ?? UIImage(named: "AppIcon") {
             trustEmblemImageView.image = img
         } else {
             trustEmblemImageView.image = UIImage(systemName: "seal.fill")
@@ -333,13 +325,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         trustEmblemImageView.layer.masksToBounds = true
         whiteCardBody.addSubview(trustEmblemImageView)
 
-        emblemHeightConstraint = trustEmblemImageView.heightAnchor.constraint(equalToConstant: 130)
-
         NSLayoutConstraint.activate([
-            trustEmblemImageView.topAnchor.constraint(equalTo: trustBadgeIcon.bottomAnchor, constant: 18),
+            trustEmblemImageView.topAnchor.constraint(equalTo: trustUnderline.bottomAnchor, constant: 14),
             trustEmblemImageView.centerXAnchor.constraint(equalTo: whiteCardBody.centerXAnchor),
-            trustEmblemImageView.widthAnchor.constraint(equalToConstant: 130),
-            emblemHeightConstraint
+            trustEmblemImageView.widthAnchor.constraint(equalToConstant: 120),
+            trustEmblemImageView.heightAnchor.constraint(equalToConstant: 120)
         ])
     }
 
@@ -391,21 +381,19 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         emailSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
         emailRowView.addSubview(emailSpinner)
 
-        emailRowHeightConstraint = emailRowView.heightAnchor.constraint(equalToConstant: 74)
-
         NSLayoutConstraint.activate([
-            emailRowView.topAnchor.constraint(equalTo: trustEmblemImageView.bottomAnchor, constant: 14),
+            emailRowView.topAnchor.constraint(equalTo: trustEmblemImageView.bottomAnchor, constant: 12),
             emailRowView.leadingAnchor.constraint(equalTo: whiteCardBody.leadingAnchor, constant: 16),
             emailRowView.trailingAnchor.constraint(equalTo: whiteCardBody.trailingAnchor, constant: -16),
-            emailRowHeightConstraint,
+            emailRowView.heightAnchor.constraint(equalToConstant: 68),
 
             emailIcon.leadingAnchor.constraint(equalTo: emailRowView.leadingAnchor),
-            emailIcon.topAnchor.constraint(equalTo: emailRowView.topAnchor, constant: 20),
-            emailIcon.widthAnchor.constraint(equalToConstant: 28),
-            emailIcon.heightAnchor.constraint(equalToConstant: 22),
+            emailIcon.topAnchor.constraint(equalTo: emailRowView.topAnchor, constant: 18),
+            emailIcon.widthAnchor.constraint(equalToConstant: 26),
+            emailIcon.heightAnchor.constraint(equalToConstant: 20),
 
             emailTitleLabel.leadingAnchor.constraint(equalTo: emailIcon.trailingAnchor, constant: 12),
-            emailTitleLabel.topAnchor.constraint(equalTo: emailRowView.topAnchor, constant: 4),
+            emailTitleLabel.topAnchor.constraint(equalTo: emailRowView.topAnchor, constant: 2),
 
             emailField.leadingAnchor.constraint(equalTo: emailIcon.trailingAnchor, constant: 12),
             emailField.topAnchor.constraint(equalTo: emailTitleLabel.bottomAnchor, constant: 4),
@@ -424,8 +412,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
 
             emailCheckmark.trailingAnchor.constraint(equalTo: emailArrowButton.leadingAnchor, constant: -8),
             emailCheckmark.centerYAnchor.constraint(equalTo: emailIcon.centerYAnchor),
-            emailCheckmark.widthAnchor.constraint(equalToConstant: 22),
-            emailCheckmark.heightAnchor.constraint(equalToConstant: 22),
+            emailCheckmark.widthAnchor.constraint(equalToConstant: 20),
+            emailCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
             emailSpinner.centerXAnchor.constraint(equalTo: emailArrowButton.centerXAnchor),
             emailSpinner.centerYAnchor.constraint(equalTo: emailArrowButton.centerYAnchor)
@@ -483,21 +471,19 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         mobileSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
         mobileRowView.addSubview(mobileSpinner)
 
-        mobileRowHeightConstraint = mobileRowView.heightAnchor.constraint(equalToConstant: 74)
-
         NSLayoutConstraint.activate([
-            mobileRowView.topAnchor.constraint(equalTo: emailRowView.bottomAnchor, constant: 14),
+            mobileRowView.topAnchor.constraint(equalTo: emailRowView.bottomAnchor, constant: 12),
             mobileRowView.leadingAnchor.constraint(equalTo: whiteCardBody.leadingAnchor, constant: 16),
             mobileRowView.trailingAnchor.constraint(equalTo: whiteCardBody.trailingAnchor, constant: -16),
-            mobileRowHeightConstraint,
+            mobileRowView.heightAnchor.constraint(equalToConstant: 68),
 
             mobileIcon.leadingAnchor.constraint(equalTo: mobileRowView.leadingAnchor),
-            mobileIcon.topAnchor.constraint(equalTo: mobileRowView.topAnchor, constant: 20),
-            mobileIcon.widthAnchor.constraint(equalToConstant: 28),
-            mobileIcon.heightAnchor.constraint(equalToConstant: 22),
+            mobileIcon.topAnchor.constraint(equalTo: mobileRowView.topAnchor, constant: 18),
+            mobileIcon.widthAnchor.constraint(equalToConstant: 26),
+            mobileIcon.heightAnchor.constraint(equalToConstant: 20),
 
             mobileTitleLabel.leadingAnchor.constraint(equalTo: mobileIcon.trailingAnchor, constant: 12),
-            mobileTitleLabel.topAnchor.constraint(equalTo: mobileRowView.topAnchor, constant: 4),
+            mobileTitleLabel.topAnchor.constraint(equalTo: mobileRowView.topAnchor, constant: 2),
 
             mobileField.leadingAnchor.constraint(equalTo: mobileIcon.trailingAnchor, constant: 12),
             mobileField.topAnchor.constraint(equalTo: mobileTitleLabel.bottomAnchor, constant: 4),
@@ -521,8 +507,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
 
             mobileCheckmark.trailingAnchor.constraint(equalTo: mobileArrowButton.leadingAnchor, constant: -8),
             mobileCheckmark.centerYAnchor.constraint(equalTo: mobileIcon.centerYAnchor),
-            mobileCheckmark.widthAnchor.constraint(equalToConstant: 22),
-            mobileCheckmark.heightAnchor.constraint(equalToConstant: 22),
+            mobileCheckmark.widthAnchor.constraint(equalToConstant: 20),
+            mobileCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
             mobileSpinner.centerXAnchor.constraint(equalTo: mobileArrowButton.centerXAnchor),
             mobileSpinner.centerYAnchor.constraint(equalTo: mobileArrowButton.centerYAnchor)
@@ -575,22 +561,20 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         parentSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
         parentRowView.addSubview(parentSpinner)
 
-        parentRowHeightConstraint = parentRowView.heightAnchor.constraint(equalToConstant: 74)
-
         NSLayoutConstraint.activate([
-            parentRowView.topAnchor.constraint(equalTo: mobileRowView.bottomAnchor, constant: 14),
+            parentRowView.topAnchor.constraint(equalTo: mobileRowView.bottomAnchor, constant: 12),
             parentRowView.leadingAnchor.constraint(equalTo: whiteCardBody.leadingAnchor, constant: 16),
             parentRowView.trailingAnchor.constraint(equalTo: whiteCardBody.trailingAnchor, constant: -16),
             parentRowView.bottomAnchor.constraint(equalTo: whiteCardBody.bottomAnchor, constant: -18),
-            parentRowHeightConstraint,
+            parentRowView.heightAnchor.constraint(equalToConstant: 68),
 
             parentIcon.leadingAnchor.constraint(equalTo: parentRowView.leadingAnchor),
-            parentIcon.topAnchor.constraint(equalTo: parentRowView.topAnchor, constant: 20),
-            parentIcon.widthAnchor.constraint(equalToConstant: 28),
-            parentIcon.heightAnchor.constraint(equalToConstant: 22),
+            parentIcon.topAnchor.constraint(equalTo: parentRowView.topAnchor, constant: 18),
+            parentIcon.widthAnchor.constraint(equalToConstant: 26),
+            parentIcon.heightAnchor.constraint(equalToConstant: 20),
 
             parentTitleLabel.leadingAnchor.constraint(equalTo: parentIcon.trailingAnchor, constant: 12),
-            parentTitleLabel.topAnchor.constraint(equalTo: parentRowView.topAnchor, constant: 4),
+            parentTitleLabel.topAnchor.constraint(equalTo: parentRowView.topAnchor, constant: 2),
 
             parentCodeField.leadingAnchor.constraint(equalTo: parentIcon.trailingAnchor, constant: 12),
             parentCodeField.topAnchor.constraint(equalTo: parentTitleLabel.bottomAnchor, constant: 4),
@@ -658,10 +642,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         otpCardContainer.backgroundColor = UIColor(red: 21/255, green: 64/255, blue: 141/255, alpha: 1.0)
         otpCardContainer.layer.cornerRadius = 14
         otpCardContainer.layer.masksToBounds = true
-        otpCardContainer.layer.shadowColor = UIColor.black.cgColor
-        otpCardContainer.layer.shadowOpacity = 0.35
-        otpCardContainer.layer.shadowOffset = CGSize(width: 0, height: 6)
-        otpCardContainer.layer.shadowRadius = 14
         otpOverlayBackdrop.addSubview(otpCardContainer)
 
         // Title: "OTP Verification"
@@ -734,7 +714,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             otpOverlayBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             otpOverlayBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            otpCardContainer.centerYAnchor.constraint(equalTo: otpOverlayBackdrop.centerYAnchor, constant: -40),
+            otpCardContainer.centerYAnchor.constraint(equalTo: otpOverlayBackdrop.centerYAnchor, constant: -30),
             otpCardContainer.leadingAnchor.constraint(equalTo: otpOverlayBackdrop.leadingAnchor, constant: 24),
             otpCardContainer.trailingAnchor.constraint(equalTo: otpOverlayBackdrop.trailingAnchor, constant: -24),
 
