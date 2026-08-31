@@ -2,9 +2,6 @@ import UIKit
 
 class SignUpViewController: UIViewController {
 
-    private let baseURL = "https://test.enin.io"
-    private let apiAccessToken = "piggyC@ins2019"
-
     var onSignUpSuccess: ((String) -> Void)?
 
     // MARK: - UI Components
@@ -246,10 +243,10 @@ class SignUpViewController: UIViewController {
 
         startLoading()
 
-        guard let url = URL(string: "\(baseURL)/api/register") else { return }
+        guard let url = URL(string: AppConfig.API.register) else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         let params: [String: String] = [
@@ -258,9 +255,9 @@ class SignUpViewController: UIViewController {
             "mobile": mobile,
             "email": email,
             "password": password,
-            "device_type": "1", // iOS
-            "device_id": "SAT_IOS_DEVICE",
-            "mobile_device_id": "SAT_IOS_DEVICE"
+            "device_type": AppConfig.deviceType,
+            "device_id": AppConfig.deviceId,
+            "mobile_device_id": AppConfig.mobileDeviceId
         ]
 
         let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")

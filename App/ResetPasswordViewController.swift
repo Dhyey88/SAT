@@ -13,9 +13,6 @@ class ResetPasswordViewController: UIViewController {
     private var userEmail: String = ""
     private var verifiedOTP: String = ""
 
-    private let baseURL = "https://test.enin.io"
-    private let apiAccessToken = "piggyC@ins2019"
-
     // MARK: - UI Components
     private let cardView = UIView()
     private let titleLabel = UILabel()
@@ -289,11 +286,11 @@ class ResetPasswordViewController: UIViewController {
     // Step 1: POST /api/forgot-password
     private func sendForgotPasswordOTP(email: String) {
         startLoading()
-        guard let url = URL(string: "\(baseURL)/api/forgot-password") else { return }
+        guard let url = URL(string: AppConfig.API.forgotPassword) else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         let body = "email=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
         request.httpBody = body.data(using: .utf8)
@@ -327,11 +324,11 @@ class ResetPasswordViewController: UIViewController {
     // Step 2: POST /api/otp-verification
     private func verifyResetOTP(email: String, otp: String) {
         startLoading()
-        guard let url = URL(string: "\(baseURL)/api/otp-verification") else { return }
+        guard let url = URL(string: AppConfig.API.otpVerification) else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         let body = "email=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&forgot_otp=\(otp)"
         request.httpBody = body.data(using: .utf8)
@@ -365,11 +362,11 @@ class ResetPasswordViewController: UIViewController {
     // Step 3: POST /api/resent-password
     private func submitNewPassword(email: String, otp: String, password: String) {
         startLoading()
-        guard let url = URL(string: "\(baseURL)/api/resent-password") else { return }
+        guard let url = URL(string: AppConfig.API.resetPassword) else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         let body = "email=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&forgot_otp=\(otp)&password=\(password.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
         request.httpBody = body.data(using: .utf8)

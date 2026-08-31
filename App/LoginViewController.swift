@@ -63,10 +63,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     private let monitorQueue = DispatchQueue(label: "NetworkMonitorQueue")
     private var isNetworkAvailable = true
 
-    // MARK: - API Constants
-    private let baseURL = "https://test.enin.io"
-    private let apiAccessToken = "piggyC@ins2019"
-
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -554,7 +550,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
     @objc private func openTutorial() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        guard let url = URL(string: "https://test.enin.io/tutorial") else { return }
+        guard let url = URL(string: AppConfig.tutorialURL) else { return }
         let safariVC = SFSafariViewController(url: url)
         present(safariVC, animated: true)
     }
@@ -581,7 +577,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         let alert = UIAlertController(
             title: "About SAT",
-            message: "SAT Application provides comprehensive trust accounting, branch billing, and donation management services.\n\nVersion: 1.0.0\nSupport: support@enin.io\nHelpline: +91 98765 43210",
+            message: "SAT Application provides comprehensive trust accounting, branch billing, and donation management services.\n\nVersion: \(AppConfig.appVersion)\nSupport: \(AppConfig.supportEmail)\nHelpline: \(AppConfig.helplineNumber)",
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
@@ -589,7 +585,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
 
     @objc private func openPrivacyPolicy() {
-        guard let url = URL(string: "https://test.enin.io/privacy-policy") else { return }
+        guard let url = URL(string: AppConfig.privacyPolicyURL) else { return }
         let safariVC = SFSafariViewController(url: url)
         present(safariVC, animated: true)
     }
@@ -660,7 +656,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             return
         }
 
-        guard let url = URL(string: "\(baseURL)/api/social-login") else { return }
+        guard let url = URL(string: AppConfig.API.socialLogin) else { return }
 
         loginButton.setTitle("", for: .normal)
         activityIndicator.startAnimating()
@@ -670,13 +666,13 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             "provider": "google",
             "provider_id": "google_\(email)",
             "email": email,
-            "device_type": "1", // iOS
-            "mobile_device_id": "SAT_IOS_DEVICE"
+            "device_type": AppConfig.deviceType,
+            "mobile_device_id": AppConfig.mobileDeviceId
         ]
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
@@ -750,21 +746,21 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         let bodyParams: [String: String] = [
             "email": email,
             "password": password,
-            "device_type": "1", // 1 for iOS
-            "device_id": "SAT_IOS_DEVICE",
-            "mobile_device_id": "SAT_IOS_DEVICE",
-            "login_by": "ho_user"
+            "device_type": AppConfig.deviceType,
+            "device_id": AppConfig.deviceId,
+            "mobile_device_id": AppConfig.mobileDeviceId,
+            "login_by": AppConfig.defaultLoginRole
         ]
 
         performLoginRequest(params: bodyParams, userEmail: email)
     }
 
     private func performLoginRequest(params: [String: String], userEmail: String) {
-        guard let url = URL(string: "\(baseURL)/api/login") else { return }
+        guard let url = URL(string: AppConfig.API.login) else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
 
         let bodyString = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = bodyString.data(using: .utf8)
@@ -831,13 +827,13 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
 
     private func verifyOTP(userId: Int, email: String, otp: String) {
-        guard let url = URL(string: "\(baseURL)/api/otp-verify") else { return }
+        guard let url = URL(string: AppConfig.API.otpVerify) else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
 
-        let params = ["otp": otp, "email": email, "device_type": "1", "device_id": "SAT_IOS_DEVICE"]
+        let params = ["otp": otp, "email": email, "device_type": AppConfig.deviceType, "device_id": AppConfig.deviceId]
         let bodyString = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = bodyString.data(using: .utf8)
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
@@ -856,7 +852,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
 
     private func openWebDashboard(userId: Int) {
-        let targetURL = "\(baseURL)/app-supplier-agent?user_id=\(userId)"
+        let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
         let webVC = WebViewController(initialURLString: targetURL)
         webVC.modalPresentationStyle = .fullScreen
         present(webVC, animated: true)
