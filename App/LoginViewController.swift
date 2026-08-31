@@ -598,13 +598,60 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     @objc private func handleGoogleLogin() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
-        let chooserVC = GoogleAccountChooserViewController()
-        chooserVC.modalPresentationStyle = .overFullScreen
-        chooserVC.modalTransitionStyle = .crossDissolve
-        chooserVC.onAccountSelected = { [weak self] selectedEmail in
-            self?.performSocialLoginRequest(email: selectedEmail)
+        var accounts = UserDefaults.standard.stringArray(forKey: "saved_google_accounts") ?? []
+        let currentFieldEmail = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if currentFieldEmail.contains("@") && !accounts.contains(currentFieldEmail) {
+            accounts.insert(currentFieldEmail, at: 0)
         }
-        present(chooserVC, animated: true)
+
+        let actionSheet = UIAlertController(
+            title: "Sign in with Google",
+            message: "Choose a Gmail account to log in directly to SAT:",
+            preferredStyle: .actionSheet
+        )
+
+        // List each available account for direct 1-tap sign in
+        for email in accounts {
+            let accountAction = UIAlertAction(title: "👤  \(email)", style: .default) { [weak self] _ in
+                self?.performSocialLoginRequest(email: email)
+            }
+            actionSheet.addAction(accountAction)
+        }
+
+        // Option to add/use another Google account
+        let addAccountAction = UIAlertAction(title: "➕  Use another account...", style: .default) { [weak self] _ in
+            self?.promptForNewGoogleAccount()
+        }
+        actionSheet.addAction(addAccountAction)
+
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        // Support iPad popovers
+        if let popover = actionSheet.popoverPresentationController {
+            popover.sourceView = googleLoginButton
+            popover.sourceRect = googleLoginButton.bounds
+        }
+
+        present(actionSheet, animated: true)
+    }
+
+    private func promptForNewGoogleAccount() {
+        let alert = UIAlertController(
+            title: "Add Google Account",
+            message: "Enter your Gmail address to sign in:",
+            preferredStyle: .alert
+        )
+        alert.addTextField { tf in
+            tf.placeholder = "your.email@gmail.com"
+            tf.keyboardType = .emailAddress
+            tf.autocapitalizationType = .none
+        }
+        alert.addAction(UIAlertAction(title: "Sign In", style: .default, handler: { [weak self, weak alert] _ in
+            guard let email = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty else { return }
+            self?.performSocialLoginRequest(email: email)
+        }))
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
     }
 
     private func performSocialLoginRequest(email: String) {
