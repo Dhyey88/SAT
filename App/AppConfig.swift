@@ -29,6 +29,7 @@ struct AppConfig {
         static let socialLogin = "\(baseURL)/api/social-login"
         static let forgotPassword = "\(baseURL)/api/forgot-password"
         static let otpVerification = "\(baseURL)/api/otp-verification"
+        static let checkTrustCode = "\(baseURL)/api/check-trust-code"
         static let resetPassword = "\(baseURL)/api/resent-password"
         static let register = "\(baseURL)/api/register"
         static let otpVerify = "\(baseURL)/api/otp-verify"
