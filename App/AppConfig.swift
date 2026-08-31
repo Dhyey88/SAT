@@ -38,6 +38,9 @@ struct AppConfig {
         static let register = "\(baseURL)/api/register"
         static let otpVerify = "\(baseURL)/api/otp-verify"
         static let deviceHelp = "\(baseURL)/api/get-device-help"
+        static let branchHelp = "\(baseURL)/api/get-branch-help"
+        static let getHelpReg = "\(baseURL)/api/get-help-reg"
+        static let getSettings = "\(baseURL)/api/get-settings"
 
         /// Web Dashboard target URL for authenticated supplier agent sessions
         static func supplierAgentURL(userId: Int) -> String {

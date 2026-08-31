@@ -239,11 +239,22 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let otpVerifyButton = UIButton(type: .system)
     private let otpSpinner = UIActivityIndicatorView(style: .medium)
 
+    // MARK: - Help Modal Dialog (Screenshot 4)
+    private let helpOverlayBackdrop = UIView()
+    private let helpCardContainer = UIView()
+    private let helpHeaderView = UIView()
+    private let helpTitleLabel = UILabel()
+    private let helpCloseButton = UIButton(type: .system)
+    private let helpHeaderDivider = UIView()
+    private let helpTextView = UITextView()
+    private let helpSpinner = UIActivityIndicatorView(style: .medium)
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupKeyboardHandling()
         setupOTPDialogUI()
+        setupHelpDialogUI()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -1110,6 +1121,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         dtParentArrowButton.translatesAutoresizingMaskIntoConstraints = false
         dtParentArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
         dtParentArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        dtParentArrowButton.addTarget(self, action: #selector(handleParentCodeSubmitAndOpenDetails), for: .touchUpInside)
         dtParentRow.addSubview(dtParentArrowButton)
 
         dtParentCheckmark.translatesAutoresizingMaskIntoConstraints = false
@@ -1567,6 +1579,149 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         ])
     }
 
+    // MARK: - Help Modal Dialog (Screenshot 4)
+    private func setupHelpDialogUI() {
+        helpOverlayBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        helpOverlayBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.65)
+        helpOverlayBackdrop.isHidden = true
+        view.addSubview(helpOverlayBackdrop)
+
+        let dismissTap = UITapGestureRecognizer(target: self, action: #selector(handleCloseHelpDialog))
+        helpOverlayBackdrop.addGestureRecognizer(dismissTap)
+
+        helpCardContainer.translatesAutoresizingMaskIntoConstraints = false
+        helpCardContainer.backgroundColor = .white
+        helpCardContainer.layer.cornerRadius = 10
+        helpCardContainer.layer.masksToBounds = true
+        helpOverlayBackdrop.addSubview(helpCardContainer)
+
+        let stopTap = UITapGestureRecognizer(target: nil, action: nil)
+        helpCardContainer.addGestureRecognizer(stopTap)
+
+        // Header
+        helpHeaderView.translatesAutoresizingMaskIntoConstraints = false
+        helpCardContainer.addSubview(helpHeaderView)
+
+        helpTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        helpTitleLabel.text = "Help"
+        helpTitleLabel.textColor = UIColor(red: 45/255, green: 45/255, blue: 45/255, alpha: 1.0)
+        helpTitleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        helpHeaderView.addSubview(helpTitleLabel)
+
+        helpCloseButton.translatesAutoresizingMaskIntoConstraints = false
+        helpCloseButton.setTitle("✕", for: .normal)
+        helpCloseButton.setTitleColor(UIColor(red: 150/255, green: 150/255, blue: 150/255, alpha: 1.0), for: .normal)
+        helpCloseButton.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+        helpCloseButton.addTarget(self, action: #selector(handleCloseHelpDialog), for: .touchUpInside)
+        helpHeaderView.addSubview(helpCloseButton)
+
+        helpHeaderDivider.translatesAutoresizingMaskIntoConstraints = false
+        helpHeaderDivider.backgroundColor = UIColor(red: 235/255, green: 235/255, blue: 235/255, alpha: 1.0)
+        helpCardContainer.addSubview(helpHeaderDivider)
+
+        // Content Text View
+        helpTextView.translatesAutoresizingMaskIntoConstraints = false
+        helpTextView.isEditable = false
+        helpTextView.isSelectable = false
+        helpTextView.backgroundColor = .clear
+        helpTextView.textColor = UIColor(red: 60/255, green: 60/255, blue: 60/255, alpha: 1.0)
+        helpTextView.font = UIFont.systemFont(ofSize: 14.5, weight: .regular)
+        helpTextView.showsVerticalScrollIndicator = true
+        helpCardContainer.addSubview(helpTextView)
+
+        helpSpinner.translatesAutoresizingMaskIntoConstraints = false
+        helpSpinner.hidesWhenStopped = true
+        helpSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        helpCardContainer.addSubview(helpSpinner)
+
+        NSLayoutConstraint.activate([
+            helpOverlayBackdrop.topAnchor.constraint(equalTo: view.topAnchor),
+            helpOverlayBackdrop.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            helpOverlayBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            helpOverlayBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            helpCardContainer.centerXAnchor.constraint(equalTo: helpOverlayBackdrop.centerXAnchor),
+            helpCardContainer.centerYAnchor.constraint(equalTo: helpOverlayBackdrop.centerYAnchor),
+            helpCardContainer.leadingAnchor.constraint(equalTo: helpOverlayBackdrop.leadingAnchor, constant: 20),
+            helpCardContainer.trailingAnchor.constraint(equalTo: helpOverlayBackdrop.trailingAnchor, constant: -20),
+            helpCardContainer.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height * 0.65),
+
+            helpHeaderView.topAnchor.constraint(equalTo: helpCardContainer.topAnchor, constant: 14),
+            helpHeaderView.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor, constant: 18),
+            helpHeaderView.trailingAnchor.constraint(equalTo: helpCardContainer.trailingAnchor, constant: -18),
+            helpHeaderView.heightAnchor.constraint(equalToConstant: 32),
+
+            helpTitleLabel.leadingAnchor.constraint(equalTo: helpHeaderView.leadingAnchor),
+            helpTitleLabel.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
+
+            helpCloseButton.trailingAnchor.constraint(equalTo: helpHeaderView.trailingAnchor),
+            helpCloseButton.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
+            helpCloseButton.widthAnchor.constraint(equalToConstant: 30),
+            helpCloseButton.heightAnchor.constraint(equalToConstant: 30),
+
+            helpHeaderDivider.topAnchor.constraint(equalTo: helpHeaderView.bottomAnchor, constant: 10),
+            helpHeaderDivider.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor),
+            helpHeaderDivider.trailingAnchor.constraint(equalTo: helpCardContainer.trailingAnchor),
+            helpHeaderDivider.heightAnchor.constraint(equalToConstant: 1),
+
+            helpTextView.topAnchor.constraint(equalTo: helpHeaderDivider.bottomAnchor, constant: 10),
+            helpTextView.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor, constant: 16),
+            helpTextView.trailingAnchor.constraint(equalTo: helpCardContainer.trailingAnchor, constant: -16),
+            helpTextView.bottomAnchor.constraint(equalTo: helpCardContainer.bottomAnchor, constant: -16),
+
+            helpSpinner.centerXAnchor.constraint(equalTo: helpCardContainer.centerXAnchor),
+            helpSpinner.centerYAnchor.constraint(equalTo: helpCardContainer.centerYAnchor)
+        ])
+    }
+
+    private func presentHelpModal(title: String = "Help", defaultText: String, apiEndpoint: String? = nil, postParams: [String: String]? = nil) {
+        view.endEditing(true)
+        helpTitleLabel.text = title
+        helpTextView.text = defaultText
+        helpTextView.setContentOffset(.zero, animated: false)
+
+        helpOverlayBackdrop.alpha = 0
+        helpOverlayBackdrop.isHidden = false
+        UIView.animate(withDuration: 0.25) {
+            self.helpOverlayBackdrop.alpha = 1.0
+        }
+
+        guard let endpoint = apiEndpoint, let url = URL(string: endpoint) else { return }
+
+        helpSpinner.startAnimating()
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let params = postParams ?? [:]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.helpSpinner.stopAnimating()
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let dataObj = json["data"] as? [String: Any],
+                      let helpStr = dataObj["help"] as? String,
+                      !helpStr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    return
+                }
+                self.helpTextView.text = helpStr.replacingOccurrences(of: "\\r\\n", with: "\n").replacingOccurrences(of: "\r\n", with: "\n")
+            }
+        }.resume()
+    }
+
+    @objc private func handleCloseHelpDialog() {
+        UIView.animate(withDuration: 0.2, animations: {
+            self.helpOverlayBackdrop.alpha = 0
+        }) { _ in
+            self.helpOverlayBackdrop.isHidden = true
+        }
+    }
+
     // MARK: - Actions & Network Calls
 
     // Step 1: Check Trust Code (POST /api/check-trust-code)
@@ -1611,11 +1766,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                 }
 
                 let status = json["status"] as? Bool ?? false
-                let apiMessage = self.extractMessage(from: json, fallback: "Please enter valid trust code. Contact helpline.")
+                let dataDict = (json["data"] as? [String: Any]) ?? (json["response"] as? [String: Any])
+                let merchantId = (dataDict?["id"] as? Int) ?? (dataDict?["merchant_id"] as? Int) ?? 0
 
-                if status {
-                    let dataObj = (json["data"] as? [String: Any]) ?? (json["response"] as? [String: Any]) ?? [:]
-                    self.verifiedMerchantId = (dataObj["id"] as? Int) ?? (dataObj["merchant_id"] as? Int) ?? 6
+                // Strict validation: merchant must exist and have a valid non-zero ID
+                if status && dataDict != nil && merchantId > 0 {
+                    let dataObj = dataDict!
+                    self.verifiedMerchantId = merchantId
                     self.verifiedMerchantName = (dataObj["name"] as? String) ?? "SHRI ANANDPUR TRUST"
                     self.verifiedRoleId = (dataObj["role_id"] as? Int) ?? 0
 
@@ -1643,13 +1800,14 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                     self.midEmailField.becomeFirstResponder()
                 } else {
                     self.initTrustUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+                    let apiMessage = self.extractMessage(from: json, fallback: "Please enter valid trust code. Contact helpline.")
                     self.showBannerError(apiMessage)
                 }
             }
         }.resume()
     }
 
-    // Step 2: Verify Email first, then reveal Mobile field (Chart Flow)
+    // Step 2: Verify Email first via API (POST /api/check-email), then reveal Mobile field (Chart Flow)
     @objc private func handleEmailVerifyAndRevealMobile() {
         view.endEditing(true)
         let email = midEmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -1664,28 +1822,58 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midEmailArrowButton.isHidden = true
         midEmailSpinner.startAnimating()
 
-        // Verify Email Format & Readiness
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            guard let self = self else { return }
-            self.midEmailSpinner.stopAnimating()
-            self.midEmailArrowButton.isHidden = false
+        guard let url = URL(string: AppConfig.API.checkEmail) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-            self.isEmailVerified = true
-            self.midEmailCheckmark.isHidden = false
-            self.midEmailUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        let params = ["email": email, "device_type": AppConfig.deviceType, "mobile_device_id": AppConfig.mobileDeviceId]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
 
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.midEmailSpinner.stopAnimating()
+                self.midEmailArrowButton.isHidden = false
 
-            // Expand mid card to show Mobile Row
-            self.midEmailToBottomConstraint?.isActive = false
-            self.midMobileToBottomConstraint?.isActive = true
+                if let error = error {
+                    self.showBannerError("Network error: \(error.localizedDescription)")
+                    return
+                }
 
-            UIView.animate(withDuration: 0.3) {
-                self.midMobileRowView.isHidden = false
-                self.view.layoutIfNeeded()
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    self.showBannerError("Invalid response from server.")
+                    return
+                }
+
+                let status = json["status"] as? Bool ?? false
+                let apiMessage = self.extractMessage(from: json, fallback: "Email already exists or is invalid.")
+
+                if status {
+                    self.isEmailVerified = true
+                    self.midEmailCheckmark.isHidden = false
+                    self.midEmailUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+                    // Expand mid card to show Mobile Row
+                    self.midEmailToBottomConstraint?.isActive = false
+                    self.midMobileToBottomConstraint?.isActive = true
+
+                    UIView.animate(withDuration: 0.3) {
+                        self.midMobileRowView.isHidden = false
+                        self.view.layoutIfNeeded()
+                    }
+                    self.midMobileField.becomeFirstResponder()
+                } else {
+                    self.midEmailUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+                    self.showBannerError(apiMessage)
+                }
             }
-            self.midMobileField.becomeFirstResponder()
-        }
+        }.resume()
     }
 
     // Step 3: Send OTP for Mobile (POST /api/register-otp-send)
@@ -2150,42 +2338,93 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         errorBanner.isHidden = true
     }
 
+    // MARK: - Custom Info Modal Handlers
     @objc private func showTrustInfo() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        showHelpAlert(
-            title: "Trust/Institution Code",
-            message: "A unique identification code assigned to your trust or branch. Contact your Trust Head Office if you do not have one."
-        )
+        let fallbackText = """
+        Welcome !
+
+        To Use this app for purposes of Data entry & submission to your office press the button 'Login by Gmail' and:
+
+        1. Enter the pre-approved Trust code of your organization and press ->
+
+        2. Enter your Branchid or Office id.
+
+        3. Enter User and Branch details.
+
+        4. Click Register to proceed.
+
+        5. App will be ready for use once the sign up request is approved by the authorised staff of the said Trust/Institution/Company.
+
+        Notes :
+        1. Register one userid on one mobile device.
+         
+        2. The privacy policy and the contact details of the Trust code organization, applicable on signup only, are as on its website.
+
+        3. To use the app for Scan & Share without signup touch on the eScan.
+
+        4. To Register Trust/Institution code write to : manojarora_2000@yahoo.com ; info@enin.io
+        """
+        presentHelpModal(title: "Help", defaultText: fallbackText, apiEndpoint: AppConfig.API.getHelpReg)
     }
 
     @objc private func showEmailInfo() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        showHelpAlert(
-            title: "Email Address",
-            message: "Enter your official email address to receive important registration updates and notifications."
-        )
+        let fallbackText = """
+        Welcome !
+
+        Email Address Verification:
+
+        1. Enter your official and active email address.
+
+        2. Press -> to verify that your email is unique and valid in the system.
+
+        3. This email will be used for your account credentials, notifications, and password recovery.
+        """
+        presentHelpModal(title: "Help", defaultText: fallbackText)
     }
 
     @objc private func showMobileInfo() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        showHelpAlert(
-            title: "Mobile Phone Verification",
-            message: "Enter your 10-digit mobile number to receive a secure One-Time Password (OTP) for account verification."
+        let fallbackText = """
+        Welcome !
+
+        Mobile Phone Verification:
+
+        1. Enter your active 10-digit mobile number.
+
+        2. Press -> to receive a secure 4-digit One-Time Password (OTP) via SMS.
+
+        3. Enter the received OTP in the popup dialog to verify your device.
+
+        Notes :
+        1. Register one userid on one mobile device.
+        """
+        presentHelpModal(
+            title: "Help",
+            defaultText: fallbackText,
+            apiEndpoint: AppConfig.API.deviceHelp,
+            postParams: ["merchant_id": "\(verifiedMerchantId)"]
         )
     }
 
     @objc private func showParentInfo() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        showHelpAlert(
-            title: "Main/Parent Branch Code",
-            message: "Enter the code or ID of your parent Head Office branch."
-        )
-    }
+        let fallbackText = """
+        Welcome !
 
-    private func showHelpAlert(title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
+        Main/Parent Branch Code:
+
+        1. Enter the pre-approved Main/Parent Branch Code (e.g. 0001 or 6) provided by your Head Office.
+
+        2. Press -> to verify your Branch association and open the complete User Details registration form.
+        """
+        presentHelpModal(
+            title: "Help",
+            defaultText: fallbackText,
+            apiEndpoint: AppConfig.API.branchHelp,
+            postParams: ["merchant_id": "\(verifiedMerchantId)"]
+        )
     }
 
     @objc private func dismissKeyboard() {
