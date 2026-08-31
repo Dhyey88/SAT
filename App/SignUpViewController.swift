@@ -4,81 +4,87 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
 
     var onSignUpSuccess: ((String) -> Void)?
 
-    // MARK: - Validation & Progressive Data State
+    // MARK: - Verified State
     private var verifiedMerchantId: Int = 6
     private var verifiedMerchantName: String = "SHRI ANANDPUR TRUST"
     private var verifiedRoleId: Int = 0
-
-    private var isTrustCodeVerified = false
-    private var isEmailVerified = false
-    private var isMobileVerified = false
 
     // Countdown Timer for OTP Dialog
     private var otpTimer: Timer?
     private var otpRemainingSeconds = 30
 
-    // MARK: - Main UI Components
+    // MARK: - Main UI Containers
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
     private let headerTitleLabel = UILabel()
     private let errorBanner = UIView()
     private let errorLabel = UILabel()
-
-    // White Main Card & Bottom Bar
-    private let cardContainer = UIView()
-    private let cardContentStack = UIStackView()
-    private let bottomActionBar = UIView()
-    private let cancelButton = UIButton(type: .system)
-    private let registerBranchButton = UIButton(type: .system)
-    private let actionSpinner = UIActivityIndicatorView(style: .medium)
     private let versionLabel = UILabel()
 
-    // MARK: - Row 1: Trust/Institution Code
-    private let trustRowView = UIView()
-    private let trustBadgeIcon = UIView()
-    private let trustBadgeSubIcon = UIImageView()
-    private let trustTitleLabel = UILabel()
-    private let trustCodeField = UITextField()
-    private let trustUnderline = UIView()
-    private let trustCheckmark = UIImageView()
-    private let trustArrowButton = UIButton(type: .system)
-    private let trustInfoButton = UIButton(type: .system)
-    private let trustSpinner = UIActivityIndicatorView(style: .medium)
+    // MARK: - Card 1: Initial Card (Screenshot 1: Trust Code only)
+    private let initialCardView = UIView()
+    private let initTrustBadge = UIView()
+    private let initTrustBadgeIcon = UIImageView()
+    private let initTrustTitleLabel = UILabel()
+    private let initTrustCodeField = UITextField()
+    private let initTrustUnderline = UIView()
+    private let initTrustArrowButton = UIButton(type: .system)
+    private let initTrustInfoButton = UIButton(type: .system)
+    private let initTrustSpinner = UIActivityIndicatorView(style: .medium)
+    private let initBottomBar = UIView()
+    private let initCancelButton = UIButton(type: .system)
 
-    // MARK: - Row 2: Center Circular Emblem Logo
-    private let emblemContainer = UIView()
+    // MARK: - Card 2: Expanded Card (Screenshot 2: All Rows + Emblem Logo)
+    private let expandedCardView = UIView()
+
+    // 1. Trust Code Row (Verified with Checkmark)
+    private let expTrustRowView = UIView()
+    private let expTrustBadge = UIView()
+    private let expTrustBadgeIcon = UIImageView()
+    private let expTrustTitleLabel = UILabel()
+    private let expTrustCodeField = UITextField()
+    private let expTrustUnderline = UIView()
+    private let expTrustCheckmark = UIImageView()
+    private let expTrustArrowButton = UIButton(type: .system)
+    private let expTrustInfoButton = UIButton(type: .system)
+
+    // 2. Emblem Logo
     private let emblemImageView = UIImageView()
 
-    // MARK: - Row 3: Email
-    private let emailRowView = UIView()
-    private let emailIcon = UIImageView()
-    private let emailTitleLabel = UILabel()
-    private let emailField = UITextField()
-    private let emailUnderline = UIView()
-    private let emailCheckmark = UIImageView()
-    private let emailSpinner = UIActivityIndicatorView(style: .medium)
+    // 3. Email Row
+    private let expEmailRowView = UIView()
+    private let expEmailIcon = UIImageView()
+    private let expEmailTitleLabel = UILabel()
+    private let expEmailField = UITextField()
+    private let expEmailUnderline = UIView()
+    private let expEmailCheckmark = UIImageView()
 
-    // MARK: - Row 4: Mobile Phone
-    private let mobileRowView = UIView()
-    private let mobileIcon = UIImageView()
-    private let mobileTitleLabel = UILabel()
-    private let mobileField = UITextField()
-    private let mobileUnderline = UIView()
-    private let mobileCheckmark = UIImageView()
-    private let mobileArrowButton = UIButton(type: .system)
-    private let mobileInfoButton = UIButton(type: .system)
-    private let mobileSpinner = UIActivityIndicatorView(style: .medium)
+    // 4. Mobile Phone Row
+    private let expMobileRowView = UIView()
+    private let expMobileIcon = UIImageView()
+    private let expMobileTitleLabel = UILabel()
+    private let expMobileField = UITextField()
+    private let expMobileUnderline = UIView()
+    private let expMobileCheckmark = UIImageView()
+    private let expMobileArrowButton = UIButton(type: .system)
+    private let expMobileInfoButton = UIButton(type: .system)
+    private let expMobileSpinner = UIActivityIndicatorView(style: .medium)
 
-    // MARK: - Row 5: Enter Main/Parent Branch Code#
-    private let parentRowView = UIView()
-    private let parentIcon = UIImageView()
-    private let parentTitleLabel = UILabel()
-    private let parentCodeField = UITextField()
-    private let parentUnderline = UIView()
-    private let parentArrowButton = UIButton(type: .system)
-    private let parentInfoButton = UIButton(type: .system)
-    private let parentSpinner = UIActivityIndicatorView(style: .medium)
+    // 5. Parent Branch Code Row
+    private let expParentRowView = UIView()
+    private let expParentIcon = UIImageView()
+    private let expParentTitleLabel = UILabel()
+    private let expParentCodeField = UITextField()
+    private let expParentUnderline = UIView()
+    private let expParentArrowButton = UIButton(type: .system)
+    private let expParentInfoButton = UIButton(type: .system)
+
+    // Expanded Bottom Bar
+    private let expBottomBar = UIView()
+    private let expCancelButton = UIButton(type: .system)
+    private let expRegisterButton = UIButton(type: .system)
+    private let expRegisterSpinner = UIActivityIndicatorView(style: .medium)
 
     // MARK: - Floating OTP Verification Modal Dialog (Screenshot 3)
     private let otpOverlayBackdrop = UIView()
@@ -109,12 +115,12 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Main Layout
+    // MARK: - Main UI Construction
     private func setupUI() {
-        // Deep Royal Blue Canvas (#133B7C)
+        // Deep Royal Blue (#133B7C)
         view.backgroundColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
 
-        // 1. Scroll & Content View
+        // 1. ScrollView & ContentView
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.keyboardDismissMode = .interactive
         scrollView.alwaysBounceVertical = true
@@ -126,7 +132,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
 
-        // 2. Top "Sign Up" Header
+        // 2. Header Title ("Sign Up")
         headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerTitleLabel.text = "Sign Up"
         headerTitleLabel.textColor = .white
@@ -134,7 +140,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         headerTitleLabel.textAlignment = .center
         contentView.addSubview(headerTitleLabel)
 
-        // 3. Error Banner (Appears dynamically upon validation failure)
+        // 3. Error Banner
         errorBanner.translatesAutoresizingMaskIntoConstraints = false
         errorBanner.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 0.95)
         errorBanner.layer.cornerRadius = 6
@@ -149,32 +155,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         errorLabel.numberOfLines = 0
         errorBanner.addSubview(errorLabel)
 
-        // 4. White Card Container
-        cardContainer.translatesAutoresizingMaskIntoConstraints = false
-        cardContainer.backgroundColor = .white
-        cardContainer.layer.cornerRadius = 18
-        cardContainer.layer.masksToBounds = true
-        contentView.addSubview(cardContainer)
+        // 4. Build Initial Card (Screenshot 1)
+        buildInitialCard()
 
-        // Card Content Stack (Vertical UIStackView for flawless dynamic expansion)
-        cardContentStack.translatesAutoresizingMaskIntoConstraints = false
-        cardContentStack.axis = .vertical
-        cardContentStack.spacing = 16
-        cardContentStack.alignment = .fill
-        cardContentStack.distribution = .fill
-        cardContainer.addSubview(cardContentStack)
+        // 5. Build Expanded Card (Screenshot 2)
+        buildExpandedCard()
 
-        // Build All Progressive Rows
-        buildTrustRow()
-        buildEmblemRow()
-        buildEmailRow()
-        buildMobileRow()
-        buildParentRow()
-
-        // Build Card Bottom Action Bar
-        buildBottomActionBar()
-
-        // 5. Version Label (Bottom Right: "v t 2.0.10")
+        // 6. Version Label ("v t 2.0.10")
         versionLabel.translatesAutoresizingMaskIntoConstraints = false
         versionLabel.text = "v t 2.0.10"
         versionLabel.textColor = UIColor.white.withAlphaComponent(0.65)
@@ -182,7 +169,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         versionLabel.textAlignment = .right
         view.addSubview(versionLabel)
 
-        // Main Layout Constraints
+        // Base Layout Constraints
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -207,145 +194,197 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             errorLabel.trailingAnchor.constraint(equalTo: errorBanner.trailingAnchor, constant: -12),
             errorLabel.bottomAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: -8),
 
-            cardContainer.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 12),
-            cardContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            cardContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            cardContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -50),
-
-            cardContentStack.topAnchor.constraint(equalTo: cardContainer.topAnchor, constant: 20),
-            cardContentStack.leadingAnchor.constraint(equalTo: cardContainer.leadingAnchor, constant: 18),
-            cardContentStack.trailingAnchor.constraint(equalTo: cardContainer.trailingAnchor, constant: -18),
-
-            bottomActionBar.topAnchor.constraint(equalTo: cardContentStack.bottomAnchor, constant: 20),
-            bottomActionBar.leadingAnchor.constraint(equalTo: cardContainer.leadingAnchor),
-            bottomActionBar.trailingAnchor.constraint(equalTo: cardContainer.trailingAnchor),
-            bottomActionBar.bottomAnchor.constraint(equalTo: cardContainer.bottomAnchor),
-            bottomActionBar.heightAnchor.constraint(equalToConstant: 54),
-
             versionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             versionLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10)
         ])
     }
 
-    // MARK: - Row 1: Trust/Institution Code
-    private func buildTrustRow() {
-        trustRowView.translatesAutoresizingMaskIntoConstraints = false
+    // MARK: - Card 1: Initial Card (Screenshot 1)
+    private func buildInitialCard() {
+        initialCardView.translatesAutoresizingMaskIntoConstraints = false
+        initialCardView.backgroundColor = .white
+        initialCardView.layer.cornerRadius = 18
+        initialCardView.layer.masksToBounds = true
+        contentView.addSubview(initialCardView)
 
         // Pink ID Badge Icon
-        trustBadgeIcon.translatesAutoresizingMaskIntoConstraints = false
-        trustBadgeIcon.backgroundColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 0.85) // Pink
-        trustBadgeIcon.layer.cornerRadius = 6
-        trustBadgeIcon.layer.masksToBounds = true
-        trustRowView.addSubview(trustBadgeIcon)
+        initTrustBadge.translatesAutoresizingMaskIntoConstraints = false
+        initTrustBadge.backgroundColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 0.85)
+        initTrustBadge.layer.cornerRadius = 6
+        initTrustBadge.layer.masksToBounds = true
+        initialCardView.addSubview(initTrustBadge)
 
-        trustBadgeSubIcon.translatesAutoresizingMaskIntoConstraints = false
-        trustBadgeSubIcon.image = UIImage(systemName: "person.crop.rectangle.fill") ?? UIImage(systemName: "person.fill")
-        trustBadgeSubIcon.tintColor = .white
-        trustBadgeSubIcon.contentMode = .scaleAspectFit
-        trustBadgeIcon.addSubview(trustBadgeSubIcon)
+        initTrustBadgeIcon.translatesAutoresizingMaskIntoConstraints = false
+        initTrustBadgeIcon.image = UIImage(systemName: "person.crop.rectangle.fill") ?? UIImage(systemName: "person.fill")
+        initTrustBadgeIcon.tintColor = .white
+        initTrustBadgeIcon.contentMode = .scaleAspectFit
+        initTrustBadge.addSubview(initTrustBadgeIcon)
 
         // Label: "Trust/Institution code*"
-        trustTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        trustTitleLabel.attributedText = createRequiredLabel("Trust/Institution code")
-        trustRowView.addSubview(trustTitleLabel)
+        initTrustTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        initTrustTitleLabel.attributedText = createRequiredLabel("Trust/Institution code")
+        initialCardView.addSubview(initTrustTitleLabel)
 
         // Text Input
-        trustCodeField.translatesAutoresizingMaskIntoConstraints = false
-        trustCodeField.placeholder = "Type your trust code"
-        trustCodeField.text = "SAT6677"
-        trustCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        trustCodeField.font = UIFont.systemFont(ofSize: 15.5, weight: .semibold)
-        trustCodeField.autocapitalizationType = .allCharacters
-        trustCodeField.autocorrectionType = .no
-        trustCodeField.returnKeyType = .done
-        trustCodeField.delegate = self
-        trustCodeField.addTarget(self, action: #selector(trustCodeEditingChanged), for: .editingChanged)
-        trustRowView.addSubview(trustCodeField)
+        initTrustCodeField.translatesAutoresizingMaskIntoConstraints = false
+        initTrustCodeField.placeholder = "Type your trust code"
+        initTrustCodeField.text = "SAT6677"
+        initTrustCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        initTrustCodeField.font = UIFont.systemFont(ofSize: 15.5, weight: .semibold)
+        initTrustCodeField.autocapitalizationType = .allCharacters
+        initTrustCodeField.autocorrectionType = .no
+        initTrustCodeField.returnKeyType = .done
+        initTrustCodeField.delegate = self
+        initTrustCodeField.addTarget(self, action: #selector(clearBannerError), for: .editingChanged)
+        initialCardView.addSubview(initTrustCodeField)
 
         // Blue Underline
-        trustUnderline.translatesAutoresizingMaskIntoConstraints = false
-        trustUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        trustRowView.addSubview(trustUnderline)
-
-        // Green Checkmark
-        trustCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        trustCheckmark.image = UIImage(systemName: "checkmark")
-        trustCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        trustCheckmark.isHidden = true
-        trustRowView.addSubview(trustCheckmark)
+        initTrustUnderline.translatesAutoresizingMaskIntoConstraints = false
+        initTrustUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        initialCardView.addSubview(initTrustUnderline)
 
         // Arrow Button
-        trustArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        trustArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        trustArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        trustArrowButton.addTarget(self, action: #selector(handleTrustCodeSubmit), for: .touchUpInside)
-        trustRowView.addSubview(trustArrowButton)
+        initTrustArrowButton.translatesAutoresizingMaskIntoConstraints = false
+        initTrustArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
+        initTrustArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        initTrustArrowButton.addTarget(self, action: #selector(handleTrustCodeSubmit), for: .touchUpInside)
+        initialCardView.addSubview(initTrustArrowButton)
 
         // Info Button
-        trustInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        trustInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        trustInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        trustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
-        trustRowView.addSubview(trustInfoButton)
+        initTrustInfoButton.translatesAutoresizingMaskIntoConstraints = false
+        initTrustInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        initTrustInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        initTrustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
+        initialCardView.addSubview(initTrustInfoButton)
 
         // Spinner
-        trustSpinner.translatesAutoresizingMaskIntoConstraints = false
-        trustSpinner.hidesWhenStopped = true
-        trustSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        trustRowView.addSubview(trustSpinner)
+        initTrustSpinner.translatesAutoresizingMaskIntoConstraints = false
+        initTrustSpinner.hidesWhenStopped = true
+        initTrustSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        initialCardView.addSubview(initTrustSpinner)
+
+        // Bottom Bar
+        initBottomBar.translatesAutoresizingMaskIntoConstraints = false
+        initBottomBar.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        initialCardView.addSubview(initBottomBar)
+
+        initCancelButton.translatesAutoresizingMaskIntoConstraints = false
+        initCancelButton.setTitle("Cancel", for: .normal)
+        initCancelButton.setTitleColor(.white, for: .normal)
+        initCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        initCancelButton.addTarget(self, action: #selector(handleCancelTap), for: .touchUpInside)
+        initBottomBar.addSubview(initCancelButton)
 
         NSLayoutConstraint.activate([
-            trustBadgeIcon.leadingAnchor.constraint(equalTo: trustRowView.leadingAnchor),
-            trustBadgeIcon.topAnchor.constraint(equalTo: trustRowView.topAnchor, constant: 4),
-            trustBadgeIcon.widthAnchor.constraint(equalToConstant: 34),
-            trustBadgeIcon.heightAnchor.constraint(equalToConstant: 24),
+            initialCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 12),
+            initialCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            initialCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            initialCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -50),
 
-            trustBadgeSubIcon.centerXAnchor.constraint(equalTo: trustBadgeIcon.centerXAnchor),
-            trustBadgeSubIcon.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
-            trustBadgeSubIcon.widthAnchor.constraint(equalToConstant: 20),
-            trustBadgeSubIcon.heightAnchor.constraint(equalToConstant: 16),
+            initTrustBadge.leadingAnchor.constraint(equalTo: initialCardView.leadingAnchor, constant: 18),
+            initTrustBadge.topAnchor.constraint(equalTo: initialCardView.topAnchor, constant: 24),
+            initTrustBadge.widthAnchor.constraint(equalToConstant: 34),
+            initTrustBadge.heightAnchor.constraint(equalToConstant: 24),
 
-            trustTitleLabel.leadingAnchor.constraint(equalTo: trustBadgeIcon.trailingAnchor, constant: 12),
-            trustTitleLabel.topAnchor.constraint(equalTo: trustRowView.topAnchor),
+            initTrustBadgeIcon.centerXAnchor.constraint(equalTo: initTrustBadge.centerXAnchor),
+            initTrustBadgeIcon.centerYAnchor.constraint(equalTo: initTrustBadge.centerYAnchor),
+            initTrustBadgeIcon.widthAnchor.constraint(equalToConstant: 20),
+            initTrustBadgeIcon.heightAnchor.constraint(equalToConstant: 16),
 
-            trustCodeField.leadingAnchor.constraint(equalTo: trustBadgeIcon.trailingAnchor, constant: 12),
-            trustCodeField.topAnchor.constraint(equalTo: trustTitleLabel.bottomAnchor, constant: 4),
-            trustCodeField.trailingAnchor.constraint(equalTo: trustCheckmark.leadingAnchor, constant: -8),
-            trustCodeField.heightAnchor.constraint(equalToConstant: 28),
+            initTrustTitleLabel.leadingAnchor.constraint(equalTo: initTrustBadge.trailingAnchor, constant: 12),
+            initTrustTitleLabel.topAnchor.constraint(equalTo: initialCardView.topAnchor, constant: 20),
 
-            trustUnderline.leadingAnchor.constraint(equalTo: trustCodeField.leadingAnchor),
-            trustUnderline.trailingAnchor.constraint(equalTo: trustCodeField.trailingAnchor),
-            trustUnderline.topAnchor.constraint(equalTo: trustCodeField.bottomAnchor, constant: 2),
-            trustUnderline.heightAnchor.constraint(equalToConstant: 1.5),
-            trustUnderline.bottomAnchor.constraint(equalTo: trustRowView.bottomAnchor, constant: -2),
+            initTrustCodeField.leadingAnchor.constraint(equalTo: initTrustBadge.trailingAnchor, constant: 12),
+            initTrustCodeField.topAnchor.constraint(equalTo: initTrustTitleLabel.bottomAnchor, constant: 4),
+            initTrustCodeField.trailingAnchor.constraint(equalTo: initTrustArrowButton.leadingAnchor, constant: -8),
+            initTrustCodeField.heightAnchor.constraint(equalToConstant: 28),
 
-            trustInfoButton.trailingAnchor.constraint(equalTo: trustRowView.trailingAnchor),
-            trustInfoButton.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
-            trustInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            trustInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            initTrustUnderline.leadingAnchor.constraint(equalTo: initTrustCodeField.leadingAnchor),
+            initTrustUnderline.trailingAnchor.constraint(equalTo: initTrustCodeField.trailingAnchor),
+            initTrustUnderline.topAnchor.constraint(equalTo: initTrustCodeField.bottomAnchor, constant: 2),
+            initTrustUnderline.heightAnchor.constraint(equalToConstant: 1.5),
 
-            trustArrowButton.trailingAnchor.constraint(equalTo: trustInfoButton.leadingAnchor, constant: -6),
-            trustArrowButton.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
-            trustArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            trustArrowButton.heightAnchor.constraint(equalToConstant: 26),
+            initTrustInfoButton.trailingAnchor.constraint(equalTo: initialCardView.trailingAnchor, constant: -18),
+            initTrustInfoButton.centerYAnchor.constraint(equalTo: initTrustBadge.centerYAnchor),
+            initTrustInfoButton.widthAnchor.constraint(equalToConstant: 26),
+            initTrustInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
-            trustCheckmark.trailingAnchor.constraint(equalTo: trustArrowButton.leadingAnchor, constant: -6),
-            trustCheckmark.centerYAnchor.constraint(equalTo: trustBadgeIcon.centerYAnchor),
-            trustCheckmark.widthAnchor.constraint(equalToConstant: 20),
-            trustCheckmark.heightAnchor.constraint(equalToConstant: 20),
+            initTrustArrowButton.trailingAnchor.constraint(equalTo: initTrustInfoButton.leadingAnchor, constant: -8),
+            initTrustArrowButton.centerYAnchor.constraint(equalTo: initTrustBadge.centerYAnchor),
+            initTrustArrowButton.widthAnchor.constraint(equalToConstant: 26),
+            initTrustArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
-            trustSpinner.centerXAnchor.constraint(equalTo: trustArrowButton.centerXAnchor),
-            trustSpinner.centerYAnchor.constraint(equalTo: trustArrowButton.centerYAnchor)
+            initTrustSpinner.centerXAnchor.constraint(equalTo: initTrustArrowButton.centerXAnchor),
+            initTrustSpinner.centerYAnchor.constraint(equalTo: initTrustArrowButton.centerYAnchor),
+
+            initBottomBar.topAnchor.constraint(equalTo: initTrustUnderline.bottomAnchor, constant: 36),
+            initBottomBar.leadingAnchor.constraint(equalTo: initialCardView.leadingAnchor),
+            initBottomBar.trailingAnchor.constraint(equalTo: initialCardView.trailingAnchor),
+            initBottomBar.bottomAnchor.constraint(equalTo: initialCardView.bottomAnchor),
+            initBottomBar.heightAnchor.constraint(equalToConstant: 54),
+
+            initCancelButton.leadingAnchor.constraint(equalTo: initBottomBar.leadingAnchor, constant: 20),
+            initCancelButton.centerYAnchor.constraint(equalTo: initBottomBar.centerYAnchor)
         ])
-
-        cardContentStack.addArrangedSubview(trustRowView)
     }
 
-    // MARK: - Row 2: Center Circular Emblem Logo (Revealed on Trust Verify)
-    private func buildEmblemRow() {
-        emblemContainer.translatesAutoresizingMaskIntoConstraints = false
-        emblemContainer.isHidden = true // Hidden initially, reveals after Trust verification
+    // MARK: - Card 2: Expanded Card (Screenshot 2)
+    private func buildExpandedCard() {
+        expandedCardView.translatesAutoresizingMaskIntoConstraints = false
+        expandedCardView.backgroundColor = .white
+        expandedCardView.layer.cornerRadius = 18
+        expandedCardView.layer.masksToBounds = true
+        expandedCardView.isHidden = true // Revealed after Trust code is verified
+        contentView.addSubview(expandedCardView)
 
+        // 1. Trust Row
+        expTrustRowView.translatesAutoresizingMaskIntoConstraints = false
+        expandedCardView.addSubview(expTrustRowView)
+
+        expTrustBadge.translatesAutoresizingMaskIntoConstraints = false
+        expTrustBadge.backgroundColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 0.85)
+        expTrustBadge.layer.cornerRadius = 6
+        expTrustBadge.layer.masksToBounds = true
+        expTrustRowView.addSubview(expTrustBadge)
+
+        expTrustBadgeIcon.translatesAutoresizingMaskIntoConstraints = false
+        expTrustBadgeIcon.image = UIImage(systemName: "person.crop.rectangle.fill") ?? UIImage(systemName: "person.fill")
+        expTrustBadgeIcon.tintColor = .white
+        expTrustBadgeIcon.contentMode = .scaleAspectFit
+        expTrustBadge.addSubview(expTrustBadgeIcon)
+
+        expTrustTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        expTrustTitleLabel.attributedText = createRequiredLabel("Trust/Institution code")
+        expTrustRowView.addSubview(expTrustTitleLabel)
+
+        expTrustCodeField.translatesAutoresizingMaskIntoConstraints = false
+        expTrustCodeField.text = "SAT6677"
+        expTrustCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        expTrustCodeField.font = UIFont.systemFont(ofSize: 15.5, weight: .semibold)
+        expTrustCodeField.isEnabled = false
+        expTrustRowView.addSubview(expTrustCodeField)
+
+        expTrustUnderline.translatesAutoresizingMaskIntoConstraints = false
+        expTrustUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        expTrustRowView.addSubview(expTrustUnderline)
+
+        expTrustCheckmark.translatesAutoresizingMaskIntoConstraints = false
+        expTrustCheckmark.image = UIImage(systemName: "checkmark")
+        expTrustCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        expTrustRowView.addSubview(expTrustCheckmark)
+
+        expTrustArrowButton.translatesAutoresizingMaskIntoConstraints = false
+        expTrustArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
+        expTrustArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        expTrustRowView.addSubview(expTrustArrowButton)
+
+        expTrustInfoButton.translatesAutoresizingMaskIntoConstraints = false
+        expTrustInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        expTrustInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        expTrustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
+        expTrustRowView.addSubview(expTrustInfoButton)
+
+        // 2. Emblem Logo
         emblemImageView.translatesAutoresizingMaskIntoConstraints = false
         if let emblem = UIImage(named: "trust_emblem") ?? UIImage(named: "AppIcon-1024") ?? UIImage(named: "AppIcon") {
             emblemImageView.image = emblem
@@ -353,325 +392,331 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             emblemImageView.image = UIImage(systemName: "seal.fill")
         }
         emblemImageView.contentMode = .scaleAspectFit
-        emblemContainer.addSubview(emblemImageView)
+        expandedCardView.addSubview(emblemImageView)
+
+        // 3. Email Row
+        expEmailRowView.translatesAutoresizingMaskIntoConstraints = false
+        expandedCardView.addSubview(expEmailRowView)
+
+        expEmailIcon.translatesAutoresizingMaskIntoConstraints = false
+        expEmailIcon.image = UIImage(systemName: "envelope.fill")
+        expEmailIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        expEmailRowView.addSubview(expEmailIcon)
+
+        expEmailTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        expEmailTitleLabel.attributedText = createRequiredLabel("Email")
+        expEmailRowView.addSubview(expEmailTitleLabel)
+
+        expEmailField.translatesAutoresizingMaskIntoConstraints = false
+        expEmailField.placeholder = "Type your email address"
+        expEmailField.text = "dhyey.k@latitudetechnolabs.org"
+        expEmailField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        expEmailField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        expEmailField.keyboardType = .emailAddress
+        expEmailField.autocapitalizationType = .none
+        expEmailField.autocorrectionType = .no
+        expEmailField.delegate = self
+        expEmailRowView.addSubview(expEmailField)
+
+        expEmailUnderline.translatesAutoresizingMaskIntoConstraints = false
+        expEmailUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        expEmailRowView.addSubview(expEmailUnderline)
+
+        expEmailCheckmark.translatesAutoresizingMaskIntoConstraints = false
+        expEmailCheckmark.image = UIImage(systemName: "checkmark")
+        expEmailCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        expEmailCheckmark.isHidden = true
+        expEmailRowView.addSubview(expEmailCheckmark)
+
+        // 4. Mobile Phone Row
+        expMobileRowView.translatesAutoresizingMaskIntoConstraints = false
+        expandedCardView.addSubview(expMobileRowView)
+
+        expMobileIcon.translatesAutoresizingMaskIntoConstraints = false
+        expMobileIcon.image = UIImage(systemName: "hand.tap.fill") ?? UIImage(systemName: "phone.fill")
+        expMobileIcon.tintColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0)
+        expMobileRowView.addSubview(expMobileIcon)
+
+        expMobileTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        expMobileTitleLabel.attributedText = createRequiredLabel("Mobile phone")
+        expMobileRowView.addSubview(expMobileTitleLabel)
+
+        expMobileField.translatesAutoresizingMaskIntoConstraints = false
+        expMobileField.placeholder = "Type your 10-digit mobile"
+        expMobileField.text = "7990657479"
+        expMobileField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        expMobileField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        expMobileField.keyboardType = .phonePad
+        expMobileField.delegate = self
+        expMobileRowView.addSubview(expMobileField)
+
+        expMobileUnderline.translatesAutoresizingMaskIntoConstraints = false
+        expMobileUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        expMobileRowView.addSubview(expMobileUnderline)
+
+        expMobileCheckmark.translatesAutoresizingMaskIntoConstraints = false
+        expMobileCheckmark.image = UIImage(systemName: "checkmark")
+        expMobileCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        expMobileCheckmark.isHidden = true
+        expMobileRowView.addSubview(expMobileCheckmark)
+
+        expMobileArrowButton.translatesAutoresizingMaskIntoConstraints = false
+        expMobileArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
+        expMobileArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        expMobileArrowButton.addTarget(self, action: #selector(handleMobileSubmitAndSendOTP), for: .touchUpInside)
+        expMobileRowView.addSubview(expMobileArrowButton)
+
+        expMobileInfoButton.translatesAutoresizingMaskIntoConstraints = false
+        expMobileInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        expMobileInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        expMobileInfoButton.addTarget(self, action: #selector(showMobileInfo), for: .touchUpInside)
+        expMobileRowView.addSubview(expMobileInfoButton)
+
+        expMobileSpinner.translatesAutoresizingMaskIntoConstraints = false
+        expMobileSpinner.hidesWhenStopped = true
+        expMobileSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        expMobileRowView.addSubview(expMobileSpinner)
+
+        // 5. Parent Branch Code Row
+        expParentRowView.translatesAutoresizingMaskIntoConstraints = false
+        expParentRowView.isHidden = true // Revealed after OTP verification
+        expandedCardView.addSubview(expParentRowView)
+
+        expParentIcon.translatesAutoresizingMaskIntoConstraints = false
+        expParentIcon.image = UIImage(systemName: "person.crop.circle.badge.checkmark") ?? UIImage(systemName: "person.fill")
+        expParentIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        expParentRowView.addSubview(expParentIcon)
+
+        expParentTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        expParentTitleLabel.attributedText = createRequiredLabel("Enter Main/Parent Branch Code#")
+        expParentRowView.addSubview(expParentTitleLabel)
+
+        expParentCodeField.translatesAutoresizingMaskIntoConstraints = false
+        expParentCodeField.placeholder = "0000"
+        expParentCodeField.text = "6"
+        expParentCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        expParentCodeField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        expParentCodeField.keyboardType = .asciiCapable
+        expParentCodeField.delegate = self
+        expParentRowView.addSubview(expParentCodeField)
+
+        expParentUnderline.translatesAutoresizingMaskIntoConstraints = false
+        expParentUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        expParentRowView.addSubview(expParentUnderline)
+
+        expParentArrowButton.translatesAutoresizingMaskIntoConstraints = false
+        expParentArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
+        expParentArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        expParentArrowButton.addTarget(self, action: #selector(handleRegisterBranch), for: .touchUpInside)
+        expParentRowView.addSubview(expParentArrowButton)
+
+        expParentInfoButton.translatesAutoresizingMaskIntoConstraints = false
+        expParentInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        expParentInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        expParentInfoButton.addTarget(self, action: #selector(showParentInfo), for: .touchUpInside)
+        expParentRowView.addSubview(expParentInfoButton)
+
+        // Expanded Bottom Bar
+        expBottomBar.translatesAutoresizingMaskIntoConstraints = false
+        expBottomBar.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        expandedCardView.addSubview(expBottomBar)
+
+        expCancelButton.translatesAutoresizingMaskIntoConstraints = false
+        expCancelButton.setTitle("Cancel", for: .normal)
+        expCancelButton.setTitleColor(.white, for: .normal)
+        expCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        expCancelButton.addTarget(self, action: #selector(handleCancelTap), for: .touchUpInside)
+        expBottomBar.addSubview(expCancelButton)
+
+        expRegisterButton.translatesAutoresizingMaskIntoConstraints = false
+        expRegisterButton.setTitle("Register Branch  ➔", for: .normal)
+        expRegisterButton.setTitleColor(.white, for: .normal)
+        expRegisterButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        expRegisterButton.isHidden = true // Revealed after OTP verification
+        expRegisterButton.addTarget(self, action: #selector(handleRegisterBranch), for: .touchUpInside)
+        expBottomBar.addSubview(expRegisterButton)
+
+        expRegisterSpinner.translatesAutoresizingMaskIntoConstraints = false
+        expRegisterSpinner.hidesWhenStopped = true
+        expRegisterSpinner.color = .white
+        expBottomBar.addSubview(expRegisterSpinner)
 
         NSLayoutConstraint.activate([
-            emblemImageView.topAnchor.constraint(equalTo: emblemContainer.topAnchor, constant: 4),
-            emblemImageView.centerXAnchor.constraint(equalTo: emblemContainer.centerXAnchor),
-            emblemImageView.widthAnchor.constraint(equalToConstant: 140),
-            emblemImageView.heightAnchor.constraint(equalToConstant: 140),
-            emblemImageView.bottomAnchor.constraint(equalTo: emblemContainer.bottomAnchor, constant: -4)
-        ])
+            expandedCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 12),
+            expandedCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            expandedCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            expandedCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -50),
 
-        cardContentStack.addArrangedSubview(emblemContainer)
-    }
+            // 1. Trust Row
+            expTrustRowView.topAnchor.constraint(equalTo: expandedCardView.topAnchor, constant: 20),
+            expTrustRowView.leadingAnchor.constraint(equalTo: expandedCardView.leadingAnchor, constant: 18),
+            expTrustRowView.trailingAnchor.constraint(equalTo: expandedCardView.trailingAnchor, constant: -18),
 
-    // MARK: - Row 3: Email (Revealed on Trust Verify)
-    private func buildEmailRow() {
-        emailRowView.translatesAutoresizingMaskIntoConstraints = false
-        emailRowView.isHidden = true // Hidden initially
+            expTrustBadge.leadingAnchor.constraint(equalTo: expTrustRowView.leadingAnchor),
+            expTrustBadge.topAnchor.constraint(equalTo: expTrustRowView.topAnchor, constant: 4),
+            expTrustBadge.widthAnchor.constraint(equalToConstant: 34),
+            expTrustBadge.heightAnchor.constraint(equalToConstant: 24),
 
-        // Envelope Icon
-        emailIcon.translatesAutoresizingMaskIntoConstraints = false
-        emailIcon.image = UIImage(systemName: "envelope.fill")
-        emailIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Gold
-        emailRowView.addSubview(emailIcon)
+            expTrustBadgeIcon.centerXAnchor.constraint(equalTo: expTrustBadge.centerXAnchor),
+            expTrustBadgeIcon.centerYAnchor.constraint(equalTo: expTrustBadge.centerYAnchor),
+            expTrustBadgeIcon.widthAnchor.constraint(equalToConstant: 20),
+            expTrustBadgeIcon.heightAnchor.constraint(equalToConstant: 16),
 
-        // Label: "Email*"
-        emailTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        emailTitleLabel.attributedText = createRequiredLabel("Email")
-        emailRowView.addSubview(emailTitleLabel)
+            expTrustTitleLabel.leadingAnchor.constraint(equalTo: expTrustBadge.trailingAnchor, constant: 12),
+            expTrustTitleLabel.topAnchor.constraint(equalTo: expTrustRowView.topAnchor),
 
-        // Text Input
-        emailField.translatesAutoresizingMaskIntoConstraints = false
-        emailField.placeholder = "Type your email address"
-        emailField.text = "dhyey.k@latitudetechnolabs.org"
-        emailField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        emailField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        emailField.keyboardType = .emailAddress
-        emailField.autocapitalizationType = .none
-        emailField.autocorrectionType = .no
-        emailField.returnKeyType = .next
-        emailField.delegate = self
-        emailField.addTarget(self, action: #selector(emailEditingChanged), for: .editingChanged)
-        emailRowView.addSubview(emailField)
+            expTrustCodeField.leadingAnchor.constraint(equalTo: expTrustBadge.trailingAnchor, constant: 12),
+            expTrustCodeField.topAnchor.constraint(equalTo: expTrustTitleLabel.bottomAnchor, constant: 4),
+            expTrustCodeField.trailingAnchor.constraint(equalTo: expTrustCheckmark.leadingAnchor, constant: -8),
+            expTrustCodeField.heightAnchor.constraint(equalToConstant: 28),
 
-        // Blue Underline
-        emailUnderline.translatesAutoresizingMaskIntoConstraints = false
-        emailUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        emailRowView.addSubview(emailUnderline)
+            expTrustUnderline.leadingAnchor.constraint(equalTo: expTrustCodeField.leadingAnchor),
+            expTrustUnderline.trailingAnchor.constraint(equalTo: expTrustCodeField.trailingAnchor),
+            expTrustUnderline.topAnchor.constraint(equalTo: expTrustCodeField.bottomAnchor, constant: 2),
+            expTrustUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+            expTrustUnderline.bottomAnchor.constraint(equalTo: expTrustRowView.bottomAnchor),
 
-        // Green Checkmark
-        emailCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        emailCheckmark.image = UIImage(systemName: "checkmark")
-        emailCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        emailCheckmark.isHidden = true
-        emailRowView.addSubview(emailCheckmark)
+            expTrustInfoButton.trailingAnchor.constraint(equalTo: expTrustRowView.trailingAnchor),
+            expTrustInfoButton.centerYAnchor.constraint(equalTo: expTrustBadge.centerYAnchor),
+            expTrustInfoButton.widthAnchor.constraint(equalToConstant: 26),
+            expTrustInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
-        // Spinner
-        emailSpinner.translatesAutoresizingMaskIntoConstraints = false
-        emailSpinner.hidesWhenStopped = true
-        emailSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        emailRowView.addSubview(emailSpinner)
+            expTrustArrowButton.trailingAnchor.constraint(equalTo: expTrustInfoButton.leadingAnchor, constant: -6),
+            expTrustArrowButton.centerYAnchor.constraint(equalTo: expTrustBadge.centerYAnchor),
+            expTrustArrowButton.widthAnchor.constraint(equalToConstant: 26),
+            expTrustArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
-        NSLayoutConstraint.activate([
-            emailIcon.leadingAnchor.constraint(equalTo: emailRowView.leadingAnchor),
-            emailIcon.topAnchor.constraint(equalTo: emailRowView.topAnchor, constant: 4),
-            emailIcon.widthAnchor.constraint(equalToConstant: 26),
-            emailIcon.heightAnchor.constraint(equalToConstant: 20),
+            expTrustCheckmark.trailingAnchor.constraint(equalTo: expTrustArrowButton.leadingAnchor, constant: -6),
+            expTrustCheckmark.centerYAnchor.constraint(equalTo: expTrustBadge.centerYAnchor),
+            expTrustCheckmark.widthAnchor.constraint(equalToConstant: 20),
+            expTrustCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
-            emailTitleLabel.leadingAnchor.constraint(equalTo: emailIcon.trailingAnchor, constant: 12),
-            emailTitleLabel.topAnchor.constraint(equalTo: emailRowView.topAnchor),
+            // 2. Emblem Logo
+            emblemImageView.topAnchor.constraint(equalTo: expTrustRowView.bottomAnchor, constant: 14),
+            emblemImageView.centerXAnchor.constraint(equalTo: expandedCardView.centerXAnchor),
+            emblemImageView.widthAnchor.constraint(equalToConstant: 135),
+            emblemImageView.heightAnchor.constraint(equalToConstant: 135),
 
-            emailField.leadingAnchor.constraint(equalTo: emailIcon.trailingAnchor, constant: 12),
-            emailField.topAnchor.constraint(equalTo: emailTitleLabel.bottomAnchor, constant: 4),
-            emailField.trailingAnchor.constraint(equalTo: emailCheckmark.leadingAnchor, constant: -8),
-            emailField.heightAnchor.constraint(equalToConstant: 28),
+            // 3. Email Row
+            expEmailRowView.topAnchor.constraint(equalTo: emblemImageView.bottomAnchor, constant: 14),
+            expEmailRowView.leadingAnchor.constraint(equalTo: expandedCardView.leadingAnchor, constant: 18),
+            expEmailRowView.trailingAnchor.constraint(equalTo: expandedCardView.trailingAnchor, constant: -18),
 
-            emailUnderline.leadingAnchor.constraint(equalTo: emailField.leadingAnchor),
-            emailUnderline.trailingAnchor.constraint(equalTo: emailRowView.trailingAnchor),
-            emailUnderline.topAnchor.constraint(equalTo: emailField.bottomAnchor, constant: 2),
-            emailUnderline.heightAnchor.constraint(equalToConstant: 1.5),
-            emailUnderline.bottomAnchor.constraint(equalTo: emailRowView.bottomAnchor, constant: -2),
+            expEmailIcon.leadingAnchor.constraint(equalTo: expEmailRowView.leadingAnchor),
+            expEmailIcon.topAnchor.constraint(equalTo: expEmailRowView.topAnchor, constant: 4),
+            expEmailIcon.widthAnchor.constraint(equalToConstant: 26),
+            expEmailIcon.heightAnchor.constraint(equalToConstant: 20),
 
-            emailCheckmark.trailingAnchor.constraint(equalTo: emailRowView.trailingAnchor),
-            emailCheckmark.centerYAnchor.constraint(equalTo: emailIcon.centerYAnchor),
-            emailCheckmark.widthAnchor.constraint(equalToConstant: 20),
-            emailCheckmark.heightAnchor.constraint(equalToConstant: 20),
+            expEmailTitleLabel.leadingAnchor.constraint(equalTo: expEmailIcon.trailingAnchor, constant: 12),
+            expEmailTitleLabel.topAnchor.constraint(equalTo: expEmailRowView.topAnchor),
 
-            emailSpinner.centerXAnchor.constraint(equalTo: emailCheckmark.centerXAnchor),
-            emailSpinner.centerYAnchor.constraint(equalTo: emailCheckmark.centerYAnchor)
-        ])
+            expEmailField.leadingAnchor.constraint(equalTo: expEmailIcon.trailingAnchor, constant: 12),
+            expEmailField.topAnchor.constraint(equalTo: expEmailTitleLabel.bottomAnchor, constant: 4),
+            expEmailField.trailingAnchor.constraint(equalTo: expEmailCheckmark.leadingAnchor, constant: -8),
+            expEmailField.heightAnchor.constraint(equalToConstant: 28),
 
-        cardContentStack.addArrangedSubview(emailRowView)
-    }
+            expEmailUnderline.leadingAnchor.constraint(equalTo: expEmailField.leadingAnchor),
+            expEmailUnderline.trailingAnchor.constraint(equalTo: expEmailRowView.trailingAnchor),
+            expEmailUnderline.topAnchor.constraint(equalTo: expEmailField.bottomAnchor, constant: 2),
+            expEmailUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+            expEmailUnderline.bottomAnchor.constraint(equalTo: expEmailRowView.bottomAnchor),
 
-    // MARK: - Row 4: Mobile Phone (Revealed on Trust Verify)
-    private func buildMobileRow() {
-        mobileRowView.translatesAutoresizingMaskIntoConstraints = false
-        mobileRowView.isHidden = true // Hidden initially
+            expEmailCheckmark.trailingAnchor.constraint(equalTo: expEmailRowView.trailingAnchor),
+            expEmailCheckmark.centerYAnchor.constraint(equalTo: expEmailIcon.centerYAnchor),
+            expEmailCheckmark.widthAnchor.constraint(equalToConstant: 20),
+            expEmailCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
-        // Hand Tap Phone Icon
-        mobileIcon.translatesAutoresizingMaskIntoConstraints = false
-        mobileIcon.image = UIImage(systemName: "hand.tap.fill") ?? UIImage(systemName: "phone.fill")
-        mobileIcon.tintColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0) // Pink
-        mobileRowView.addSubview(mobileIcon)
+            // 4. Mobile Row
+            expMobileRowView.topAnchor.constraint(equalTo: expEmailRowView.bottomAnchor, constant: 14),
+            expMobileRowView.leadingAnchor.constraint(equalTo: expandedCardView.leadingAnchor, constant: 18),
+            expMobileRowView.trailingAnchor.constraint(equalTo: expandedCardView.trailingAnchor, constant: -18),
 
-        // Label: "Mobile phone*"
-        mobileTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        mobileTitleLabel.attributedText = createRequiredLabel("Mobile phone")
-        mobileRowView.addSubview(mobileTitleLabel)
+            expMobileIcon.leadingAnchor.constraint(equalTo: expMobileRowView.leadingAnchor),
+            expMobileIcon.topAnchor.constraint(equalTo: expMobileRowView.topAnchor, constant: 4),
+            expMobileIcon.widthAnchor.constraint(equalToConstant: 26),
+            expMobileIcon.heightAnchor.constraint(equalToConstant: 20),
 
-        // Text Input
-        mobileField.translatesAutoresizingMaskIntoConstraints = false
-        mobileField.placeholder = "Type your 10-digit mobile"
-        mobileField.text = "7990657479"
-        mobileField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        mobileField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        mobileField.keyboardType = .phonePad
-        mobileField.delegate = self
-        mobileField.addTarget(self, action: #selector(mobileEditingChanged), for: .editingChanged)
-        mobileRowView.addSubview(mobileField)
+            expMobileTitleLabel.leadingAnchor.constraint(equalTo: expMobileIcon.trailingAnchor, constant: 12),
+            expMobileTitleLabel.topAnchor.constraint(equalTo: expMobileRowView.topAnchor),
 
-        // Blue Underline
-        mobileUnderline.translatesAutoresizingMaskIntoConstraints = false
-        mobileUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        mobileRowView.addSubview(mobileUnderline)
+            expMobileField.leadingAnchor.constraint(equalTo: expMobileIcon.trailingAnchor, constant: 12),
+            expMobileField.topAnchor.constraint(equalTo: expMobileTitleLabel.bottomAnchor, constant: 4),
+            expMobileField.trailingAnchor.constraint(equalTo: expMobileCheckmark.leadingAnchor, constant: -8),
+            expMobileField.heightAnchor.constraint(equalToConstant: 28),
 
-        // Green Checkmark
-        mobileCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        mobileCheckmark.image = UIImage(systemName: "checkmark")
-        mobileCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        mobileCheckmark.isHidden = true
-        mobileRowView.addSubview(mobileCheckmark)
+            expMobileUnderline.leadingAnchor.constraint(equalTo: expMobileField.leadingAnchor),
+            expMobileUnderline.trailingAnchor.constraint(equalTo: expMobileField.trailingAnchor),
+            expMobileUnderline.topAnchor.constraint(equalTo: expMobileField.bottomAnchor, constant: 2),
+            expMobileUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+            expMobileUnderline.bottomAnchor.constraint(equalTo: expMobileRowView.bottomAnchor),
 
-        // Arrow Button (Dispatches OTP)
-        mobileArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        mobileArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        mobileArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        mobileArrowButton.addTarget(self, action: #selector(handleMobileSubmitAndSendOTP), for: .touchUpInside)
-        mobileRowView.addSubview(mobileArrowButton)
+            expMobileInfoButton.trailingAnchor.constraint(equalTo: expMobileRowView.trailingAnchor),
+            expMobileInfoButton.centerYAnchor.constraint(equalTo: expMobileIcon.centerYAnchor),
+            expMobileInfoButton.widthAnchor.constraint(equalToConstant: 26),
+            expMobileInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
-        // Info Button
-        mobileInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        mobileInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        mobileInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        mobileInfoButton.addTarget(self, action: #selector(showMobileInfo), for: .touchUpInside)
-        mobileRowView.addSubview(mobileInfoButton)
+            expMobileArrowButton.trailingAnchor.constraint(equalTo: expMobileInfoButton.leadingAnchor, constant: -6),
+            expMobileArrowButton.centerYAnchor.constraint(equalTo: expMobileIcon.centerYAnchor),
+            expMobileArrowButton.widthAnchor.constraint(equalToConstant: 26),
+            expMobileArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
-        // Spinner
-        mobileSpinner.translatesAutoresizingMaskIntoConstraints = false
-        mobileSpinner.hidesWhenStopped = true
-        mobileSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        mobileRowView.addSubview(mobileSpinner)
+            expMobileCheckmark.trailingAnchor.constraint(equalTo: expMobileArrowButton.leadingAnchor, constant: -6),
+            expMobileCheckmark.centerYAnchor.constraint(equalTo: expMobileIcon.centerYAnchor),
+            expMobileCheckmark.widthAnchor.constraint(equalToConstant: 20),
+            expMobileCheckmark.heightAnchor.constraint(equalToConstant: 20),
 
-        NSLayoutConstraint.activate([
-            mobileIcon.leadingAnchor.constraint(equalTo: mobileRowView.leadingAnchor),
-            mobileIcon.topAnchor.constraint(equalTo: mobileRowView.topAnchor, constant: 4),
-            mobileIcon.widthAnchor.constraint(equalToConstant: 26),
-            mobileIcon.heightAnchor.constraint(equalToConstant: 20),
+            expMobileSpinner.centerXAnchor.constraint(equalTo: expMobileArrowButton.centerXAnchor),
+            expMobileSpinner.centerYAnchor.constraint(equalTo: expMobileArrowButton.centerYAnchor),
 
-            mobileTitleLabel.leadingAnchor.constraint(equalTo: mobileIcon.trailingAnchor, constant: 12),
-            mobileTitleLabel.topAnchor.constraint(equalTo: mobileRowView.topAnchor),
+            // 5. Parent Code Row
+            expParentRowView.topAnchor.constraint(equalTo: expMobileRowView.bottomAnchor, constant: 14),
+            expParentRowView.leadingAnchor.constraint(equalTo: expandedCardView.leadingAnchor, constant: 18),
+            expParentRowView.trailingAnchor.constraint(equalTo: expandedCardView.trailingAnchor, constant: -18),
 
-            mobileField.leadingAnchor.constraint(equalTo: mobileIcon.trailingAnchor, constant: 12),
-            mobileField.topAnchor.constraint(equalTo: mobileTitleLabel.bottomAnchor, constant: 4),
-            mobileField.trailingAnchor.constraint(equalTo: mobileCheckmark.leadingAnchor, constant: -8),
-            mobileField.heightAnchor.constraint(equalToConstant: 28),
+            expParentIcon.leadingAnchor.constraint(equalTo: expParentRowView.leadingAnchor),
+            expParentIcon.topAnchor.constraint(equalTo: expParentRowView.topAnchor, constant: 4),
+            expParentIcon.widthAnchor.constraint(equalToConstant: 26),
+            expParentIcon.heightAnchor.constraint(equalToConstant: 20),
 
-            mobileUnderline.leadingAnchor.constraint(equalTo: mobileField.leadingAnchor),
-            mobileUnderline.trailingAnchor.constraint(equalTo: mobileField.trailingAnchor),
-            mobileUnderline.topAnchor.constraint(equalTo: mobileField.bottomAnchor, constant: 2),
-            mobileUnderline.heightAnchor.constraint(equalToConstant: 1.5),
-            mobileUnderline.bottomAnchor.constraint(equalTo: mobileRowView.bottomAnchor, constant: -2),
+            expParentTitleLabel.leadingAnchor.constraint(equalTo: expParentIcon.trailingAnchor, constant: 12),
+            expParentTitleLabel.topAnchor.constraint(equalTo: expParentRowView.topAnchor),
 
-            mobileInfoButton.trailingAnchor.constraint(equalTo: mobileRowView.trailingAnchor),
-            mobileInfoButton.centerYAnchor.constraint(equalTo: mobileIcon.centerYAnchor),
-            mobileInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            mobileInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            expParentCodeField.leadingAnchor.constraint(equalTo: expParentIcon.trailingAnchor, constant: 12),
+            expParentCodeField.topAnchor.constraint(equalTo: expParentTitleLabel.bottomAnchor, constant: 4),
+            expParentCodeField.trailingAnchor.constraint(equalTo: expParentArrowButton.leadingAnchor, constant: -8),
+            expParentCodeField.heightAnchor.constraint(equalToConstant: 28),
 
-            mobileArrowButton.trailingAnchor.constraint(equalTo: mobileInfoButton.leadingAnchor, constant: -6),
-            mobileArrowButton.centerYAnchor.constraint(equalTo: mobileIcon.centerYAnchor),
-            mobileArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            mobileArrowButton.heightAnchor.constraint(equalToConstant: 26),
+            expParentUnderline.leadingAnchor.constraint(equalTo: expParentCodeField.leadingAnchor),
+            expParentUnderline.trailingAnchor.constraint(equalTo: expParentCodeField.trailingAnchor),
+            expParentUnderline.topAnchor.constraint(equalTo: expParentCodeField.bottomAnchor, constant: 2),
+            expParentUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+            expParentUnderline.bottomAnchor.constraint(equalTo: expParentRowView.bottomAnchor),
 
-            mobileCheckmark.trailingAnchor.constraint(equalTo: mobileArrowButton.leadingAnchor, constant: -6),
-            mobileCheckmark.centerYAnchor.constraint(equalTo: mobileIcon.centerYAnchor),
-            mobileCheckmark.widthAnchor.constraint(equalToConstant: 20),
-            mobileCheckmark.heightAnchor.constraint(equalToConstant: 20),
+            expParentInfoButton.trailingAnchor.constraint(equalTo: expParentRowView.trailingAnchor),
+            expParentInfoButton.centerYAnchor.constraint(equalTo: expParentIcon.centerYAnchor),
+            expParentInfoButton.widthAnchor.constraint(equalToConstant: 26),
+            expParentInfoButton.heightAnchor.constraint(equalToConstant: 26),
 
-            mobileSpinner.centerXAnchor.constraint(equalTo: mobileArrowButton.centerXAnchor),
-            mobileSpinner.centerYAnchor.constraint(equalTo: mobileArrowButton.centerYAnchor)
-        ])
+            expParentArrowButton.trailingAnchor.constraint(equalTo: expParentInfoButton.leadingAnchor, constant: -6),
+            expParentArrowButton.centerYAnchor.constraint(equalTo: expParentIcon.centerYAnchor),
+            expParentArrowButton.widthAnchor.constraint(equalToConstant: 26),
+            expParentArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
-        cardContentStack.addArrangedSubview(mobileRowView)
-    }
+            // Bottom Bar
+            expBottomBar.topAnchor.constraint(equalTo: expParentRowView.bottomAnchor, constant: 20),
+            expBottomBar.leadingAnchor.constraint(equalTo: expandedCardView.leadingAnchor),
+            expBottomBar.trailingAnchor.constraint(equalTo: expandedCardView.trailingAnchor),
+            expBottomBar.bottomAnchor.constraint(equalTo: expandedCardView.bottomAnchor),
+            expBottomBar.heightAnchor.constraint(equalToConstant: 54),
 
-    // MARK: - Row 5: Enter Main/Parent Branch Code# (Revealed on OTP Verify)
-    private func buildParentRow() {
-        parentRowView.translatesAutoresizingMaskIntoConstraints = false
-        parentRowView.isHidden = true // Hidden initially
+            expCancelButton.leadingAnchor.constraint(equalTo: expBottomBar.leadingAnchor, constant: 20),
+            expCancelButton.centerYAnchor.constraint(equalTo: expBottomBar.centerYAnchor),
 
-        // Businessman Avatar Icon
-        parentIcon.translatesAutoresizingMaskIntoConstraints = false
-        parentIcon.image = UIImage(systemName: "person.crop.circle.badge.checkmark") ?? UIImage(systemName: "person.fill")
-        parentIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
-        parentRowView.addSubview(parentIcon)
+            expRegisterButton.trailingAnchor.constraint(equalTo: expBottomBar.trailingAnchor, constant: -20),
+            expRegisterButton.centerYAnchor.constraint(equalTo: expBottomBar.centerYAnchor),
 
-        // Label: "Enter Main/Parent Branch Code#"
-        parentTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        parentTitleLabel.attributedText = createRequiredLabel("Enter Main/Parent Branch Code#")
-        parentRowView.addSubview(parentTitleLabel)
-
-        // Text Input
-        parentCodeField.translatesAutoresizingMaskIntoConstraints = false
-        parentCodeField.placeholder = "0000"
-        parentCodeField.text = "6"
-        parentCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        parentCodeField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        parentCodeField.keyboardType = .asciiCapable
-        parentCodeField.delegate = self
-        parentCodeField.addTarget(self, action: #selector(parentEditingChanged), for: .editingChanged)
-        parentRowView.addSubview(parentCodeField)
-
-        // Blue Underline
-        parentUnderline.translatesAutoresizingMaskIntoConstraints = false
-        parentUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        parentRowView.addSubview(parentUnderline)
-
-        // Arrow Button
-        parentArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        parentArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        parentArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        parentArrowButton.addTarget(self, action: #selector(handleRegisterBranch), for: .touchUpInside)
-        parentRowView.addSubview(parentArrowButton)
-
-        // Info Button
-        parentInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        parentInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        parentInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        parentInfoButton.addTarget(self, action: #selector(showParentInfo), for: .touchUpInside)
-        parentRowView.addSubview(parentInfoButton)
-
-        // Spinner
-        parentSpinner.translatesAutoresizingMaskIntoConstraints = false
-        parentSpinner.hidesWhenStopped = true
-        parentSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
-        parentRowView.addSubview(parentSpinner)
-
-        NSLayoutConstraint.activate([
-            parentIcon.leadingAnchor.constraint(equalTo: parentRowView.leadingAnchor),
-            parentIcon.topAnchor.constraint(equalTo: parentRowView.topAnchor, constant: 4),
-            parentIcon.widthAnchor.constraint(equalToConstant: 26),
-            parentIcon.heightAnchor.constraint(equalToConstant: 20),
-
-            parentTitleLabel.leadingAnchor.constraint(equalTo: parentIcon.trailingAnchor, constant: 12),
-            parentTitleLabel.topAnchor.constraint(equalTo: parentRowView.topAnchor),
-
-            parentCodeField.leadingAnchor.constraint(equalTo: parentIcon.trailingAnchor, constant: 12),
-            parentCodeField.topAnchor.constraint(equalTo: parentTitleLabel.bottomAnchor, constant: 4),
-            parentCodeField.trailingAnchor.constraint(equalTo: parentArrowButton.leadingAnchor, constant: -8),
-            parentCodeField.heightAnchor.constraint(equalToConstant: 28),
-
-            parentUnderline.leadingAnchor.constraint(equalTo: parentCodeField.leadingAnchor),
-            parentUnderline.trailingAnchor.constraint(equalTo: parentCodeField.trailingAnchor),
-            parentUnderline.topAnchor.constraint(equalTo: parentCodeField.bottomAnchor, constant: 2),
-            parentUnderline.heightAnchor.constraint(equalToConstant: 1.5),
-            parentUnderline.bottomAnchor.constraint(equalTo: parentRowView.bottomAnchor, constant: -2),
-
-            parentInfoButton.trailingAnchor.constraint(equalTo: parentRowView.trailingAnchor),
-            parentInfoButton.centerYAnchor.constraint(equalTo: parentIcon.centerYAnchor),
-            parentInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            parentInfoButton.heightAnchor.constraint(equalToConstant: 26),
-
-            parentArrowButton.trailingAnchor.constraint(equalTo: parentInfoButton.leadingAnchor, constant: -6),
-            parentArrowButton.centerYAnchor.constraint(equalTo: parentIcon.centerYAnchor),
-            parentArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            parentArrowButton.heightAnchor.constraint(equalToConstant: 26),
-
-            parentSpinner.centerXAnchor.constraint(equalTo: parentArrowButton.centerXAnchor),
-            parentSpinner.centerYAnchor.constraint(equalTo: parentArrowButton.centerYAnchor)
-        ])
-
-        cardContentStack.addArrangedSubview(parentRowView)
-    }
-
-    // MARK: - Card Bottom Action Bar (Cancel & Register Branch ➔)
-    private func buildBottomActionBar() {
-        bottomActionBar.translatesAutoresizingMaskIntoConstraints = false
-        bottomActionBar.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0) // #4184D6
-
-        // Cancel Button (Left)
-        cancelButton.translatesAutoresizingMaskIntoConstraints = false
-        cancelButton.setTitle("Cancel", for: .normal)
-        cancelButton.setTitleColor(.white, for: .normal)
-        cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        cancelButton.addTarget(self, action: #selector(handleCancelTap), for: .touchUpInside)
-        bottomActionBar.addSubview(cancelButton)
-
-        // Register Branch Button (Right - Visible after OTP verify)
-        registerBranchButton.translatesAutoresizingMaskIntoConstraints = false
-        registerBranchButton.setTitle("Register Branch  ➔", for: .normal)
-        registerBranchButton.setTitleColor(.white, for: .normal)
-        registerBranchButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        registerBranchButton.isHidden = true // Revealed after OTP verification
-        registerBranchButton.addTarget(self, action: #selector(handleRegisterBranch), for: .touchUpInside)
-        bottomActionBar.addSubview(registerBranchButton)
-
-        actionSpinner.translatesAutoresizingMaskIntoConstraints = false
-        actionSpinner.hidesWhenStopped = true
-        actionSpinner.color = .white
-        bottomActionBar.addSubview(actionSpinner)
-
-        NSLayoutConstraint.activate([
-            cancelButton.leadingAnchor.constraint(equalTo: bottomActionBar.leadingAnchor, constant: 20),
-            cancelButton.centerYAnchor.constraint(equalTo: bottomActionBar.centerYAnchor),
-
-            registerBranchButton.trailingAnchor.constraint(equalTo: bottomActionBar.trailingAnchor, constant: -20),
-            registerBranchButton.centerYAnchor.constraint(equalTo: bottomActionBar.centerYAnchor),
-
-            actionSpinner.centerYAnchor.constraint(equalTo: registerBranchButton.centerYAnchor),
-            actionSpinner.centerXAnchor.constraint(equalTo: registerBranchButton.centerXAnchor)
+            expRegisterSpinner.centerYAnchor.constraint(equalTo: expRegisterButton.centerYAnchor),
+            expRegisterSpinner.centerXAnchor.constraint(equalTo: expRegisterButton.centerXAnchor)
         ])
     }
 
@@ -683,7 +728,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         view.addSubview(otpOverlayBackdrop)
 
         otpCardContainer.translatesAutoresizingMaskIntoConstraints = false
-        otpCardContainer.backgroundColor = UIColor(red: 21/255, green: 64/255, blue: 141/255, alpha: 1.0) // #15408D
+        otpCardContainer.backgroundColor = UIColor(red: 21/255, green: 64/255, blue: 141/255, alpha: 1.0)
         otpCardContainer.layer.cornerRadius = 14
         otpCardContainer.layer.masksToBounds = true
         otpOverlayBackdrop.addSubview(otpCardContainer)
@@ -734,7 +779,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         otpCancelButton.translatesAutoresizingMaskIntoConstraints = false
         otpCancelButton.setTitle("Cancel", for: .normal)
         otpCancelButton.setTitleColor(.white, for: .normal)
-        otpCancelButton.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.75) // #27A9E3
+        otpCancelButton.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.75)
         otpCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         otpCancelButton.layer.cornerRadius = 4
         otpCancelButton.addTarget(self, action: #selector(handleCancelOTP), for: .touchUpInside)
@@ -743,7 +788,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         otpVerifyButton.translatesAutoresizingMaskIntoConstraints = false
         otpVerifyButton.setTitle("Verify OTP", for: .normal)
         otpVerifyButton.setTitleColor(.white, for: .normal)
-        otpVerifyButton.backgroundColor = UIColor(red: 2/255, green: 136/255, blue: 209/255, alpha: 1.0) // #0288D1
+        otpVerifyButton.backgroundColor = UIColor(red: 2/255, green: 136/255, blue: 209/255, alpha: 1.0)
         otpVerifyButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
         otpVerifyButton.layer.cornerRadius = 4
         otpVerifyButton.addTarget(self, action: #selector(handleVerifyOTP), for: .touchUpInside)
@@ -815,13 +860,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             string: "*",
             attributes: [
                 .font: UIFont.systemFont(ofSize: 15, weight: .bold),
-                .foregroundColor: UIColor(red: 220/255, green: 53/255, blue: 69/255, alpha: 1.0) // Red
+                .foregroundColor: UIColor(red: 220/255, green: 53/255, blue: 69/255, alpha: 1.0)
             ]
         ))
         return attr
     }
 
-    // MARK: - Error Helpers & Dynamic Extraction
+    // MARK: - Dynamic Error Extraction & Banner Helpers
     private func extractMessage(from json: [String: Any], fallback: String) -> String {
         if let msg = json["message"] as? String, !msg.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return msg
@@ -854,45 +899,22 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         errorBanner.isHidden = false
     }
 
-    private func clearBannerError() {
+    @objc private func clearBannerError() {
         errorBanner.isHidden = true
-    }
-
-    @objc private func trustCodeEditingChanged() {
-        trustUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        trustCheckmark.isHidden = true
-        clearBannerError()
-    }
-
-    @objc private func emailEditingChanged() {
-        emailUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        emailCheckmark.isHidden = true
-        clearBannerError()
-    }
-
-    @objc private func mobileEditingChanged() {
-        mobileUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        mobileCheckmark.isHidden = true
-        clearBannerError()
-    }
-
-    @objc private func parentEditingChanged() {
-        parentUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-        clearBannerError()
     }
 
     // MARK: - Step 1: Trust Code Verification (POST /api/check-trust-code)
     @objc private func handleTrustCodeSubmit() {
         view.endEditing(true)
-        let code = trustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let code = initTrustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !code.isEmpty else {
-            trustUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+            initTrustUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter valid trust code. Contact helpline.")
             return
         }
 
-        trustArrowButton.isHidden = true
-        trustSpinner.startAnimating()
+        initTrustArrowButton.isHidden = true
+        initTrustSpinner.startAnimating()
         clearBannerError()
 
         guard let url = URL(string: AppConfig.API.checkTrustCode) else { return }
@@ -908,8 +930,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
                 guard let self = self else { return }
-                self.trustArrowButton.isHidden = false
-                self.trustSpinner.stopAnimating()
+                self.initTrustArrowButton.isHidden = false
+                self.initTrustSpinner.stopAnimating()
 
                 if let error = error {
                     self.showBannerError("Network error: \(error.localizedDescription)")
@@ -931,20 +953,17 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
                     self.verifiedMerchantName = (dataObj["name"] as? String) ?? "SHRI ANANDPUR TRUST"
                     self.verifiedRoleId = (dataObj["role_id"] as? Int) ?? 0
 
-                    self.isTrustCodeVerified = true
-                    self.trustCheckmark.isHidden = false
-                    self.trustUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+                    self.expTrustCodeField.text = code
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
-                    // Expand card smoothly to reveal Logo, Email, and Mobile rows (Screenshot 2)
-                    UIView.animate(withDuration: 0.3) {
-                        self.emblemContainer.isHidden = false
-                        self.emailRowView.isHidden = false
-                        self.mobileRowView.isHidden = false
+                    // Switch cleanly from Initial Card to Expanded Card (Screenshot 2)
+                    UIView.transition(with: self.contentView, duration: 0.35, options: .transitionCrossDissolve) {
+                        self.initialCardView.isHidden = true
+                        self.expandedCardView.isHidden = false
                     }
-                    self.emailField.becomeFirstResponder()
+                    self.expEmailField.becomeFirstResponder()
                 } else {
-                    self.trustUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+                    self.initTrustUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
                     self.showBannerError(apiMessage)
                 }
             }
@@ -954,24 +973,24 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
     // MARK: - Step 2: Mobile Submit & Send OTP (POST /api/register-otp-send)
     @objc private func handleMobileSubmitAndSendOTP() {
         view.endEditing(true)
-        let email = emailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let mobile = mobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let trustCode = trustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let email = expEmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let mobile = expMobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trustCode = expTrustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         guard !email.isEmpty, email.contains("@"), email.contains(".") else {
-            emailUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+            expEmailUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter a valid Email address.")
             return
         }
 
         guard !mobile.isEmpty, mobile.count == 10 else {
-            mobileUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+            expMobileUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter a valid 10-digit mobile number.")
             return
         }
 
-        mobileArrowButton.isHidden = true
-        mobileSpinner.startAnimating()
+        expMobileArrowButton.isHidden = true
+        expMobileSpinner.startAnimating()
         clearBannerError()
 
         guard let url = URL(string: AppConfig.API.registerOtpSend) else { return }
@@ -994,8 +1013,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
                 guard let self = self else { return }
-                self.mobileArrowButton.isHidden = false
-                self.mobileSpinner.stopAnimating()
+                self.expMobileArrowButton.isHidden = false
+                self.expMobileSpinner.stopAnimating()
 
                 if let error = error {
                     self.showBannerError("Network error: \(error.localizedDescription)")
@@ -1015,7 +1034,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     self.presentOTPDialog()
                 } else {
-                    self.mobileUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+                    self.expMobileUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
                     self.showBannerError(apiMessage)
                 }
             }
@@ -1080,7 +1099,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
             return
         }
 
-        let mobile = mobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let mobile = expMobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         otpVerifyButton.setTitle("", for: .normal)
         otpSpinner.startAnimating()
@@ -1123,11 +1142,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
 
                 if status {
                     self.otpTimer?.invalidate()
-                    self.isEmailVerified = true
-                    self.isMobileVerified = true
 
-                    self.emailCheckmark.isHidden = false
-                    self.mobileCheckmark.isHidden = false
+                    self.expEmailCheckmark.isHidden = false
+                    self.expMobileCheckmark.isHidden = false
 
                     UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
@@ -1138,12 +1155,12 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
                         self.otpOverlayBackdrop.isHidden = true
                     }
 
-                    // Reveal Row 5 (Parent Branch Code) & Bottom "Register Branch ➔" Button (Screenshot 2)
+                    // Reveal Parent Code Row and Register Branch Button (Screenshot 2)
                     UIView.animate(withDuration: 0.3) {
-                        self.parentRowView.isHidden = false
-                        self.registerBranchButton.isHidden = false
+                        self.expParentRowView.isHidden = false
+                        self.expRegisterButton.isHidden = false
                     }
-                    self.parentCodeField.becomeFirstResponder()
+                    self.expParentCodeField.becomeFirstResponder()
                 } else {
                     self.otpUnderline.backgroundColor = UIColor(red: 255/255, green: 107/255, blue: 107/255, alpha: 1.0)
                     self.otpErrorLabel.text = apiMessage
@@ -1157,19 +1174,19 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
     // MARK: - Step 5: Final Branch Registration (POST /api/register)
     @objc private func handleRegisterBranch() {
         view.endEditing(true)
-        let parentCode = parentCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let email = emailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let mobile = mobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let trustCode = trustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let parentCode = expParentCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let email = expEmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let mobile = expMobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trustCode = expTrustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         guard !parentCode.isEmpty else {
-            parentUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+            expParentUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter Main/Parent Branch Code.")
             return
         }
 
-        registerBranchButton.setTitle("", for: .normal)
-        actionSpinner.startAnimating()
+        expRegisterButton.setTitle("", for: .normal)
+        expRegisterSpinner.startAnimating()
         clearBannerError()
 
         guard let url = URL(string: AppConfig.API.register) else { return }
@@ -1197,8 +1214,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
                 guard let self = self else { return }
-                self.actionSpinner.stopAnimating()
-                self.registerBranchButton.setTitle("Register Branch  ➔", for: .normal)
+                self.expRegisterSpinner.stopAnimating()
+                self.expRegisterButton.setTitle("Register Branch  ➔", for: .normal)
 
                 if let error = error {
                     self.showBannerError("Network error: \(error.localizedDescription)")
@@ -1291,13 +1308,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate {
     }
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        if textField == trustCodeField {
+        if textField == initTrustCodeField {
             handleTrustCodeSubmit()
-        } else if textField == emailField {
-            mobileField.becomeFirstResponder()
-        } else if textField == mobileField {
+        } else if textField == expEmailField {
+            expMobileField.becomeFirstResponder()
+        } else if textField == expMobileField {
             handleMobileSubmitAndSendOTP()
-        } else if textField == parentCodeField {
+        } else if textField == expParentCodeField {
             handleRegisterBranch()
         }
         return true
