@@ -53,7 +53,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let initBottomBar = UIView()
     private let initCancelButton = UIButton(type: .system)
 
-    // MARK: - Card 2: Mid Progressive Card (Trust -> Email -> Mobile -> Parent Code)
+    // MARK: - Card 2: Mid Progressive Card (Trust -> Email & Mobile displayed together -> Parent Code)
     private let midCardView = UIView()
 
     // Trust Row
@@ -81,7 +81,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let midEmailInfoButton = UIButton(type: .system)
     private let midEmailSpinner = UIActivityIndicatorView(style: .medium)
 
-    // Mobile Row
+    // Mobile Row (Displayed together with Email)
     private let midMobileRowView = UIView()
     private let midMobileIcon = UIImageView()
     private let midMobileTitleLabel = UILabel()
@@ -108,7 +108,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let midCancelButton = UIButton(type: .system)
 
     // Dynamic constraints for midCardView progressive heights
-    private var midEmailToBottomConstraint: NSLayoutConstraint?
     private var midMobileToBottomConstraint: NSLayoutConstraint?
     private var midParentToBottomConstraint: NSLayoutConstraint?
 
@@ -268,8 +267,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
     // MARK: - Main UI Construction
     private func setupUI() {
-        // Deep Royal Blue Canvas (#133B7C)
-        view.backgroundColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        // Match Login Page Theme: Dark Slate / Charcoal Canvas (#2E363F)
+        view.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
 
         // 1. Scroll & Content
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -299,7 +298,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         headerSubtitleLabel.isHidden = true
         contentView.addSubview(headerSubtitleLabel)
 
-        // 3. Error Banner
+        // 3. Error Banner (Matching Login Theme Terracotta Red #DA542E)
         errorBanner.translatesAutoresizingMaskIntoConstraints = false
         errorBanner.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 0.95)
         errorBanner.layer.cornerRadius = 6
@@ -368,7 +367,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private func buildInitialCard() {
         initialCardView.translatesAutoresizingMaskIntoConstraints = false
         initialCardView.backgroundColor = .white
-        initialCardView.layer.cornerRadius = 18
+        initialCardView.layer.cornerRadius = 16
         initialCardView.layer.masksToBounds = true
         contentView.addSubview(initialCardView)
 
@@ -391,7 +390,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         initTrustCodeField.translatesAutoresizingMaskIntoConstraints = false
         initTrustCodeField.placeholder = "Type your trust code"
         initTrustCodeField.text = "" // User enters value
-        initTrustCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        initTrustCodeField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         initTrustCodeField.font = UIFont.systemFont(ofSize: 15.5, weight: .semibold)
         initTrustCodeField.autocapitalizationType = .allCharacters
         initTrustCodeField.autocorrectionType = .no
@@ -400,33 +399,33 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         initialCardView.addSubview(initTrustCodeField)
 
         initTrustUnderline.translatesAutoresizingMaskIntoConstraints = false
-        initTrustUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        initTrustUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0) // Sky Blue
         initialCardView.addSubview(initTrustUnderline)
 
         initTrustInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        initTrustInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        initTrustInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        initTrustInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
+        initTrustInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         initTrustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
         initialCardView.addSubview(initTrustInfoButton)
 
         initTrustArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        initTrustArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        initTrustArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        initTrustArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
+        initTrustArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0) // Green
         initTrustArrowButton.addTarget(self, action: #selector(handleTrustCodeSubmit), for: .touchUpInside)
         initialCardView.addSubview(initTrustArrowButton)
 
         initTrustSpinner.translatesAutoresizingMaskIntoConstraints = false
         initTrustSpinner.hidesWhenStopped = true
-        initTrustSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        initTrustSpinner.color = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         initialCardView.addSubview(initTrustSpinner)
 
         initBottomBar.translatesAutoresizingMaskIntoConstraints = false
-        initBottomBar.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        initBottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0) // Match Login Card Bottom Bar
         initialCardView.addSubview(initBottomBar)
 
         initCancelButton.translatesAutoresizingMaskIntoConstraints = false
         initCancelButton.setTitle("Cancel", for: .normal)
-        initCancelButton.setTitleColor(.white, for: .normal)
+        initCancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
         initCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         initCancelButton.addTarget(self, action: #selector(handleCancelTap), for: .touchUpInside)
         initBottomBar.addSubview(initCancelButton)
@@ -483,11 +482,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         ])
     }
 
-    // MARK: - Card 2: Mid Progressive Card (Trust -> Email -> Mobile -> Parent Code)
+    // MARK: - Card 2: Mid Progressive Card (Trust -> Email & Mobile displayed together -> Parent Code)
     private func buildMidCard() {
         midCardView.translatesAutoresizingMaskIntoConstraints = false
         midCardView.backgroundColor = .white
-        midCardView.layer.cornerRadius = 18
+        midCardView.layer.cornerRadius = 16
         midCardView.layer.masksToBounds = true
         midCardView.isHidden = true
         contentView.addSubview(midCardView)
@@ -515,28 +514,28 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midTrustCodeField.translatesAutoresizingMaskIntoConstraints = false
         midTrustCodeField.placeholder = "Type your trust code"
         midTrustCodeField.text = ""
-        midTrustCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        midTrustCodeField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         midTrustCodeField.font = UIFont.systemFont(ofSize: 15.5, weight: .semibold)
         midTrustCodeField.isEnabled = false
         midTrustRowView.addSubview(midTrustCodeField)
 
         midTrustUnderline.translatesAutoresizingMaskIntoConstraints = false
-        midTrustUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        midTrustUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midTrustRowView.addSubview(midTrustUnderline)
 
         midTrustInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        midTrustInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        midTrustInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        midTrustInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
+        midTrustInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midTrustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
         midTrustRowView.addSubview(midTrustInfoButton)
 
         midTrustArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        midTrustArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        midTrustArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        midTrustArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
+        midTrustArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         midTrustRowView.addSubview(midTrustArrowButton)
 
         midTrustCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        midTrustCheckmark.image = UIImage(systemName: "checkmark")
+        midTrustCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         midTrustCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         midTrustRowView.addSubview(midTrustCheckmark)
 
@@ -550,13 +549,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midEmblemImageView.contentMode = .scaleAspectFit
         midCardView.addSubview(midEmblemImageView)
 
-        // 3. Email Row (Revealed first)
+        // 3. Email Row (Displayed together with Mobile)
         midEmailRowView.translatesAutoresizingMaskIntoConstraints = false
         midCardView.addSubview(midEmailRowView)
 
         midEmailIcon.translatesAutoresizingMaskIntoConstraints = false
         midEmailIcon.image = UIImage(systemName: "envelope.fill")
-        midEmailIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        midEmailIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Amber Gold #FFB848
         midEmailIcon.contentMode = .scaleAspectFit
         midEmailRowView.addSubview(midEmailIcon)
 
@@ -567,7 +566,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midEmailField.translatesAutoresizingMaskIntoConstraints = false
         midEmailField.placeholder = "Type your email address"
         midEmailField.text = "" // User enters value
-        midEmailField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        midEmailField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         midEmailField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         midEmailField.keyboardType = .emailAddress
         midEmailField.autocapitalizationType = .none
@@ -577,40 +576,39 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midEmailRowView.addSubview(midEmailField)
 
         midEmailUnderline.translatesAutoresizingMaskIntoConstraints = false
-        midEmailUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        midEmailUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midEmailRowView.addSubview(midEmailUnderline)
 
         midEmailInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        midEmailInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        midEmailInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        midEmailInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
+        midEmailInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midEmailInfoButton.addTarget(self, action: #selector(showEmailInfo), for: .touchUpInside)
         midEmailRowView.addSubview(midEmailInfoButton)
 
         midEmailArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        midEmailArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        midEmailArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
-        midEmailArrowButton.addTarget(self, action: #selector(handleEmailVerifyAndRevealMobile), for: .touchUpInside)
+        midEmailArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
+        midEmailArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        midEmailArrowButton.addTarget(self, action: #selector(handleEmailVerify), for: .touchUpInside)
         midEmailRowView.addSubview(midEmailArrowButton)
 
         midEmailCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        midEmailCheckmark.image = UIImage(systemName: "checkmark")
+        midEmailCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         midEmailCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         midEmailCheckmark.isHidden = true
         midEmailRowView.addSubview(midEmailCheckmark)
 
         midEmailSpinner.translatesAutoresizingMaskIntoConstraints = false
         midEmailSpinner.hidesWhenStopped = true
-        midEmailSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        midEmailSpinner.color = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midEmailRowView.addSubview(midEmailSpinner)
 
-        // 4. Mobile Row (Revealed after Email verified)
+        // 4. Mobile Row (Displayed together with Email after Trust Code verified)
         midMobileRowView.translatesAutoresizingMaskIntoConstraints = false
-        midMobileRowView.isHidden = true
         midCardView.addSubview(midMobileRowView)
 
         midMobileIcon.translatesAutoresizingMaskIntoConstraints = false
         midMobileIcon.image = UIImage(systemName: "hand.tap.fill") ?? UIImage(systemName: "phone.fill")
-        midMobileIcon.tintColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0)
+        midMobileIcon.tintColor = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0) // Pink #E91E63
         midMobileIcon.contentMode = .scaleAspectFit
         midMobileRowView.addSubview(midMobileIcon)
 
@@ -621,7 +619,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midMobileField.translatesAutoresizingMaskIntoConstraints = false
         midMobileField.placeholder = "Type your 10-digit mobile"
         midMobileField.text = "" // User enters value
-        midMobileField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        midMobileField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         midMobileField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         midMobileField.keyboardType = .phonePad
         midMobileField.delegate = self
@@ -629,30 +627,30 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midMobileRowView.addSubview(midMobileField)
 
         midMobileUnderline.translatesAutoresizingMaskIntoConstraints = false
-        midMobileUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        midMobileUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midMobileRowView.addSubview(midMobileUnderline)
 
         midMobileInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        midMobileInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        midMobileInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        midMobileInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
+        midMobileInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midMobileInfoButton.addTarget(self, action: #selector(showMobileInfo), for: .touchUpInside)
         midMobileRowView.addSubview(midMobileInfoButton)
 
         midMobileArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        midMobileArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        midMobileArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        midMobileArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
+        midMobileArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         midMobileArrowButton.addTarget(self, action: #selector(handleMobileSubmitAndSendOTP), for: .touchUpInside)
         midMobileRowView.addSubview(midMobileArrowButton)
 
         midMobileCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        midMobileCheckmark.image = UIImage(systemName: "checkmark")
+        midMobileCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         midMobileCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         midMobileCheckmark.isHidden = true
         midMobileRowView.addSubview(midMobileCheckmark)
 
         midMobileSpinner.translatesAutoresizingMaskIntoConstraints = false
         midMobileSpinner.hidesWhenStopped = true
-        midMobileSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        midMobileSpinner.color = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midMobileRowView.addSubview(midMobileSpinner)
 
         // 5. Parent Code Row (Revealed after OTP verified)
@@ -662,7 +660,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         midParentIcon.translatesAutoresizingMaskIntoConstraints = false
         midParentIcon.image = UIImage(systemName: "person.crop.circle.badge.checkmark") ?? UIImage(systemName: "person.fill")
-        midParentIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        midParentIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Amber Gold #FFB848
         midParentIcon.contentMode = .scaleAspectFit
         midParentRowView.addSubview(midParentIcon)
 
@@ -673,7 +671,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midParentCodeField.translatesAutoresizingMaskIntoConstraints = false
         midParentCodeField.placeholder = "0001"
         midParentCodeField.text = "" // User enters value
-        midParentCodeField.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        midParentCodeField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         midParentCodeField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         midParentCodeField.keyboardType = .asciiCapable
         midParentCodeField.delegate = self
@@ -681,50 +679,49 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midParentRowView.addSubview(midParentCodeField)
 
         midParentUnderline.translatesAutoresizingMaskIntoConstraints = false
-        midParentUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        midParentUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midParentRowView.addSubview(midParentUnderline)
 
         midParentInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        midParentInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        midParentInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        midParentInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
+        midParentInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midParentInfoButton.addTarget(self, action: #selector(showParentInfo), for: .touchUpInside)
         midParentRowView.addSubview(midParentInfoButton)
 
         midParentArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        midParentArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        midParentArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        midParentArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
+        midParentArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         midParentArrowButton.addTarget(self, action: #selector(handleParentCodeSubmitAndOpenDetails), for: .touchUpInside)
         midParentRowView.addSubview(midParentArrowButton)
 
         midParentCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        midParentCheckmark.image = UIImage(systemName: "checkmark")
+        midParentCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         midParentCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         midParentCheckmark.isHidden = true
         midParentRowView.addSubview(midParentCheckmark)
 
         midParentSpinner.translatesAutoresizingMaskIntoConstraints = false
         midParentSpinner.hidesWhenStopped = true
-        midParentSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        midParentSpinner.color = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midParentRowView.addSubview(midParentSpinner)
 
-        // Mid Bottom Bar
+        // Mid Bottom Bar (Matching Login Card Bottom Bar #262D35)
         midBottomBar.translatesAutoresizingMaskIntoConstraints = false
-        midBottomBar.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        midBottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
         midCardView.addSubview(midBottomBar)
 
         midCancelButton.translatesAutoresizingMaskIntoConstraints = false
         midCancelButton.setTitle("Cancel", for: .normal)
-        midCancelButton.setTitleColor(.white, for: .normal)
+        midCancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
         midCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         midCancelButton.addTarget(self, action: #selector(handleCancelTap), for: .touchUpInside)
         midBottomBar.addSubview(midCancelButton)
 
-        // Setup dynamic bottom bar constraints
-        midEmailToBottomConstraint = midBottomBar.topAnchor.constraint(equalTo: midEmailRowView.bottomAnchor, constant: 20)
+        // Setup dynamic bottom bar constraints: default wraps below Mobile row
         midMobileToBottomConstraint = midBottomBar.topAnchor.constraint(equalTo: midMobileRowView.bottomAnchor, constant: 20)
         midParentToBottomConstraint = midBottomBar.topAnchor.constraint(equalTo: midParentRowView.bottomAnchor, constant: 20)
 
-        midEmailToBottomConstraint?.isActive = true // Default state in Card 2
+        midMobileToBottomConstraint?.isActive = true // Default state in Card 2 (holds both Email and Mobile together)
 
         NSLayoutConstraint.activate([
             midCardView.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 14),
@@ -823,7 +820,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             midEmailSpinner.centerXAnchor.constraint(equalTo: midEmailArrowButton.centerXAnchor),
             midEmailSpinner.centerYAnchor.constraint(equalTo: midEmailArrowButton.centerYAnchor),
 
-            // 4. Mobile Row
+            // 4. Mobile Row (Displayed alongside Email)
             midMobileRowView.topAnchor.constraint(equalTo: midEmailRowView.bottomAnchor, constant: 14),
             midMobileRowView.leadingAnchor.constraint(equalTo: midCardView.leadingAnchor, constant: 16),
             midMobileRowView.trailingAnchor.constraint(equalTo: midCardView.trailingAnchor, constant: -16),
@@ -865,7 +862,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             midMobileSpinner.centerXAnchor.constraint(equalTo: midMobileArrowButton.centerXAnchor),
             midMobileSpinner.centerYAnchor.constraint(equalTo: midMobileArrowButton.centerYAnchor),
 
-            // 5. Parent Code Row
+            // 5. Parent Code Row (Revealed after OTP verified)
             midParentRowView.topAnchor.constraint(equalTo: midMobileRowView.bottomAnchor, constant: 14),
             midParentRowView.leadingAnchor.constraint(equalTo: midCardView.leadingAnchor, constant: 16),
             midParentRowView.trailingAnchor.constraint(equalTo: midCardView.trailingAnchor, constant: -16),
@@ -922,7 +919,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private func buildDetailsCard() {
         detailsCardView.translatesAutoresizingMaskIntoConstraints = false
         detailsCardView.backgroundColor = .white
-        detailsCardView.layer.cornerRadius = 18
+        detailsCardView.layer.cornerRadius = 16
         detailsCardView.layer.masksToBounds = true
         detailsCardView.isHidden = true
         contentView.addSubview(detailsCardView)
@@ -930,18 +927,18 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         // 1. Trust Code Row
         buildDetailRow(container: dtTrustRow, iconView: dtTrustBadgeIcon, iconWrapper: dtTrustBadge, isBadge: true, label: dtTrustTitleLabel, title: "Trust/Institution code*", field: dtTrustCodeField, placeholder: "Type your trust code", underline: dtTrustUnderline, isEnabled: false)
         dtTrustCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        dtTrustCheckmark.image = UIImage(systemName: "checkmark")
+        dtTrustCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         dtTrustCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         dtTrustRow.addSubview(dtTrustCheckmark)
 
         dtTrustArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        dtTrustArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        dtTrustArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        dtTrustArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
+        dtTrustArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         dtTrustRow.addSubview(dtTrustArrowButton)
 
         dtTrustInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        dtTrustInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        dtTrustInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        dtTrustInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
+        dtTrustInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         dtTrustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
         dtTrustRow.addSubview(dtTrustInfoButton)
 
@@ -973,11 +970,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         detailsCardView.addSubview(dtTitleRow)
 
         // 3. First Name*
-        buildDetailRow(container: dtFnameRow, iconView: dtFnameIcon, iconName: "person.fill", iconColor: UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0), label: dtFnameLabel, title: "First Name*", field: dtFnameField, placeholder: "Type your First Name", underline: dtFnameUnderline)
+        buildDetailRow(container: dtFnameRow, iconView: dtFnameIcon, iconName: "person.fill", iconColor: UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), label: dtFnameLabel, title: "First Name*", field: dtFnameField, placeholder: "Type your First Name", underline: dtFnameUnderline)
         detailsCardView.addSubview(dtFnameRow)
 
         // 4. Last Name*
-        buildDetailRow(container: dtLnameRow, iconView: dtLnameIcon, iconName: "person.fill", iconColor: UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0), label: dtLnameLabel, title: "Last Name*", field: dtLnameField, placeholder: "Type your Last Name", underline: dtLnameUnderline)
+        buildDetailRow(container: dtLnameRow, iconView: dtLnameIcon, iconName: "person.fill", iconColor: UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), label: dtLnameLabel, title: "Last Name*", field: dtLnameField, placeholder: "Type your Last Name", underline: dtLnameUnderline)
         detailsCardView.addSubview(dtLnameRow)
 
         // 5. Password*
@@ -985,8 +982,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         dtPasswordField.isSecureTextEntry = true
         dtShowPasswordButton.translatesAutoresizingMaskIntoConstraints = false
         dtShowPasswordButton.setTitle("Show", for: .normal)
-        dtShowPasswordButton.setTitleColor(UIColor(red: 100/255, green: 110/255, blue: 120/255, alpha: 1.0), for: .normal)
-        dtShowPasswordButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        dtShowPasswordButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        dtShowPasswordButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
         dtShowPasswordButton.addTarget(self, action: #selector(toggleShowPassword), for: .touchUpInside)
         dtPasswordRow.addSubview(dtShowPasswordButton)
         NSLayoutConstraint.activate([
@@ -1010,7 +1007,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         // 7. Email*
         buildDetailRow(container: dtEmailRow, iconView: dtEmailIcon, iconName: "envelope.fill", iconColor: UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0), label: dtEmailLabel, title: "Email*", field: dtEmailField, placeholder: "Type your email address", underline: dtEmailUnderline, hasCustomTrailing: true)
         dtEmailCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        dtEmailCheckmark.image = UIImage(systemName: "checkmark")
+        dtEmailCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         dtEmailCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         dtEmailRow.addSubview(dtEmailCheckmark)
         NSLayoutConstraint.activate([
@@ -1025,18 +1022,18 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         // 8. Mobile phone*
         buildDetailRow(container: dtMobileRow, iconView: dtMobileIcon, iconName: "hand.tap.fill", iconColor: UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 1.0), label: dtMobileLabel, title: "Mobile phone*", field: dtMobileField, placeholder: "Type your 10-digit mobile", underline: dtMobileUnderline, hasCustomTrailing: true)
         dtMobileInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        dtMobileInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        dtMobileInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        dtMobileInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
+        dtMobileInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         dtMobileInfoButton.addTarget(self, action: #selector(showMobileInfo), for: .touchUpInside)
         dtMobileRow.addSubview(dtMobileInfoButton)
 
         dtMobileArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        dtMobileArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        dtMobileArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        dtMobileArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
+        dtMobileArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         dtMobileRow.addSubview(dtMobileArrowButton)
 
         dtMobileCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        dtMobileCheckmark.image = UIImage(systemName: "checkmark")
+        dtMobileCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         dtMobileCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         dtMobileRow.addSubview(dtMobileCheckmark)
 
@@ -1074,20 +1071,20 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         dtGenderLabel.translatesAutoresizingMaskIntoConstraints = false
         dtGenderLabel.text = "Gender"
-        dtGenderLabel.textColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        dtGenderLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         dtGenderLabel.font = UIFont.systemFont(ofSize: 14.5, weight: .bold)
         dtGenderRow.addSubview(dtGenderLabel)
 
         dtMaleRadioButton.translatesAutoresizingMaskIntoConstraints = false
         dtMaleRadioButton.setTitle(" 🔘 Male", for: .normal)
-        dtMaleRadioButton.setTitleColor(UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0), for: .normal)
+        dtMaleRadioButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
         dtMaleRadioButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         dtMaleRadioButton.addTarget(self, action: #selector(selectMale), for: .touchUpInside)
         dtGenderRow.addSubview(dtMaleRadioButton)
 
         dtFemaleRadioButton.translatesAutoresizingMaskIntoConstraints = false
         dtFemaleRadioButton.setTitle(" ⚪ Female", for: .normal)
-        dtFemaleRadioButton.setTitleColor(UIColor(red: 100/255, green: 110/255, blue: 120/255, alpha: 1.0), for: .normal)
+        dtFemaleRadioButton.setTitleColor(UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0), for: .normal)
         dtFemaleRadioButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         dtFemaleRadioButton.addTarget(self, action: #selector(selectFemale), for: .touchUpInside)
         dtGenderRow.addSubview(dtFemaleRadioButton)
@@ -1113,19 +1110,19 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         // 11. Enter Main/Parent Branch Code#
         buildDetailRow(container: dtParentRow, iconView: dtParentIcon, iconName: "person.crop.circle.badge.checkmark", iconColor: UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0), label: dtParentLabel, title: "Enter Main/Parent Branch Code#", field: dtParentCodeField, placeholder: "0001", underline: dtParentUnderline, hasCustomTrailing: true)
         dtParentInfoButton.translatesAutoresizingMaskIntoConstraints = false
-        dtParentInfoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        dtParentInfoButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        dtParentInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
+        dtParentInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         dtParentInfoButton.addTarget(self, action: #selector(showParentInfo), for: .touchUpInside)
         dtParentRow.addSubview(dtParentInfoButton)
 
         dtParentArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        dtParentArrowButton.setImage(UIImage(systemName: "arrow.right"), for: .normal)
-        dtParentArrowButton.tintColor = UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+        dtParentArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
+        dtParentArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         dtParentArrowButton.addTarget(self, action: #selector(handleParentCodeSubmitAndOpenDetails), for: .touchUpInside)
         dtParentRow.addSubview(dtParentArrowButton)
 
         dtParentCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        dtParentCheckmark.image = UIImage(systemName: "checkmark")
+        dtParentCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         dtParentCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
         dtParentRow.addSubview(dtParentCheckmark)
 
@@ -1206,14 +1203,14 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             dtUploadPreview.bottomAnchor.constraint(equalTo: dtUploadBox.bottomAnchor)
         ])
 
-        // Details Bottom Bar
+        // Details Bottom Bar (Matching Login Card Bottom Bar #262D35)
         dtBottomBar.translatesAutoresizingMaskIntoConstraints = false
-        dtBottomBar.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        dtBottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
         detailsCardView.addSubview(dtBottomBar)
 
         dtCancelButton.translatesAutoresizingMaskIntoConstraints = false
         dtCancelButton.setTitle("Cancel", for: .normal)
-        dtCancelButton.setTitleColor(.white, for: .normal)
+        dtCancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
         dtCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         dtCancelButton.addTarget(self, action: #selector(handleCancelTap), for: .touchUpInside)
         dtBottomBar.addSubview(dtCancelButton)
@@ -1221,7 +1218,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         dtRegisterButton.translatesAutoresizingMaskIntoConstraints = false
         dtRegisterButton.setTitle("Register Branch  ➔", for: .normal)
         dtRegisterButton.setTitleColor(.white, for: .normal)
-        dtRegisterButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        dtRegisterButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0) // Matching Login Button Emerald Green
+        dtRegisterButton.layer.cornerRadius = 6
+        dtRegisterButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
         dtRegisterButton.addTarget(self, action: #selector(handleFinalUserRegistration), for: .touchUpInside)
         dtBottomBar.addSubview(dtRegisterButton)
 
@@ -1320,6 +1319,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
             dtRegisterButton.trailingAnchor.constraint(equalTo: dtBottomBar.trailingAnchor, constant: -20),
             dtRegisterButton.centerYAnchor.constraint(equalTo: dtBottomBar.centerYAnchor),
+            dtRegisterButton.heightAnchor.constraint(equalToConstant: 38),
+            dtRegisterButton.widthAnchor.constraint(equalToConstant: 160),
 
             dtRegisterSpinner.centerYAnchor.constraint(equalTo: dtRegisterButton.centerYAnchor),
             dtRegisterSpinner.centerXAnchor.constraint(equalTo: dtRegisterButton.centerXAnchor)
@@ -1395,7 +1396,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         if let text = text {
             field.text = text
         }
-        field.textColor = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        field.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         field.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
         field.isEnabled = isEnabled
         field.delegate = self
@@ -1403,7 +1404,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         container.addSubview(field)
 
         underline.translatesAutoresizingMaskIntoConstraints = false
-        underline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         container.addSubview(underline)
 
         let anchorLeading = (isBadge && iconWrapper != nil) ? iconWrapper!.trailingAnchor : iconView.trailingAnchor
@@ -1436,7 +1437,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             string: cleanText,
             attributes: [
                 .font: UIFont.systemFont(ofSize: 14.5, weight: .bold),
-                .foregroundColor: UIColor(red: 32/255, green: 33/255, blue: 36/255, alpha: 1.0)
+                .foregroundColor: UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
             ]
         )
         if isRequired {
@@ -1459,7 +1460,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         view.addSubview(otpOverlayBackdrop)
 
         otpCardContainer.translatesAutoresizingMaskIntoConstraints = false
-        otpCardContainer.backgroundColor = UIColor(red: 21/255, green: 64/255, blue: 141/255, alpha: 1.0)
+        otpCardContainer.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0) // Matching theme
         otpCardContainer.layer.cornerRadius = 14
         otpCardContainer.layer.masksToBounds = true
         otpOverlayBackdrop.addSubview(otpCardContainer)
@@ -1483,7 +1484,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         otpCardContainer.addSubview(otpInputField)
 
         otpUnderline.translatesAutoresizingMaskIntoConstraints = false
-        otpUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+        otpUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         otpCardContainer.addSubview(otpUnderline)
 
         otpErrorLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -1510,18 +1511,18 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         otpCancelButton.translatesAutoresizingMaskIntoConstraints = false
         otpCancelButton.setTitle("Cancel", for: .normal)
         otpCancelButton.setTitleColor(.white, for: .normal)
-        otpCancelButton.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.75)
+        otpCancelButton.backgroundColor = UIColor(red: 70/255, green: 80/255, blue: 90/255, alpha: 1.0)
         otpCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        otpCancelButton.layer.cornerRadius = 4
+        otpCancelButton.layer.cornerRadius = 6
         otpCancelButton.addTarget(self, action: #selector(handleCancelOTP), for: .touchUpInside)
         otpCardContainer.addSubview(otpCancelButton)
 
         otpVerifyButton.translatesAutoresizingMaskIntoConstraints = false
         otpVerifyButton.setTitle("Verify OTP", for: .normal)
         otpVerifyButton.setTitleColor(.white, for: .normal)
-        otpVerifyButton.backgroundColor = UIColor(red: 2/255, green: 136/255, blue: 209/255, alpha: 1.0)
+        otpVerifyButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0) // Green
         otpVerifyButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
-        otpVerifyButton.layer.cornerRadius = 4
+        otpVerifyButton.layer.cornerRadius = 6
         otpVerifyButton.addTarget(self, action: #selector(handleVerifyOTP), for: .touchUpInside)
         otpCardContainer.addSubview(otpVerifyButton)
 
@@ -1604,7 +1605,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         helpTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         helpTitleLabel.text = "Help"
-        helpTitleLabel.textColor = UIColor(red: 45/255, green: 45/255, blue: 45/255, alpha: 1.0)
+        helpTitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         helpTitleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
         helpHeaderView.addSubview(helpTitleLabel)
 
@@ -1631,7 +1632,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         helpSpinner.translatesAutoresizingMaskIntoConstraints = false
         helpSpinner.hidesWhenStopped = true
-        helpSpinner.color = UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0)
+        helpSpinner.color = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         helpCardContainer.addSubview(helpSpinner)
 
         NSLayoutConstraint.activate([
@@ -1725,6 +1726,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     // MARK: - Actions & Network Calls
 
     // Step 1: Check Trust Code (POST /api/check-trust-code)
+    // On success: Displays Emblem Logo, Email Field, AND Mobile Field simultaneously!
     @objc private func handleTrustCodeSubmit() {
         view.endEditing(true)
         let code = initTrustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -1788,7 +1790,12 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
-                    // Transition to midCardView with Email row active
+                    // Transition to midCardView with BOTH Email and Mobile rows visible!
+                    self.midEmailRowView.isHidden = false
+                    self.midMobileRowView.isHidden = false
+                    self.midParentRowView.isHidden = true
+                    self.midMobileToBottomConstraint?.isActive = true
+
                     self.contentBottomConstraint?.isActive = false
                     self.contentBottomConstraint = self.contentView.bottomAnchor.constraint(equalTo: self.midCardView.bottomAnchor, constant: 40)
                     self.contentBottomConstraint?.isActive = true
@@ -1807,8 +1814,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         }.resume()
     }
 
-    // Step 2: Verify Email first via API (POST /api/check-email), then reveal Mobile field (Chart Flow)
-    @objc private func handleEmailVerifyAndRevealMobile() {
+    // Step 2: Email verification via API (POST /api/check-email)
+    @objc private func handleEmailVerify() {
         view.endEditing(true)
         let email = midEmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
@@ -1855,18 +1862,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                 if status {
                     self.isEmailVerified = true
                     self.midEmailCheckmark.isHidden = false
-                    self.midEmailUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
-
+                    self.midEmailUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-
-                    // Expand mid card to show Mobile Row
-                    self.midEmailToBottomConstraint?.isActive = false
-                    self.midMobileToBottomConstraint?.isActive = true
-
-                    UIView.animate(withDuration: 0.3) {
-                        self.midMobileRowView.isHidden = false
-                        self.view.layoutIfNeeded()
-                    }
                     self.midMobileField.becomeFirstResponder()
                 } else {
                     self.midEmailUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
@@ -1883,8 +1880,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         let mobile = midMobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let trustCode = midTrustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        guard isEmailVerified else {
-            showBannerError("Please verify your email first.")
+        guard !email.isEmpty, email.contains("@"), email.contains(".") else {
+            midEmailUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+            showBannerError("Please enter a valid Email address.")
             return
         }
 
@@ -1936,6 +1934,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                 let apiMessage = self.extractMessage(from: json, fallback: "Failed to send OTP. Please check mobile number.")
 
                 if status {
+                    self.isEmailVerified = true
+                    self.midEmailCheckmark.isHidden = false
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     self.presentOTPDialog()
                 } else {
@@ -1992,6 +1992,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     }
 
     // Step 4: Verify OTP (POST /api/check-register-otp)
+    // On success: Reveals Parent Code row!
     @objc private func handleVerifyOTP() {
         view.endEditing(true)
         let otp = otpInputField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -2049,7 +2050,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                     self.isMobileVerified = true
 
                     self.midMobileCheckmark.isHidden = false
-                    self.midMobileUnderline.backgroundColor = UIColor(red: 65/255, green: 132/255, blue: 214/255, alpha: 1.0)
+                    self.midMobileUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
 
                     UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
@@ -2284,17 +2285,17 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     @objc private func selectMale() {
         selectedGender = 1
         dtMaleRadioButton.setTitle(" 🔘 Male", for: .normal)
-        dtMaleRadioButton.setTitleColor(UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0), for: .normal)
+        dtMaleRadioButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
         dtFemaleRadioButton.setTitle(" ⚪ Female", for: .normal)
-        dtFemaleRadioButton.setTitleColor(UIColor(red: 100/255, green: 110/255, blue: 120/255, alpha: 1.0), for: .normal)
+        dtFemaleRadioButton.setTitleColor(UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0), for: .normal)
     }
 
     @objc private func selectFemale() {
         selectedGender = 2
         dtFemaleRadioButton.setTitle(" 🔘 Female", for: .normal)
-        dtFemaleRadioButton.setTitleColor(UIColor(red: 19/255, green: 59/255, blue: 124/255, alpha: 1.0), for: .normal)
+        dtFemaleRadioButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
         dtMaleRadioButton.setTitle(" ⚪ Male", for: .normal)
-        dtMaleRadioButton.setTitleColor(UIColor(red: 100/255, green: 110/255, blue: 120/255, alpha: 1.0), for: .normal)
+        dtMaleRadioButton.setTitleColor(UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0), for: .normal)
     }
 
     @objc private func handleCancelTap() {
@@ -2452,7 +2453,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         if textField == initTrustCodeField {
             handleTrustCodeSubmit()
         } else if textField == midEmailField {
-            handleEmailVerifyAndRevealMobile()
+            midMobileField.becomeFirstResponder()
         } else if textField == midMobileField {
             handleMobileSubmitAndSendOTP()
         } else if textField == midParentCodeField {
