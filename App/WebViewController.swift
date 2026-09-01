@@ -6,13 +6,15 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
     private let initialURLString: String
     private var webView: WKWebView!
-    private var progressView: UIProgressView!
     private var refreshControl: UIRefreshControl!
     private var offlineOverlayView: UIView!
 
-    // MARK: - Native Blue App Frame & Border
+    // MARK: - Native Blue App Frame
     private let topFrameView = UIView()
-    private let topFrameBorderLine = UIView()
+
+    // MARK: - Native Round Activity Loader (Replaces Web Line Loader)
+    private let loaderHUD = UIView()
+    private let activitySpinner = UIActivityIndicatorView(style: .large)
 
     private let networkMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "WebNetworkMonitorQueue")
@@ -30,11 +32,11 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationController?.setNavigationBarHidden(true, animated: false)
-        view.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0) // Rich SAT Theme Blue Frame
+        view.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0) // Rich SAT Deep Blue
 
         setupTopFrame()
         setupWebView()
-        setupProgressView()
+        setupLoaderHUD()
         setupRefreshControl()
         setupOfflineOverlay()
         setupNetworkMonitoring()
@@ -50,26 +52,17 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         navigationController?.setNavigationBarHidden(true, animated: false)
     }
 
-    // MARK: - Top Blue App Frame (Covers Status Bar & Bounds Web View)
+    // MARK: - Top Blue App Frame (Covers Status Bar & Encloses Screen)
     private func setupTopFrame() {
         topFrameView.translatesAutoresizingMaskIntoConstraints = false
         topFrameView.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0) // Android-matched SAT Deep Blue
         view.addSubview(topFrameView)
 
-        topFrameBorderLine.translatesAutoresizingMaskIntoConstraints = false
-        topFrameBorderLine.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.4) // Subtle accent line
-        topFrameView.addSubview(topFrameBorderLine)
-
         NSLayoutConstraint.activate([
             topFrameView.topAnchor.constraint(equalTo: view.topAnchor),
             topFrameView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topFrameView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            topFrameView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-
-            topFrameBorderLine.leadingAnchor.constraint(equalTo: topFrameView.leadingAnchor),
-            topFrameBorderLine.trailingAnchor.constraint(equalTo: topFrameView.trailingAnchor),
-            topFrameBorderLine.bottomAnchor.constraint(equalTo: topFrameView.bottomAnchor),
-            topFrameBorderLine.heightAnchor.constraint(equalToConstant: 1.0)
+            topFrameView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
         ])
     }
 
@@ -102,25 +95,52 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-
-        webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
     }
 
-    // MARK: - Animated Loading Progress Line (Hides Under Top Blue Frame)
-    private func setupProgressView() {
-        progressView = UIProgressView(progressViewStyle: .default)
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.progressTintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0) // Vibrant Cyan Progress
-        progressView.trackTintColor = .clear
-        progressView.alpha = 0
-        view.addSubview(progressView)
+    // MARK: - Native Round Circular Loader (App-Like Spinner)
+    private func setupLoaderHUD() {
+        loaderHUD.translatesAutoresizingMaskIntoConstraints = false
+        loaderHUD.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 0.92) // Deep SAT Blue Glass HUD
+        loaderHUD.layer.cornerRadius = 16
+        loaderHUD.layer.shadowColor = UIColor.black.cgColor
+        loaderHUD.layer.shadowOpacity = 0.25
+        loaderHUD.layer.shadowOffset = CGSize(width: 0, height: 4)
+        loaderHUD.layer.shadowRadius = 8
+        loaderHUD.alpha = 0
+        loaderHUD.isHidden = true
+        view.addSubview(loaderHUD)
+
+        activitySpinner.translatesAutoresizingMaskIntoConstraints = false
+        activitySpinner.color = .white
+        activitySpinner.hidesWhenStopped = true
+        loaderHUD.addSubview(activitySpinner)
 
         NSLayoutConstraint.activate([
-            progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            progressView.heightAnchor.constraint(equalToConstant: 2.5)
+            loaderHUD.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loaderHUD.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            loaderHUD.widthAnchor.constraint(equalToConstant: 72),
+            loaderHUD.heightAnchor.constraint(equalToConstant: 72),
+
+            activitySpinner.centerXAnchor.constraint(equalTo: loaderHUD.centerXAnchor),
+            activitySpinner.centerYAnchor.constraint(equalTo: loaderHUD.centerYAnchor)
         ])
+    }
+
+    private func showRoundLoader() {
+        loaderHUD.isHidden = false
+        activitySpinner.startAnimating()
+        UIView.animate(withDuration: 0.2) {
+            self.loaderHUD.alpha = 1.0
+        }
+    }
+
+    private func hideRoundLoader() {
+        UIView.animate(withDuration: 0.25, animations: {
+            self.loaderHUD.alpha = 0.0
+        }, completion: { _ in
+            self.loaderHUD.isHidden = true
+            self.activitySpinner.stopAnimating()
+        })
     }
 
     private func setupRefreshControl() {
@@ -284,7 +304,33 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         refreshControl.endRefreshing()
     }
 
-    // MARK: - WKNavigationDelegate (Apple Standards)
+    // MARK: - WKNavigationDelegate (Native Round Spinner Control & Apple Standards)
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        showRoundLoader()
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        hideRoundLoader()
+        refreshControl.endRefreshing()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        hideRoundLoader()
+        refreshControl.endRefreshing()
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        hideRoundLoader()
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain &&
+            (nsError.code == NSURLErrorNotConnectedToInternet ||
+             nsError.code == NSURLErrorCannotFindHost ||
+             nsError.code == NSURLErrorTimedOut) {
+            offlineOverlayView.isHidden = false
+        }
+        refreshControl.endRefreshing()
+    }
+
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = navigationAction.request.url else {
             decisionHandler(.allow)
@@ -308,17 +354,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         }
 
         decisionHandler(.allow)
-    }
-
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        let nsError = error as NSError
-        if nsError.domain == NSURLErrorDomain &&
-            (nsError.code == NSURLErrorNotConnectedToInternet ||
-             nsError.code == NSURLErrorCannotFindHost ||
-             nsError.code == NSURLErrorTimedOut) {
-            offlineOverlayView.isHidden = false
-        }
-        refreshControl.endRefreshing()
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
@@ -345,29 +380,5 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
             webView.load(navigationAction.request)
         }
         return nil
-    }
-
-    // MARK: - Progress KVO Observer (Smooth Progress Tracking and Fade-Out Under Frame)
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-        if keyPath == "estimatedProgress" {
-            let progress = Float(webView.estimatedProgress)
-            progressView.setProgress(progress, animated: true)
-
-            if progress < 1.0 {
-                UIView.animate(withDuration: 0.15) {
-                    self.progressView.alpha = 1.0
-                }
-            } else {
-                UIView.animate(withDuration: 0.35, delay: 0.15, options: .curveEaseOut, animations: {
-                    self.progressView.alpha = 0.0
-                }, completion: { _ in
-                    self.progressView.setProgress(0, animated: false)
-                })
-            }
-        }
-    }
-
-    deinit {
-        webView?.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
     }
 }
