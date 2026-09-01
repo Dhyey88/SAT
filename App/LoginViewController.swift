@@ -66,6 +66,15 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     private let helpTextView = UITextView()
     private let helpSpinner = UIActivityIndicatorView(style: .medium)
 
+    // MARK: - Android-Style Message Popup (247 / Available on sign up only)
+    private let androidPopupBackdrop = UIView()
+    private let androidPopupCard = UIView()
+    private let androidPopupEmblem = UIImageView()
+    private let androidPopupCodeLabel = UILabel()
+    private let androidPopupMsgLabel = UILabel()
+    private let androidPopupVersionLabel = UILabel()
+    private let androidPopupOkButton = UIButton(type: .system)
+
     // MARK: - Offline View (App Store Guideline 4.2 Compliant)
     private let offlineOverlayView = UIView()
     private let networkMonitor = NWPathMonitor()
@@ -79,6 +88,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         setupKeyboardHandling()
         setupNetworkMonitoring()
         setupHelpDialogUI()
+        setupAndroidPopupUI()
         AppConfig.fetchRemoteSettings()
     }
 
@@ -740,51 +750,123 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         presentHelpModal(title: "Help", defaultText: fallbackText, apiEndpoint: AppConfig.API.getHelpReg)
     }
 
+    // MARK: - Privacy Policy & Contact Popups (Android-Matched 247 Dialog)
     @objc private func openPrivacyPolicyModal() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        let defaultPrivacy = """
-        Privacy Policy & Terms of Service
-
-        1. Data Protection & Security:
-        Your registration and transaction data are securely encrypted and protected under our organization's data protection standards.
-
-        2. Registration & Account Policy:
-        Register one User ID per mobile device. All sign-up requests require approval by authorized staff.
-
-        3. Organization Privacy Charter:
-        The privacy policy and terms of service of the Trust code organization, applicable on sign-up only, are as defined by its governing body.
-
-        For questions or data access requests, please contact:
-        Email: \(AppConfig.supportEmail)
-        Helpline: \(AppConfig.helplineNumber)
-        """
-        presentHelpModal(title: "Privacy Policy", defaultText: defaultPrivacy, apiEndpoint: AppConfig.API.getHelpReg)
+        presentAndroidStylePopup(code: "247", message: "Available on sign up only.")
     }
 
     @objc private func openContactSheet() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        let sheet = UIAlertController(
-            title: "Contact & Support",
-            message: "Helpline: \(AppConfig.helplineNumber)\nSupport Email: \(AppConfig.supportEmail)",
-            preferredStyle: .actionSheet
-        )
-        sheet.addAction(UIAlertAction(title: "📞  Call Helpline (\(AppConfig.helplineNumber))", style: .default) { _ in
-            if let url = URL(string: "tel://\(AppConfig.helplineNumber)") {
-                UIApplication.shared.open(url)
-            }
-        })
-        sheet.addAction(UIAlertAction(title: "✉️  Email Support (\(AppConfig.supportEmail))", style: .default) { _ in
-            if let url = URL(string: "mailto:\(AppConfig.supportEmail)") {
-                UIApplication.shared.open(url)
-            }
-        })
-        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        presentAndroidStylePopup(code: "247", message: "Available on sign up only.")
+    }
 
-        if let popover = sheet.popoverPresentationController {
-            popover.sourceView = contactButton
-            popover.sourceRect = contactButton.bounds
+    // MARK: - Android Style Modal Dialog (247 / Available on sign up only.)
+    private func setupAndroidPopupUI() {
+        androidPopupBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        androidPopupBackdrop.isHidden = true
+        view.addSubview(androidPopupBackdrop)
+
+        let dismissTap = UITapGestureRecognizer(target: self, action: #selector(dismissAndroidPopup))
+        androidPopupBackdrop.addGestureRecognizer(dismissTap)
+
+        androidPopupCard.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupCard.backgroundColor = .white
+        androidPopupCard.layer.cornerRadius = 12
+        androidPopupCard.layer.masksToBounds = true
+        androidPopupBackdrop.addSubview(androidPopupCard)
+
+        let stopTap = UITapGestureRecognizer(target: nil, action: nil)
+        androidPopupCard.addGestureRecognizer(stopTap)
+
+        // Green Trust Emblem
+        androidPopupEmblem.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupEmblem.image = UIImage(named: "trust_emblem") ?? UIImage(systemName: "checkmark.seal.fill")
+        androidPopupEmblem.tintColor = UIColor(red: 40/255, green: 167/255, blue: 69/255, alpha: 1.0)
+        androidPopupEmblem.contentMode = .scaleAspectFit
+        androidPopupCard.addSubview(androidPopupEmblem)
+
+        // Code Label (e.g. "247")
+        androidPopupCodeLabel.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupCodeLabel.text = "247"
+        androidPopupCodeLabel.textColor = UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 1.0)
+        androidPopupCodeLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        androidPopupCard.addSubview(androidPopupCodeLabel)
+
+        // Body Message: "Available on sign up only."
+        androidPopupMsgLabel.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupMsgLabel.text = "Available on sign up only."
+        androidPopupMsgLabel.textColor = UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 1.0)
+        androidPopupMsgLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        androidPopupMsgLabel.numberOfLines = 0
+        androidPopupCard.addSubview(androidPopupMsgLabel)
+
+        // Version Label ("v t 2.0.10") at bottom-left
+        androidPopupVersionLabel.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupVersionLabel.text = AppConfig.appVersion
+        androidPopupVersionLabel.textColor = UIColor(red: 60/255, green: 60/255, blue: 60/255, alpha: 1.0)
+        androidPopupVersionLabel.font = UIFont.systemFont(ofSize: 12.5, weight: .regular)
+        androidPopupCard.addSubview(androidPopupVersionLabel)
+
+        // Ok Button at bottom-right
+        androidPopupOkButton.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupOkButton.setTitle("Ok", for: .normal)
+        androidPopupOkButton.setTitleColor(UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 1.0), for: .normal)
+        androidPopupOkButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        androidPopupOkButton.addTarget(self, action: #selector(dismissAndroidPopup), for: .touchUpInside)
+        androidPopupCard.addSubview(androidPopupOkButton)
+
+        NSLayoutConstraint.activate([
+            androidPopupBackdrop.topAnchor.constraint(equalTo: view.topAnchor),
+            androidPopupBackdrop.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            androidPopupBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            androidPopupBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            androidPopupCard.centerXAnchor.constraint(equalTo: androidPopupBackdrop.centerXAnchor),
+            androidPopupCard.centerYAnchor.constraint(equalTo: androidPopupBackdrop.centerYAnchor),
+            androidPopupCard.leadingAnchor.constraint(equalTo: androidPopupBackdrop.leadingAnchor, constant: 28),
+            androidPopupCard.trailingAnchor.constraint(equalTo: androidPopupBackdrop.trailingAnchor, constant: -28),
+
+            androidPopupEmblem.topAnchor.constraint(equalTo: androidPopupCard.topAnchor, constant: 22),
+            androidPopupEmblem.leadingAnchor.constraint(equalTo: androidPopupCard.leadingAnchor, constant: 20),
+            androidPopupEmblem.widthAnchor.constraint(equalToConstant: 32),
+            androidPopupEmblem.heightAnchor.constraint(equalToConstant: 32),
+
+            androidPopupCodeLabel.leadingAnchor.constraint(equalTo: androidPopupEmblem.trailingAnchor, constant: 10),
+            androidPopupCodeLabel.centerYAnchor.constraint(equalTo: androidPopupEmblem.centerYAnchor),
+
+            androidPopupMsgLabel.topAnchor.constraint(equalTo: androidPopupEmblem.bottomAnchor, constant: 18),
+            androidPopupMsgLabel.leadingAnchor.constraint(equalTo: androidPopupCard.leadingAnchor, constant: 20),
+            androidPopupMsgLabel.trailingAnchor.constraint(equalTo: androidPopupCard.trailingAnchor, constant: -20),
+
+            androidPopupVersionLabel.leadingAnchor.constraint(equalTo: androidPopupCard.leadingAnchor, constant: 20),
+            androidPopupVersionLabel.bottomAnchor.constraint(equalTo: androidPopupCard.bottomAnchor, constant: -18),
+
+            androidPopupOkButton.trailingAnchor.constraint(equalTo: androidPopupCard.trailingAnchor, constant: -24),
+            androidPopupOkButton.bottomAnchor.constraint(equalTo: androidPopupCard.bottomAnchor, constant: -14),
+            androidPopupOkButton.topAnchor.constraint(equalTo: androidPopupMsgLabel.bottomAnchor, constant: 36)
+        ])
+    }
+
+    private func presentAndroidStylePopup(code: String = "247", message: String = "Available on sign up only.") {
+        view.endEditing(true)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        androidPopupCodeLabel.text = code
+        androidPopupMsgLabel.text = message
+        androidPopupVersionLabel.text = AppConfig.appVersion
+
+        androidPopupBackdrop.alpha = 0
+        androidPopupBackdrop.isHidden = false
+        UIView.animate(withDuration: 0.25) {
+            self.androidPopupBackdrop.alpha = 1.0
         }
-        present(sheet, animated: true)
+    }
+
+    @objc private func dismissAndroidPopup() {
+        UIView.animate(withDuration: 0.2, animations: {
+            self.androidPopupBackdrop.alpha = 0
+        }) { _ in
+            self.androidPopupBackdrop.isHidden = true
+        }
     }
 
     // MARK: - Google Account Chooser & Social Login
