@@ -10,6 +10,10 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
     private var refreshControl: UIRefreshControl!
     private var offlineOverlayView: UIView!
 
+    // MARK: - Native Blue App Frame & Border
+    private let topFrameView = UIView()
+    private let topFrameBorderLine = UIView()
+
     private let networkMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "WebNetworkMonitorQueue")
     private var isConnected: Bool = true
@@ -25,6 +29,10 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationController?.setNavigationBarHidden(true, animated: false)
+        view.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0) // Rich SAT Theme Blue Frame
+
+        setupTopFrame()
         setupWebView()
         setupProgressView()
         setupRefreshControl()
@@ -37,7 +45,35 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         return .lightContent
     }
 
-    // MARK: - WKWebView Setup (Per Apple Developer Documentation)
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: false)
+    }
+
+    // MARK: - Top Blue App Frame (Covers Status Bar & Bounds Web View)
+    private func setupTopFrame() {
+        topFrameView.translatesAutoresizingMaskIntoConstraints = false
+        topFrameView.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0) // Android-matched SAT Deep Blue
+        view.addSubview(topFrameView)
+
+        topFrameBorderLine.translatesAutoresizingMaskIntoConstraints = false
+        topFrameBorderLine.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.4) // Subtle accent line
+        topFrameView.addSubview(topFrameBorderLine)
+
+        NSLayoutConstraint.activate([
+            topFrameView.topAnchor.constraint(equalTo: view.topAnchor),
+            topFrameView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            topFrameView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            topFrameView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+
+            topFrameBorderLine.leadingAnchor.constraint(equalTo: topFrameView.leadingAnchor),
+            topFrameBorderLine.trailingAnchor.constraint(equalTo: topFrameView.trailingAnchor),
+            topFrameBorderLine.bottomAnchor.constraint(equalTo: topFrameView.bottomAnchor),
+            topFrameBorderLine.heightAnchor.constraint(equalToConstant: 1.0)
+        ])
+    }
+
+    // MARK: - WKWebView Setup (Enclosed Inside Native App Shell)
     private func setupWebView() {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
@@ -51,8 +87,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true // Native swipe back/forward
         webView.scrollView.bounces = true
-        webView.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        webView.isOpaque = false
+        webView.backgroundColor = UIColor(red: 245/255, green: 247/255, blue: 252/255, alpha: 1.0) // Dashboard light background
+        webView.isOpaque = true
 
         if #available(iOS 16.4, *) {
             webView.isInspectable = true // Safari Web Inspector support
@@ -64,17 +100,19 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
             webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
     }
 
+    // MARK: - Animated Loading Progress Line (Hides Under Top Blue Frame)
     private func setupProgressView() {
         progressView = UIProgressView(progressViewStyle: .default)
         progressView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.progressTintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        progressView.progressTintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0) // Vibrant Cyan Progress
         progressView.trackTintColor = .clear
+        progressView.alpha = 0
         view.addSubview(progressView)
 
         NSLayoutConstraint.activate([
@@ -96,7 +134,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
     private func setupOfflineOverlay() {
         offlineOverlayView = UIView()
         offlineOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        offlineOverlayView.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        offlineOverlayView.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0)
         offlineOverlayView.isHidden = true
         view.addSubview(offlineOverlayView)
 
@@ -109,7 +147,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
         let iconContainer = UIView()
         iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        iconContainer.backgroundColor = UIColor(red: 55/255, green: 64/255, blue: 74/255, alpha: 1.0)
+        iconContainer.backgroundColor = UIColor(red: 30/255, green: 60/255, blue: 115/255, alpha: 1.0)
         iconContainer.layer.cornerRadius = 45
         offlineOverlayView.addSubview(iconContainer)
 
@@ -131,7 +169,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         let subtitleLabel = UILabel()
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         subtitleLabel.text = "Please connect to Wi-Fi or Mobile Data to use SAT."
-        subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.75)
+        subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.8)
         subtitleLabel.font = UIFont.systemFont(ofSize: 15)
         subtitleLabel.textAlignment = .center
         subtitleLabel.numberOfLines = 0
@@ -149,7 +187,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         retryButton.addTarget(self, action: #selector(handleRefresh), for: .touchUpInside)
         offlineOverlayView.addSubview(retryButton)
 
-        // Offline Contact / Help Button (Satisfies Guideline 4.2 Minimum Functionality)
+        // Offline Contact / Help Button
         let helpButton = UIButton(type: .system)
         helpButton.translatesAutoresizingMaskIntoConstraints = false
         helpButton.setTitle("Need Help? View Offline Support", for: .normal)
@@ -192,16 +230,16 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
     @objc private func showOfflineHelp() {
         let alert = UIAlertController(
             title: "SAT Support & Assistance",
-            message: "You are currently offline. You can contact support directly via telephone or email.\n\n• Helpline: +91 98765 43210\n• Email: support@enin.io\n• Head Office: Ahmedabad, Gujarat",
+            message: "You are currently offline. You can contact support directly via telephone or email.\n\n• Helpline: \(AppConfig.helplineNumber)\n• Email: \(AppConfig.supportEmail)",
             preferredStyle: .actionSheet
         )
-        alert.addAction(UIAlertAction(title: "Call Helpline", style: .default, handler: { _ in
-            if let url = URL(string: "tel:+919876543210"), UIApplication.shared.canOpenURL(url) {
+        alert.addAction(UIAlertAction(title: "📞  Call Helpline", style: .default, handler: { _ in
+            if let url = URL(string: "tel://\(AppConfig.helplineNumber)"), UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             }
         }))
-        alert.addAction(UIAlertAction(title: "Send Support Email", style: .default, handler: { _ in
-            if let url = URL(string: "mailto:support@enin.io"), UIApplication.shared.canOpenURL(url) {
+        alert.addAction(UIAlertAction(title: "✉️  Send Support Email", style: .default, handler: { _ in
+            if let url = URL(string: "mailto:\(AppConfig.supportEmail)"), UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             }
         }))
@@ -253,7 +291,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
             return
         }
 
-        // Intercept logout to return to LoginViewController
+        // Intercept logout to return smoothly to LoginViewController
         if url.absoluteString.contains("/logout") {
             decisionHandler(.cancel)
             dismiss(animated: true)
@@ -303,22 +341,33 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
     }
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        // Opens <a target="_blank"> links in the same webview smoothly
         if navigationAction.targetFrame == nil {
             webView.load(navigationAction.request)
         }
         return nil
     }
 
-    // MARK: - Progress KVO
+    // MARK: - Progress KVO Observer (Smooth Progress Tracking and Fade-Out Under Frame)
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "estimatedProgress" {
-            progressView.progress = Float(webView.estimatedProgress)
-            progressView.isHidden = webView.estimatedProgress >= 1.0
+            let progress = Float(webView.estimatedProgress)
+            progressView.setProgress(progress, animated: true)
+
+            if progress < 1.0 {
+                UIView.animate(withDuration: 0.15) {
+                    self.progressView.alpha = 1.0
+                }
+            } else {
+                UIView.animate(withDuration: 0.35, delay: 0.15, options: .curveEaseOut, animations: {
+                    self.progressView.alpha = 0.0
+                }, completion: { _ in
+                    self.progressView.setProgress(0, animated: false)
+                })
+            }
         }
     }
 
     deinit {
-        webView?.removeObserver(self, forKeyPath: "estimatedProgress")
+        webView?.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
     }
 }

@@ -1077,6 +1077,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
         let webVC = WebViewController(initialURLString: targetURL)
         let nav = UINavigationController(rootViewController: webVC)
+        nav.isNavigationBarHidden = true
         nav.modalPresentationStyle = .overFullScreen
         present(nav, animated: true)
     }
