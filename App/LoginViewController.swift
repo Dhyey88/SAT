@@ -10,8 +10,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
     // Header Elements
     private let welcomeLabel = UILabel()
-    private let avatarContainer = UIView()
-    private let avatarImageView = UIImageView()
+    private let appLogoImageView = UIImageView()
 
     // Social Login
     private let googleLoginButton = UIButton(type: .custom)
@@ -57,6 +56,16 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     // Error Alert
     private let errorLabel = UILabel()
 
+    // MARK: - Help Modal Dialog
+    private let helpOverlayBackdrop = UIView()
+    private let helpCardContainer = UIView()
+    private let helpHeaderView = UIView()
+    private let helpTitleLabel = UILabel()
+    private let helpCloseButton = UIButton(type: .system)
+    private let helpHeaderDivider = UIView()
+    private let helpTextView = UITextView()
+    private let helpSpinner = UIActivityIndicatorView(style: .medium)
+
     // MARK: - Offline View (App Store Guideline 4.2 Compliant)
     private let offlineOverlayView = UIView()
     private let networkMonitor = NWPathMonitor()
@@ -69,6 +78,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         setupUI()
         setupKeyboardHandling()
         setupNetworkMonitoring()
+        setupHelpDialogUI()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -112,20 +122,15 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         welcomeLabel.textAlignment = .center
         contentView.addSubview(welcomeLabel)
 
-        // 2. Avatar Placeholder
-        avatarContainer.translatesAutoresizingMaskIntoConstraints = false
-        avatarContainer.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
-        avatarContainer.layer.cornerRadius = 35
-        avatarContainer.layer.masksToBounds = true
-        avatarContainer.layer.borderWidth = 2
-        avatarContainer.layer.borderColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 0.8).cgColor
-        contentView.addSubview(avatarContainer)
-
-        avatarImageView.translatesAutoresizingMaskIntoConstraints = false
-        avatarImageView.image = UIImage(systemName: "person.fill")
-        avatarImageView.tintColor = UIColor.white.withAlphaComponent(0.85)
-        avatarImageView.contentMode = .scaleAspectFit
-        avatarContainer.addSubview(avatarImageView)
+        // 2. App Logo
+        appLogoImageView.translatesAutoresizingMaskIntoConstraints = false
+        if let emblem = UIImage(named: "trust_emblem") ?? UIImage(named: "AppIcon-1024") ?? UIImage(named: "AppIcon") {
+            appLogoImageView.image = emblem
+        } else {
+            appLogoImageView.image = UIImage(systemName: "seal.fill")
+        }
+        appLogoImageView.contentMode = .scaleAspectFit
+        contentView.addSubview(appLogoImageView)
 
         // 3. Login Via Gmail Button
         googleLoginButton.translatesAutoresizingMaskIntoConstraints = false
@@ -190,17 +195,12 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             welcomeLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
             welcomeLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
 
-            avatarContainer.topAnchor.constraint(equalTo: welcomeLabel.bottomAnchor, constant: 14),
-            avatarContainer.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            avatarContainer.widthAnchor.constraint(equalToConstant: 70),
-            avatarContainer.heightAnchor.constraint(equalToConstant: 70),
+            appLogoImageView.topAnchor.constraint(equalTo: welcomeLabel.bottomAnchor, constant: 14),
+            appLogoImageView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            appLogoImageView.widthAnchor.constraint(equalToConstant: 80),
+            appLogoImageView.heightAnchor.constraint(equalToConstant: 80),
 
-            avatarImageView.centerXAnchor.constraint(equalTo: avatarContainer.centerXAnchor),
-            avatarImageView.centerYAnchor.constraint(equalTo: avatarContainer.centerYAnchor),
-            avatarImageView.widthAnchor.constraint(equalToConstant: 40),
-            avatarImageView.heightAnchor.constraint(equalToConstant: 40),
-
-            googleLoginButton.topAnchor.constraint(equalTo: avatarContainer.bottomAnchor, constant: 18),
+            googleLoginButton.topAnchor.constraint(equalTo: appLogoImageView.bottomAnchor, constant: 18),
             googleLoginButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 36),
             googleLoginButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -36),
             googleLoginButton.heightAnchor.constraint(equalToConstant: 46),
@@ -263,7 +263,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         setupPasswordContainer()
         cardView.addSubview(passwordContainer)
 
-        // Action Links: Tutorial & Reset Password
+        // Action Links: Reset Password (Tutorial hidden)
         setupActionLinksRow()
         cardView.addSubview(actionLinksStack)
 
@@ -396,18 +396,11 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     private func setupActionLinksRow() {
         actionLinksStack.translatesAutoresizingMaskIntoConstraints = false
         actionLinksStack.axis = .horizontal
-        actionLinksStack.distribution = .equalSpacing
-        actionLinksStack.alignment = .center
+        actionLinksStack.distribution = .fill
+        actionLinksStack.alignment = .trailing
 
-        // Tutorial Button (Web Sky Blue #27A9E3)
-        tutorialButton.translatesAutoresizingMaskIntoConstraints = false
-        tutorialButton.setImage(UIImage(systemName: "play.circle.fill"), for: .normal)
-        tutorialButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        tutorialButton.setTitle(" Tutorial", for: .normal)
-        tutorialButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        tutorialButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
-        tutorialButton.addTarget(self, action: #selector(openTutorial), for: .touchUpInside)
-        actionLinksStack.addArrangedSubview(tutorialButton)
+        // Tutorial Button (Hidden per user request)
+        tutorialButton.isHidden = true
 
         // Reset Password Button (Web Terracotta Orange #DA542E)
         resetPasswordButton.translatesAutoresizingMaskIntoConstraints = false
@@ -500,6 +493,149 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         footerStack.addArrangedSubview(versionLabel)
     }
 
+    // MARK: - Help Modal Dialog (API-driven)
+    private func setupHelpDialogUI() {
+        helpOverlayBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        helpOverlayBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.65)
+        helpOverlayBackdrop.isHidden = true
+        view.addSubview(helpOverlayBackdrop)
+
+        let dismissTap = UITapGestureRecognizer(target: self, action: #selector(handleCloseHelpDialog))
+        helpOverlayBackdrop.addGestureRecognizer(dismissTap)
+
+        helpCardContainer.translatesAutoresizingMaskIntoConstraints = false
+        helpCardContainer.backgroundColor = .white
+        helpCardContainer.layer.cornerRadius = 10
+        helpCardContainer.layer.masksToBounds = true
+        helpOverlayBackdrop.addSubview(helpCardContainer)
+
+        let stopTap = UITapGestureRecognizer(target: nil, action: nil)
+        helpCardContainer.addGestureRecognizer(stopTap)
+
+        // Header
+        helpHeaderView.translatesAutoresizingMaskIntoConstraints = false
+        helpCardContainer.addSubview(helpHeaderView)
+
+        helpTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        helpTitleLabel.text = "Help"
+        helpTitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        helpTitleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        helpHeaderView.addSubview(helpTitleLabel)
+
+        helpCloseButton.translatesAutoresizingMaskIntoConstraints = false
+        helpCloseButton.setTitle("✕", for: .normal)
+        helpCloseButton.setTitleColor(UIColor(red: 150/255, green: 150/255, blue: 150/255, alpha: 1.0), for: .normal)
+        helpCloseButton.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+        helpCloseButton.addTarget(self, action: #selector(handleCloseHelpDialog), for: .touchUpInside)
+        helpHeaderView.addSubview(helpCloseButton)
+
+        helpHeaderDivider.translatesAutoresizingMaskIntoConstraints = false
+        helpHeaderDivider.backgroundColor = UIColor(red: 235/255, green: 235/255, blue: 235/255, alpha: 1.0)
+        helpCardContainer.addSubview(helpHeaderDivider)
+
+        // Content Text View
+        helpTextView.translatesAutoresizingMaskIntoConstraints = false
+        helpTextView.isEditable = false
+        helpTextView.isSelectable = false
+        helpTextView.backgroundColor = .clear
+        helpTextView.textColor = UIColor(red: 60/255, green: 60/255, blue: 60/255, alpha: 1.0)
+        helpTextView.font = UIFont.systemFont(ofSize: 14.5, weight: .regular)
+        helpTextView.showsVerticalScrollIndicator = true
+        helpCardContainer.addSubview(helpTextView)
+
+        helpSpinner.translatesAutoresizingMaskIntoConstraints = false
+        helpSpinner.hidesWhenStopped = true
+        helpSpinner.color = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        helpCardContainer.addSubview(helpSpinner)
+
+        NSLayoutConstraint.activate([
+            helpOverlayBackdrop.topAnchor.constraint(equalTo: view.topAnchor),
+            helpOverlayBackdrop.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            helpOverlayBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            helpOverlayBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            helpCardContainer.centerXAnchor.constraint(equalTo: helpOverlayBackdrop.centerXAnchor),
+            helpCardContainer.centerYAnchor.constraint(equalTo: helpOverlayBackdrop.centerYAnchor),
+            helpCardContainer.leadingAnchor.constraint(equalTo: helpOverlayBackdrop.leadingAnchor, constant: 20),
+            helpCardContainer.trailingAnchor.constraint(equalTo: helpOverlayBackdrop.trailingAnchor, constant: -20),
+            helpCardContainer.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height * 0.65),
+
+            helpHeaderView.topAnchor.constraint(equalTo: helpCardContainer.topAnchor, constant: 14),
+            helpHeaderView.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor, constant: 18),
+            helpHeaderView.trailingAnchor.constraint(equalTo: helpCardContainer.trailingAnchor, constant: -18),
+            helpHeaderView.heightAnchor.constraint(equalToConstant: 32),
+
+            helpTitleLabel.leadingAnchor.constraint(equalTo: helpHeaderView.leadingAnchor),
+            helpTitleLabel.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
+
+            helpCloseButton.trailingAnchor.constraint(equalTo: helpHeaderView.trailingAnchor),
+            helpCloseButton.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
+            helpCloseButton.widthAnchor.constraint(equalToConstant: 30),
+            helpCloseButton.heightAnchor.constraint(equalToConstant: 30),
+
+            helpHeaderDivider.topAnchor.constraint(equalTo: helpHeaderView.bottomAnchor, constant: 10),
+            helpHeaderDivider.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor),
+            helpHeaderDivider.trailingAnchor.constraint(equalTo: helpCardContainer.trailingAnchor),
+            helpHeaderDivider.heightAnchor.constraint(equalToConstant: 1),
+
+            helpTextView.topAnchor.constraint(equalTo: helpHeaderDivider.bottomAnchor, constant: 10),
+            helpTextView.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor, constant: 16),
+            helpTextView.trailingAnchor.constraint(equalTo: helpCardContainer.trailingAnchor, constant: -16),
+            helpTextView.bottomAnchor.constraint(equalTo: helpCardContainer.bottomAnchor, constant: -16),
+
+            helpSpinner.centerXAnchor.constraint(equalTo: helpCardContainer.centerXAnchor),
+            helpSpinner.centerYAnchor.constraint(equalTo: helpCardContainer.centerYAnchor)
+        ])
+    }
+
+    private func presentHelpModal(title: String = "Help", defaultText: String, apiEndpoint: String? = nil, postParams: [String: String]? = nil) {
+        view.endEditing(true)
+        helpTitleLabel.text = title
+        helpTextView.text = defaultText
+        helpTextView.setContentOffset(.zero, animated: false)
+
+        helpOverlayBackdrop.alpha = 0
+        helpOverlayBackdrop.isHidden = false
+        UIView.animate(withDuration: 0.25) {
+            self.helpOverlayBackdrop.alpha = 1.0
+        }
+
+        guard let endpoint = apiEndpoint, let url = URL(string: endpoint) else { return }
+
+        helpSpinner.startAnimating()
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let params = postParams ?? [:]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.helpSpinner.stopAnimating()
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let dataObj = json["data"] as? [String: Any],
+                      let helpStr = dataObj["help"] as? String,
+                      !helpStr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    return
+                }
+                self.helpTextView.text = helpStr.replacingOccurrences(of: "\\r\\n", with: "\n").replacingOccurrences(of: "\r\n", with: "\n")
+            }
+        }.resume()
+    }
+
+    @objc private func handleCloseHelpDialog() {
+        UIView.animate(withDuration: 0.2, animations: {
+            self.helpOverlayBackdrop.alpha = 0
+        }) { _ in
+            self.helpOverlayBackdrop.isHidden = true
+        }
+    }
+
     // MARK: - Keyboard Handling
     private func setupKeyboardHandling() {
         // Tap anywhere on screen to dismiss keyboard
@@ -549,10 +685,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
 
     @objc private func openTutorial() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        guard let url = URL(string: AppConfig.tutorialURL) else { return }
-        let safariVC = SFSafariViewController(url: url)
-        present(safariVC, animated: true)
+        // Tutorial hidden
     }
 
     @objc private func openResetPasswordModal() {
@@ -574,15 +707,34 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         present(signUpVC, animated: true)
     }
 
+    // Login screen info (i) button - opens live dynamic Help modal
     @objc private func openInfoModal() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        let alert = UIAlertController(
-            title: "About SAT",
-            message: "SAT Application provides comprehensive trust accounting, branch billing, and donation management services.\n\nVersion: \(AppConfig.appVersion)\nSupport: \(AppConfig.supportEmail)\nHelpline: \(AppConfig.helplineNumber)",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
+        let fallbackText = """
+        Welcome !
+
+        To Use this app for purposes of Data entry & submission to your office press the button 'Login by Gmail' and:
+
+        1. Enter the pre-approved Trust code of your organization and press ->
+
+        2. Enter your Branchid or Office id.
+
+        3. Enter User and Branch details.
+
+        4. Click Register to proceed.
+
+        5. App will be ready for use once the sign up request is approved by the authorised staff of the said Trust/Institution/Company.
+
+        Notes :
+        1. Register one userid on one mobile device.
+         
+        2. The privacy policy and the contact details of the Trust code organization, applicable on signup only, are as on its website.
+
+        3. To use the app for Scan & Share without signup touch on the eScan.
+
+        4. To Register Trust/Institution code write to : manojarora_2000@yahoo.com ; info@enin.io
+        """
+        presentHelpModal(title: "Help", defaultText: fallbackText, apiEndpoint: AppConfig.API.getHelpReg)
     }
 
     @objc private func openPrivacyPolicy() {
@@ -719,8 +871,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     // Standard User ID / Password Login (POST /api/login)
     @objc private func handleLoginTap() {
         view.endEditing(true)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-
         guard isNetworkAvailable else {
             offlineOverlayView.isHidden = false
             return
@@ -739,35 +889,31 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             return
         }
 
-        errorLabel.isHidden = true
+        guard let url = URL(string: AppConfig.API.login) else { return }
+
         loginButton.setTitle("", for: .normal)
         activityIndicator.startAnimating()
         loginButton.isEnabled = false
+        clearError()
 
-        let bodyParams: [String: String] = [
+        let params: [String: String] = [
             "email": email,
             "password": password,
             "device_type": AppConfig.deviceType,
             "device_id": AppConfig.deviceId,
-            "mobile_device_id": AppConfig.mobileDeviceId,
-            "login_by": AppConfig.defaultLoginRole
+            "device_name": AppConfig.deviceName,
+            "mobile_device_id": AppConfig.mobileDeviceId
         ]
-
-        performLoginRequest(params: bodyParams, userEmail: email)
-    }
-
-    private func performLoginRequest(params: [String: String], userEmail: String) {
-        guard let url = URL(string: AppConfig.API.login) else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-
-        let bodyString = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = bodyString.data(using: .utf8)
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
                 self?.activityIndicator.stopAnimating()
                 self?.loginButton.setTitle("Login  ➔", for: .normal)
@@ -778,230 +924,146 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                     return
                 }
 
-                guard let data = data else {
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                     self?.showError(message: "Invalid response from server.")
                     return
                 }
 
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        let status = json["status"] as? Bool ?? false
-                        let message = json["message"] as? String ?? ""
+                let status = json["status"] as? Bool ?? false
+                let message = json["message"] as? String ?? ""
 
-                        if status, let dataObj = json["data"] as? [String: Any] {
-                            let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
-                            let requiredOtp = dataObj["required_otp"] as? Int ?? 0
-
-                            if requiredOtp == 1 || message.lowercased().contains("otp") {
-                                self?.promptForOTP(userId: userId, email: userEmail)
-                            } else {
-                                self?.openWebDashboard(userId: userId)
-                            }
-                        } else {
-                            self?.showError(message: message.isEmpty ? "Invalid credentials." : message)
-                        }
-                    }
-                } catch {
-                    self?.showError(message: "Error processing response.")
-                }
-            }
-        }.resume()
-    }
-
-    private func promptForOTP(userId: Int, email: String) {
-        let alert = UIAlertController(title: "Enter Verification Code",
-                                      message: "An OTP has been sent to your registered mobile/email.",
-                                      preferredStyle: .alert)
-        alert.addTextField { tf in
-            tf.placeholder = "4-digit OTP"
-            tf.keyboardType = .numberPad
-        }
-
-        let verifyAction = UIAlertAction(title: "Verify", style: .default) { [weak self, weak alert] _ in
-            guard let otp = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines), !otp.isEmpty else { return }
-            self?.verifyOTP(userId: userId, email: email, otp: otp)
-        }
-
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(verifyAction)
-        present(alert, animated: true)
-    }
-
-    private func verifyOTP(userId: Int, email: String, otp: String) {
-        guard let url = URL(string: AppConfig.API.otpVerify) else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-
-        let params = ["otp": otp, "email": email, "device_type": AppConfig.deviceType, "device_id": AppConfig.deviceId]
-        let bodyString = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = bodyString.data(using: .utf8)
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                if let data = data,
-                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let status = json["status"] as? Bool, status {
+                if status, let dataObj = json["data"] as? [String: Any] {
+                    let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
                     self?.openWebDashboard(userId: userId)
                 } else {
-                    self?.showError(message: "Invalid OTP code.")
+                    self?.showError(message: message.isEmpty ? "Invalid credentials. Please try again." : message)
                 }
             }
         }.resume()
     }
 
     private func openWebDashboard(userId: Int) {
-        let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
-        let webVC = WebViewController(initialURLString: targetURL)
-        webVC.modalPresentationStyle = .fullScreen
-        present(webVC, animated: true)
+        let webVC = WebViewController()
+        webVC.targetUserId = userId
+        let nav = UINavigationController(rootViewController: webVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
     }
 
     private func showError(message: String) {
-        errorLabel.text = "  \(message)  "
+        errorLabel.text = message
         errorLabel.isHidden = false
     }
 
-    // MARK: - Native Offline Screen (App Store Guideline 4.2 Compliant)
-    private func setupOfflineView() {
-        offlineOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        offlineOverlayView.backgroundColor = UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 1.0)
-        offlineOverlayView.isHidden = true
-        view.addSubview(offlineOverlayView)
-
-        NSLayoutConstraint.activate([
-            offlineOverlayView.topAnchor.constraint(equalTo: view.topAnchor),
-            offlineOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            offlineOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            offlineOverlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-
-        let iconContainer = UIView()
-        iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        iconContainer.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        iconContainer.layer.cornerRadius = 45
-        offlineOverlayView.addSubview(iconContainer)
-
-        let wifiIcon = UIImageView()
-        wifiIcon.translatesAutoresizingMaskIntoConstraints = false
-        wifiIcon.image = UIImage(systemName: "wifi.slash")
-        wifiIcon.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        wifiIcon.contentMode = .scaleAspectFit
-        iconContainer.addSubview(wifiIcon)
-
-        let titleLabel = UILabel()
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "No Internet Connection"
-        titleLabel.textColor = .white
-        titleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
-        titleLabel.textAlignment = .center
-        offlineOverlayView.addSubview(titleLabel)
-
-        let subtitleLabel = UILabel()
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Please connect to Wi-Fi or Mobile Data to use SAT."
-        subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.75)
-        subtitleLabel.font = UIFont.systemFont(ofSize: 15)
-        subtitleLabel.textAlignment = .center
-        subtitleLabel.numberOfLines = 0
-        offlineOverlayView.addSubview(subtitleLabel)
-
-        let retryButton = UIButton(type: .system)
-        retryButton.translatesAutoresizingMaskIntoConstraints = false
-        retryButton.setTitle("Try Again", for: .normal)
-        retryButton.setTitleColor(.white, for: .normal)
-        retryButton.setImage(UIImage(systemName: "arrow.clockwise"), for: .normal)
-        retryButton.tintColor = .white
-        retryButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        retryButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        retryButton.layer.cornerRadius = 6
-        retryButton.addTarget(self, action: #selector(retryConnection), for: .touchUpInside)
-        offlineOverlayView.addSubview(retryButton)
-
-        let helpButton = UIButton(type: .system)
-        helpButton.translatesAutoresizingMaskIntoConstraints = false
-        helpButton.setTitle("Need Help? View Offline Support", for: .normal)
-        helpButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        helpButton.setImage(UIImage(systemName: "questionmark.circle"), for: .normal)
-        helpButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        helpButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        helpButton.addTarget(self, action: #selector(showOfflineHelp), for: .touchUpInside)
-        offlineOverlayView.addSubview(helpButton)
-
-        NSLayoutConstraint.activate([
-            iconContainer.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
-            iconContainer.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor, constant: -90),
-            iconContainer.widthAnchor.constraint(equalToConstant: 90),
-            iconContainer.heightAnchor.constraint(equalToConstant: 90),
-
-            wifiIcon.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
-            wifiIcon.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
-            wifiIcon.widthAnchor.constraint(equalToConstant: 48),
-            wifiIcon.heightAnchor.constraint(equalToConstant: 48),
-
-            titleLabel.topAnchor.constraint(equalTo: iconContainer.bottomAnchor, constant: 24),
-            titleLabel.leadingAnchor.constraint(equalTo: offlineOverlayView.leadingAnchor, constant: 32),
-            titleLabel.trailingAnchor.constraint(equalTo: offlineOverlayView.trailingAnchor, constant: -32),
-
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
-            subtitleLabel.leadingAnchor.constraint(equalTo: offlineOverlayView.leadingAnchor, constant: 32),
-            subtitleLabel.trailingAnchor.constraint(equalTo: offlineOverlayView.trailingAnchor, constant: -32),
-
-            retryButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 28),
-            retryButton.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
-            retryButton.widthAnchor.constraint(equalToConstant: 160),
-            retryButton.heightAnchor.constraint(equalToConstant: 48),
-
-            helpButton.topAnchor.constraint(equalTo: retryButton.bottomAnchor, constant: 20),
-            helpButton.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor)
-        ])
+    private func clearError() {
+        errorLabel.isHidden = true
     }
 
-    @objc private func showOfflineHelp() {
-        let alert = UIAlertController(
-            title: "SAT Support & Assistance",
-            message: "You can contact support directly via telephone or email.\n\n• Helpline: +91 98765 43210\n• Email: support@enin.io\n• Head Office: Ahmedabad, Gujarat",
-            preferredStyle: .actionSheet
-        )
-        alert.addAction(UIAlertAction(title: "Call Helpline", style: .default, handler: { _ in
-            if let url = URL(string: "tel:+919876543210"), UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url)
-            }
-        }))
-        alert.addAction(UIAlertAction(title: "Send Support Email", style: .default, handler: { _ in
-            if let url = URL(string: "mailto:support@enin.io"), UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url)
-            }
-        }))
-        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
-        present(alert, animated: true)
-    }
-
+    // MARK: - Offline Handling (App Store Guideline 4.2)
     private func setupNetworkMonitoring() {
         networkMonitor.pathUpdateHandler = { [weak self] path in
             DispatchQueue.main.async {
-                let isConnected = path.status == .satisfied
-                self?.isNetworkAvailable = isConnected
-                self?.offlineOverlayView.isHidden = isConnected
+                self?.isNetworkAvailable = (path.status == .satisfied)
+                if path.status == .satisfied {
+                    self?.offlineOverlayView.isHidden = true
+                }
             }
         }
         networkMonitor.start(queue: monitorQueue)
     }
 
-    @objc private func retryConnection() {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
+    private func setupOfflineView() {
+        offlineOverlayView.translatesAutoresizingMaskIntoConstraints = false
+        offlineOverlayView.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 0.96)
+        offlineOverlayView.isHidden = true
+        view.addSubview(offlineOverlayView)
 
+        let stack = UIStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 16
+        offlineOverlayView.addSubview(stack)
+
+        let wifiIcon = UIImageView(image: UIImage(systemName: "wifi.slash"))
+        wifiIcon.tintColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+        wifiIcon.contentMode = .scaleAspectFit
+        wifiIcon.translatesAutoresizingMaskIntoConstraints = false
+        wifiIcon.heightAnchor.constraint(equalToConstant: 60).isActive = true
+        wifiIcon.widthAnchor.constraint(equalToConstant: 60).isActive = true
+        stack.addArrangedSubview(wifiIcon)
+
+        let offlineTitle = UILabel()
+        offlineTitle.text = "You're Offline"
+        offlineTitle.textColor = .white
+        offlineTitle.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        stack.addArrangedSubview(offlineTitle)
+
+        let offlineMsg = UILabel()
+        offlineMsg.text = "Please check your internet connection to use SAT Application features."
+        offlineMsg.textColor = UIColor.white.withAlphaComponent(0.8)
+        offlineMsg.font = UIFont.systemFont(ofSize: 14)
+        offlineMsg.textAlignment = .center
+        offlineMsg.numberOfLines = 0
+        stack.addArrangedSubview(offlineMsg)
+
+        let helplineBtn = UIButton(type: .system)
+        helplineBtn.setTitle("📞  Call Helpline: \(AppConfig.helplineNumber)", for: .normal)
+        helplineBtn.setTitleColor(.white, for: .normal)
+        helplineBtn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        helplineBtn.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        helplineBtn.layer.cornerRadius = 8
+        helplineBtn.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20)
+        helplineBtn.addTarget(self, action: #selector(callHelpline), for: .touchUpInside)
+        stack.addArrangedSubview(helplineBtn)
+
+        let retryBtn = UIButton(type: .system)
+        retryBtn.setTitle("Retry Connection", for: .normal)
+        retryBtn.setTitleColor(.white, for: .normal)
+        retryBtn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        retryBtn.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        retryBtn.layer.cornerRadius = 8
+        retryBtn.contentEdgeInsets = UIEdgeInsets(top: 10, left: 24, bottom: 10, right: 24)
+        retryBtn.addTarget(self, action: #selector(retryConnection), for: .touchUpInside)
+        stack.addArrangedSubview(retryBtn)
+
+        NSLayoutConstraint.activate([
+            offlineOverlayView.topAnchor.constraint(equalTo: view.topAnchor),
+            offlineOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            offlineOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            offlineOverlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            stack.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor),
+            stack.leadingAnchor.constraint(equalTo: offlineOverlayView.leadingAnchor, constant: 32),
+            stack.trailingAnchor.constraint(equalTo: offlineOverlayView.trailingAnchor, constant: -32)
+        ])
+    }
+
+    @objc private func callHelpline() {
+        guard let url = URL(string: "tel://\(AppConfig.helplineNumber)") else { return }
+        UIApplication.shared.open(url)
+    }
+
+    @objc private func showOfflineHelp() {
+        let alert = UIAlertController(
+            title: "Helpline & Support",
+            message: "Helpline: \(AppConfig.helplineNumber)\nSupport Email: \(AppConfig.supportEmail)",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Call", style: .default, handler: { [weak self] _ in
+            self?.callHelpline()
+        }))
+        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+        present(alert, animated: true)
+    }
+
+    @objc private func retryConnection() {
         if networkMonitor.currentPath.status == .satisfied {
             offlineOverlayView.isHidden = true
         } else {
-            let animation = CAKeyframeAnimation(keyPath: "transform.translation.x")
-            animation.timingFunction = CAMediaTimingFunction(name: .linear)
-            animation.duration = 0.4
-            animation.values = [-10.0, 10.0, -8.0, 8.0, -5.0, 5.0, 0.0]
-            offlineOverlayView.layer.add(animation, forKey: "shake")
+            showError(message: "Still offline. Please check your connection.")
         }
     }
 }

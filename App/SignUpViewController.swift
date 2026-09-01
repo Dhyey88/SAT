@@ -2406,10 +2406,32 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         scrollView.verticalScrollIndicatorInsets.bottom = 0
     }
 
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        if textField == midEmailField && !isEmailVerified {
+            let email = midEmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !email.isEmpty && email.contains("@") && email.contains(".") {
+                handleEmailVerify()
+            }
+        }
+    }
+
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        if textField == midMobileField && !isEmailVerified {
+            let email = midEmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !email.isEmpty && email.contains("@") && email.contains(".") {
+                handleEmailVerify()
+            }
+        }
+    }
+
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField == initTrustCodeField {
             handleTrustCodeSubmit()
         } else if textField == midEmailField {
+            let email = midEmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !isEmailVerified && !email.isEmpty && email.contains("@") && email.contains(".") {
+                handleEmailVerify()
+            }
             midMobileField.becomeFirstResponder()
         } else if textField == midMobileField {
             handleMobileSubmitAndSendOTP()
