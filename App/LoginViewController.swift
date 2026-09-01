@@ -901,7 +901,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             "password": password,
             "device_type": AppConfig.deviceType,
             "device_id": AppConfig.deviceId,
-            "device_name": AppConfig.deviceName,
+            "device_name": "iPhone",
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
 
@@ -944,10 +944,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
 
     private func openWebDashboard(userId: Int) {
-        let webVC = WebViewController()
-        webVC.targetUserId = userId
+        let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
+        let webVC = WebViewController(initialURLString: targetURL)
         let nav = UINavigationController(rootViewController: webVC)
-        nav.modalPresentationStyle = .fullScreen
+        nav.modalPresentationStyle = .overFullScreen
         present(nav, animated: true)
     }
 
