@@ -22,10 +22,10 @@ struct AppConfig {
     static var supportEmail = "info@enin.io"
     static var helplineNumber = "9977833922"
 
-    // MARK: - Dynamic App Version (e.g. "v t 2.0.10" derived from Application Bundle)
+    // MARK: - Dynamic App Version (Derived from iOS Application Bundle)
     static var appVersion: String {
-        let ver = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.0.10"
-        return "v t \(ver)"
+        let ver = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        return "v \(ver)"
     }
 
     // MARK: - REST API Endpoints
