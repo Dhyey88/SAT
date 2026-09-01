@@ -314,9 +314,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         buildMidCard()
         buildDetailsCard()
 
-        // 5. Version Label ("v t 2.0.10")
+        // 5. Version Label (Dynamic from Application Bundle)
         versionLabel.translatesAutoresizingMaskIntoConstraints = false
-        versionLabel.text = "v t 2.0.10"
+        versionLabel.text = AppConfig.appVersion
         versionLabel.textColor = UIColor.white.withAlphaComponent(0.65)
         versionLabel.font = UIFont.systemFont(ofSize: 12, weight: .regular)
         versionLabel.textAlignment = .right

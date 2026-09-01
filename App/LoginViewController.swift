@@ -79,6 +79,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         setupKeyboardHandling()
         setupNetworkMonitoring()
         setupHelpDialogUI()
+        AppConfig.fetchRemoteSettings()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -469,7 +470,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         privacyPolicyButton.setTitle("Privacy policy", for: .normal)
         privacyPolicyButton.setTitleColor(UIColor.white.withAlphaComponent(0.65), for: .normal)
         privacyPolicyButton.titleLabel?.font = UIFont.systemFont(ofSize: 13)
-        privacyPolicyButton.addTarget(self, action: #selector(openPrivacyPolicy), for: .touchUpInside)
+        privacyPolicyButton.addTarget(self, action: #selector(openPrivacyPolicyModal), for: .touchUpInside)
         leftLinks.addArrangedSubview(privacyPolicyButton)
 
         footerDividerLabel.text = "|"
@@ -480,14 +481,13 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         contactButton.setTitle("Contact", for: .normal)
         contactButton.setTitleColor(UIColor.white.withAlphaComponent(0.65), for: .normal)
         contactButton.titleLabel?.font = UIFont.systemFont(ofSize: 13)
-        contactButton.addTarget(self, action: #selector(showOfflineHelp), for: .touchUpInside)
+        contactButton.addTarget(self, action: #selector(openContactSheet), for: .touchUpInside)
         leftLinks.addArrangedSubview(contactButton)
 
         footerStack.addArrangedSubview(leftLinks)
 
-        // Version Label
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
-        versionLabel.text = "v \(version)"
+        // Version Label (Pure dynamic from bundle)
+        versionLabel.text = AppConfig.appVersion
         versionLabel.textColor = UIColor.white.withAlphaComponent(0.5)
         versionLabel.font = UIFont.systemFont(ofSize: 13)
         footerStack.addArrangedSubview(versionLabel)
@@ -740,10 +740,51 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         presentHelpModal(title: "Help", defaultText: fallbackText, apiEndpoint: AppConfig.API.getHelpReg)
     }
 
-    @objc private func openPrivacyPolicy() {
-        guard let url = URL(string: AppConfig.privacyPolicyURL) else { return }
-        let safariVC = SFSafariViewController(url: url)
-        present(safariVC, animated: true)
+    @objc private func openPrivacyPolicyModal() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        let defaultPrivacy = """
+        Privacy Policy & Terms of Service
+
+        1. Data Protection & Security:
+        Your registration and transaction data are securely encrypted and protected under our organization's data protection standards.
+
+        2. Registration & Account Policy:
+        Register one User ID per mobile device. All sign-up requests require approval by authorized staff.
+
+        3. Organization Privacy Charter:
+        The privacy policy and terms of service of the Trust code organization, applicable on sign-up only, are as defined by its governing body.
+
+        For questions or data access requests, please contact:
+        Email: \(AppConfig.supportEmail)
+        Helpline: \(AppConfig.helplineNumber)
+        """
+        presentHelpModal(title: "Privacy Policy", defaultText: defaultPrivacy, apiEndpoint: AppConfig.API.getHelpReg)
+    }
+
+    @objc private func openContactSheet() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        let sheet = UIAlertController(
+            title: "Contact & Support",
+            message: "Helpline: \(AppConfig.helplineNumber)\nSupport Email: \(AppConfig.supportEmail)",
+            preferredStyle: .actionSheet
+        )
+        sheet.addAction(UIAlertAction(title: "📞  Call Helpline (\(AppConfig.helplineNumber))", style: .default) { _ in
+            if let url = URL(string: "tel://\(AppConfig.helplineNumber)") {
+                UIApplication.shared.open(url)
+            }
+        })
+        sheet.addAction(UIAlertAction(title: "✉️  Email Support (\(AppConfig.supportEmail))", style: .default) { _ in
+            if let url = URL(string: "mailto:\(AppConfig.supportEmail)") {
+                UIApplication.shared.open(url)
+            }
+        })
+        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = contactButton
+            popover.sourceRect = contactButton.bounds
+        }
+        present(sheet, animated: true)
     }
 
     // MARK: - Google Account Chooser & Social Login
