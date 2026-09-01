@@ -16,6 +16,9 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     private let errorBanner = UIView()
     private let errorLabel = UILabel()
 
+    // Dynamic Content View Bottom Constraint
+    private var contentBottomConstraint: NSLayoutConstraint?
+
     // MARK: - Step 1 Card: Email Entry (Screenshot 1)
     private let step1Card = UIView()
     private let s1AvatarIcon = UIImageView()
@@ -42,14 +45,12 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
     // Password Row
     private let s3LockIcon1 = UIImageView()
-    private let s3PasswordTitleLabel = UILabel()
     private let s3PasswordField = UITextField()
     private let s3PasswordUnderline = UIView()
     private let s3ShowPasswordButton1 = UIButton(type: .system)
 
     // Confirm Password Row
     private let s3LockIcon2 = UIImageView()
-    private let s3ConfirmTitleLabel = UILabel()
     private let s3ConfirmPasswordField = UITextField()
     private let s3ConfirmPasswordUnderline = UIView()
     private let s3ShowPasswordButton2 = UIButton(type: .system)
@@ -98,9 +99,9 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         headerTitleLabel.textAlignment = .center
         contentView.addSubview(headerTitleLabel)
 
-        // Error Banner
+        // Error Banner (Matching Login/SignUp Terracotta Red #DA542E)
         errorBanner.translatesAutoresizingMaskIntoConstraints = false
-        errorBanner.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 0.95) // Terracotta Red #DA542E
+        errorBanner.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 0.95)
         errorBanner.layer.cornerRadius = 6
         errorBanner.layer.masksToBounds = true
         errorBanner.isHidden = true
@@ -117,6 +118,10 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         buildStep1Card()
         buildStep2Card()
         buildStep3Card()
+
+        // Dynamic Bottom Constraint to active card
+        contentBottomConstraint = contentView.bottomAnchor.constraint(equalTo: step1Card.bottomAnchor, constant: 40)
+        contentBottomConstraint?.isActive = true
 
         // Base Layout Constraints
         NSLayoutConstraint.activate([
@@ -153,21 +158,21 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         step1Card.layer.masksToBounds = true
         contentView.addSubview(step1Card)
 
-        // Person Icon
+        // Person / Avatar Icon
         s1AvatarIcon.translatesAutoresizingMaskIntoConstraints = false
         s1AvatarIcon.image = UIImage(systemName: "person.crop.circle.fill") ?? UIImage(systemName: "person.fill")
         s1AvatarIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Amber Gold #FFB848
         s1AvatarIcon.contentMode = .scaleAspectFit
         step1Card.addSubview(s1AvatarIcon)
 
-        // User Email Title
+        // User Email Title Label
         s1TitleLabel.translatesAutoresizingMaskIntoConstraints = false
         s1TitleLabel.text = "User Email"
         s1TitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
         s1TitleLabel.font = UIFont.systemFont(ofSize: 15, weight: .bold)
         step1Card.addSubview(s1TitleLabel)
 
-        // Email Field
+        // Email Text Field
         s1EmailField.translatesAutoresizingMaskIntoConstraints = false
         s1EmailField.placeholder = "Your Email"
         s1EmailField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
@@ -182,7 +187,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
         // Sky Blue Underline
         s1Underline.translatesAutoresizingMaskIntoConstraints = false
-        s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0) // Sky Blue
+        s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         step1Card.addSubview(s1Underline)
 
         // Bottom Bar (Matching Theme #262D35)
@@ -201,7 +206,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         s1NextButton.setTitle("Next  ➔", for: .normal)
         s1NextButton.setTitleColor(.white, for: .normal)
         s1NextButton.titleLabel?.font = UIFont.systemFont(ofSize: 15.5, weight: .bold)
-        s1NextButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0) // Green #28B779
+        s1NextButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0) // Emerald Green #28B779
         s1NextButton.layer.cornerRadius = 6
         s1NextButton.addTarget(self, action: #selector(handleStep1Submit), for: .touchUpInside)
         s1BottomBar.addSubview(s1NextButton)
@@ -215,7 +220,6 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             step1Card.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 16),
             step1Card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             step1Card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            step1Card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
 
             s1AvatarIcon.leadingAnchor.constraint(equalTo: step1Card.leadingAnchor, constant: 18),
             s1AvatarIcon.topAnchor.constraint(equalTo: step1Card.topAnchor, constant: 22),
@@ -325,7 +329,6 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             step2Card.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 16),
             step2Card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             step2Card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            step2Card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
 
             s2LockIcon.leadingAnchor.constraint(equalTo: step2Card.leadingAnchor, constant: 16),
             s2LockIcon.centerYAnchor.constraint(equalTo: s2OtpStack.centerYAnchor),
@@ -372,11 +375,12 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         s3LockIcon1.contentMode = .scaleAspectFit
         step3Card.addSubview(s3LockIcon1)
 
-        s3PasswordTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        s3PasswordTitleLabel.text = "Password"
-        s3PasswordTitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        s3PasswordTitleLabel.font = UIFont.systemFont(ofSize: 14.5, weight: .bold)
-        step3Card.addSubview(s3PasswordTitleLabel)
+        s3ShowPasswordButton1.translatesAutoresizingMaskIntoConstraints = false
+        s3ShowPasswordButton1.setTitle("Show", for: .normal)
+        s3ShowPasswordButton1.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        s3ShowPasswordButton1.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        s3ShowPasswordButton1.addTarget(self, action: #selector(toggleShowPassword1), for: .touchUpInside)
+        step3Card.addSubview(s3ShowPasswordButton1)
 
         s3PasswordField.translatesAutoresizingMaskIntoConstraints = false
         s3PasswordField.placeholder = "Type Your Password"
@@ -387,13 +391,6 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         s3PasswordField.delegate = self
         s3PasswordField.addTarget(self, action: #selector(clearErrorBanner), for: .editingChanged)
         step3Card.addSubview(s3PasswordField)
-
-        s3ShowPasswordButton1.translatesAutoresizingMaskIntoConstraints = false
-        s3ShowPasswordButton1.setTitle("Show", for: .normal)
-        s3ShowPasswordButton1.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        s3ShowPasswordButton1.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
-        s3ShowPasswordButton1.addTarget(self, action: #selector(toggleShowPassword1), for: .touchUpInside)
-        step3Card.addSubview(s3ShowPasswordButton1)
 
         s3PasswordUnderline.translatesAutoresizingMaskIntoConstraints = false
         s3PasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
@@ -406,11 +403,12 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         s3LockIcon2.contentMode = .scaleAspectFit
         step3Card.addSubview(s3LockIcon2)
 
-        s3ConfirmTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        s3ConfirmTitleLabel.text = "Confirm Password"
-        s3ConfirmTitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        s3ConfirmTitleLabel.font = UIFont.systemFont(ofSize: 14.5, weight: .bold)
-        step3Card.addSubview(s3ConfirmTitleLabel)
+        s3ShowPasswordButton2.translatesAutoresizingMaskIntoConstraints = false
+        s3ShowPasswordButton2.setTitle("Show", for: .normal)
+        s3ShowPasswordButton2.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        s3ShowPasswordButton2.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        s3ShowPasswordButton2.addTarget(self, action: #selector(toggleShowPassword2), for: .touchUpInside)
+        step3Card.addSubview(s3ShowPasswordButton2)
 
         s3ConfirmPasswordField.translatesAutoresizingMaskIntoConstraints = false
         s3ConfirmPasswordField.placeholder = "Type Your Password Again"
@@ -421,13 +419,6 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         s3ConfirmPasswordField.delegate = self
         s3ConfirmPasswordField.addTarget(self, action: #selector(clearErrorBanner), for: .editingChanged)
         step3Card.addSubview(s3ConfirmPasswordField)
-
-        s3ShowPasswordButton2.translatesAutoresizingMaskIntoConstraints = false
-        s3ShowPasswordButton2.setTitle("Show", for: .normal)
-        s3ShowPasswordButton2.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        s3ShowPasswordButton2.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
-        s3ShowPasswordButton2.addTarget(self, action: #selector(toggleShowPassword2), for: .touchUpInside)
-        step3Card.addSubview(s3ShowPasswordButton2)
 
         s3ConfirmPasswordUnderline.translatesAutoresizingMaskIntoConstraints = false
         s3ConfirmPasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
@@ -463,16 +454,12 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             step3Card.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 16),
             step3Card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             step3Card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            step3Card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
 
             // Password Row
             s3LockIcon1.leadingAnchor.constraint(equalTo: step3Card.leadingAnchor, constant: 18),
-            s3LockIcon1.topAnchor.constraint(equalTo: step3Card.topAnchor, constant: 22),
-            s3LockIcon1.widthAnchor.constraint(equalToConstant: 24),
-            s3LockIcon1.heightAnchor.constraint(equalToConstant: 24),
-
-            s3PasswordTitleLabel.leadingAnchor.constraint(equalTo: s3LockIcon1.trailingAnchor, constant: 12),
-            s3PasswordTitleLabel.topAnchor.constraint(equalTo: step3Card.topAnchor, constant: 16),
+            s3LockIcon1.centerYAnchor.constraint(equalTo: s3PasswordField.centerYAnchor),
+            s3LockIcon1.widthAnchor.constraint(equalToConstant: 22),
+            s3LockIcon1.heightAnchor.constraint(equalToConstant: 22),
 
             s3ShowPasswordButton1.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor, constant: -16),
             s3ShowPasswordButton1.centerYAnchor.constraint(equalTo: s3PasswordField.centerYAnchor),
@@ -480,8 +467,8 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
             s3PasswordField.leadingAnchor.constraint(equalTo: s3LockIcon1.trailingAnchor, constant: 12),
             s3PasswordField.trailingAnchor.constraint(equalTo: s3ShowPasswordButton1.leadingAnchor, constant: -8),
-            s3PasswordField.topAnchor.constraint(equalTo: s3PasswordTitleLabel.bottomAnchor, constant: 4),
-            s3PasswordField.heightAnchor.constraint(equalToConstant: 28),
+            s3PasswordField.topAnchor.constraint(equalTo: step3Card.topAnchor, constant: 22),
+            s3PasswordField.heightAnchor.constraint(equalToConstant: 32),
 
             s3PasswordUnderline.leadingAnchor.constraint(equalTo: s3PasswordField.leadingAnchor),
             s3PasswordUnderline.trailingAnchor.constraint(equalTo: s3ShowPasswordButton1.trailingAnchor),
@@ -490,12 +477,9 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
             // Confirm Password Row
             s3LockIcon2.leadingAnchor.constraint(equalTo: step3Card.leadingAnchor, constant: 18),
-            s3LockIcon2.topAnchor.constraint(equalTo: s3PasswordUnderline.bottomAnchor, constant: 20),
-            s3LockIcon2.widthAnchor.constraint(equalToConstant: 24),
-            s3LockIcon2.heightAnchor.constraint(equalToConstant: 24),
-
-            s3ConfirmTitleLabel.leadingAnchor.constraint(equalTo: s3LockIcon2.trailingAnchor, constant: 12),
-            s3ConfirmTitleLabel.topAnchor.constraint(equalTo: s3PasswordUnderline.bottomAnchor, constant: 14),
+            s3LockIcon2.centerYAnchor.constraint(equalTo: s3ConfirmPasswordField.centerYAnchor),
+            s3LockIcon2.widthAnchor.constraint(equalToConstant: 22),
+            s3LockIcon2.heightAnchor.constraint(equalToConstant: 22),
 
             s3ShowPasswordButton2.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor, constant: -16),
             s3ShowPasswordButton2.centerYAnchor.constraint(equalTo: s3ConfirmPasswordField.centerYAnchor),
@@ -503,15 +487,15 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
             s3ConfirmPasswordField.leadingAnchor.constraint(equalTo: s3LockIcon2.trailingAnchor, constant: 12),
             s3ConfirmPasswordField.trailingAnchor.constraint(equalTo: s3ShowPasswordButton2.leadingAnchor, constant: -8),
-            s3ConfirmPasswordField.topAnchor.constraint(equalTo: s3ConfirmTitleLabel.bottomAnchor, constant: 4),
-            s3ConfirmPasswordField.heightAnchor.constraint(equalToConstant: 28),
+            s3ConfirmPasswordField.topAnchor.constraint(equalTo: s3PasswordUnderline.bottomAnchor, constant: 18),
+            s3ConfirmPasswordField.heightAnchor.constraint(equalToConstant: 32),
 
             s3ConfirmPasswordUnderline.leadingAnchor.constraint(equalTo: s3ConfirmPasswordField.leadingAnchor),
             s3ConfirmPasswordUnderline.trailingAnchor.constraint(equalTo: s3ShowPasswordButton2.trailingAnchor),
             s3ConfirmPasswordUnderline.topAnchor.constraint(equalTo: s3ConfirmPasswordField.bottomAnchor, constant: 2),
             s3ConfirmPasswordUnderline.heightAnchor.constraint(equalToConstant: 1.5),
 
-            // Bottom Bar
+            // Bottom Bar (Clean 54pt bar properly enclosing buttons)
             s3BottomBar.topAnchor.constraint(equalTo: s3ConfirmPasswordUnderline.bottomAnchor, constant: 24),
             s3BottomBar.leadingAnchor.constraint(equalTo: step3Card.leadingAnchor),
             s3BottomBar.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor),
@@ -538,6 +522,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         view.endEditing(true)
         let email = s1EmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !email.isEmpty, email.contains("@"), email.contains(".") else {
+            s1Underline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showError("Please enter a valid email address.")
             return
         }
@@ -567,22 +552,30 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
                 self.s1NextButton.setTitle("Next  ➔", for: .normal)
 
                 if let error = error {
+                    self.s1Underline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
                     self.showError("Network error: \(error.localizedDescription)")
                     return
                 }
 
                 guard let data = data,
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    self.s1Underline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
                     self.showError("Invalid response from server.")
                     return
                 }
 
                 let status = json["status"] as? Bool ?? false
-                let apiMessage = self.extractMessage(from: json, fallback: "Failed to send OTP. Please try again.")
+                let apiMessage = self.extractMessage(from: json, fallback: "Email does not exist in our records.")
 
                 if status {
                     self.userEmail = email
+                    self.s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+                    // Update bottom constraint to step2Card
+                    self.contentBottomConstraint?.isActive = false
+                    self.contentBottomConstraint = self.contentView.bottomAnchor.constraint(equalTo: self.step2Card.bottomAnchor, constant: 40)
+                    self.contentBottomConstraint?.isActive = true
 
                     // Transition to Step 2 Card (Enter OTP)
                     self.headerTitleLabel.text = "Enter OTP"
@@ -590,8 +583,10 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
                         self.step1Card.isHidden = true
                         self.step2Card.isHidden = false
                     }
+                    self.scrollView.setContentOffset(.zero, animated: true)
                     self.s2OtpBoxes.first?.becomeFirstResponder()
                 } else {
+                    self.s1Underline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
                     self.showError(apiMessage)
                 }
             }
@@ -650,12 +645,18 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
                     self.verifiedOTP = otp
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
+                    // Update bottom constraint to step3Card
+                    self.contentBottomConstraint?.isActive = false
+                    self.contentBottomConstraint = self.contentView.bottomAnchor.constraint(equalTo: self.step3Card.bottomAnchor, constant: 40)
+                    self.contentBottomConstraint?.isActive = true
+
                     // Transition to Step 3 Card (Enter Password)
                     self.headerTitleLabel.text = "Enter Password"
                     UIView.transition(with: self.contentView, duration: 0.35, options: .transitionCrossDissolve) {
                         self.step2Card.isHidden = true
                         self.step3Card.isHidden = false
                     }
+                    self.scrollView.setContentOffset(.zero, animated: true)
                     self.s3PasswordField.becomeFirstResponder()
                 } else {
                     self.showError(apiMessage)
@@ -754,20 +755,32 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     @objc private func handleStep2Cancel() {
         clearErrorBanner()
         headerTitleLabel.text = "Forgot Password?"
+
+        contentBottomConstraint?.isActive = false
+        contentBottomConstraint = contentView.bottomAnchor.constraint(equalTo: step1Card.bottomAnchor, constant: 40)
+        contentBottomConstraint?.isActive = true
+
         UIView.transition(with: contentView, duration: 0.3, options: .transitionCrossDissolve) {
             self.step2Card.isHidden = true
             self.step1Card.isHidden = false
         }
+        scrollView.setContentOffset(.zero, animated: true)
         s1EmailField.becomeFirstResponder()
     }
 
     @objc private func handleStep3Cancel() {
         clearErrorBanner()
         headerTitleLabel.text = "Enter OTP"
+
+        contentBottomConstraint?.isActive = false
+        contentBottomConstraint = contentView.bottomAnchor.constraint(equalTo: step2Card.bottomAnchor, constant: 40)
+        contentBottomConstraint?.isActive = true
+
         UIView.transition(with: contentView, duration: 0.3, options: .transitionCrossDissolve) {
             self.step3Card.isHidden = true
             self.step2Card.isHidden = false
         }
+        scrollView.setContentOffset(.zero, animated: true)
         s2OtpBoxes.first?.becomeFirstResponder()
     }
 
@@ -848,6 +861,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
     @objc private func clearErrorBanner() {
         errorBanner.isHidden = true
+        s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
     }
 
     private func extractMessage(from json: [String: Any], fallback: String) -> String {
@@ -856,6 +870,22 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         }
         if let err = json["error"] as? String, !err.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return err
+        }
+        if let dataObj = json["data"] as? [String: Any] {
+            if let msg = dataObj["message"] as? String, !msg.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return msg
+            }
+            if let err = dataObj["error"] as? String, !err.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return err
+            }
+        }
+        if let respObj = json["response"] as? [String: Any] {
+            if let msg = respObj["message"] as? String, !msg.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return msg
+            }
+            if let err = respObj["error"] as? String, !err.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return err
+            }
         }
         return fallback
     }
