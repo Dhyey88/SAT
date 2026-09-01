@@ -15,10 +15,12 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
     // MARK: - Native Round Activity Loader (Replaces Web Line Loader)
     private let loaderHUD = UIView()
     private let activitySpinner = UIActivityIndicatorView(style: .large)
+    private var loaderDismissWorkItem: DispatchWorkItem?
 
     private let networkMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "WebNetworkMonitorQueue")
     private var isConnected: Bool = true
+    private var wasOffline: Bool = false
 
     init(initialURLString: String) {
         self.initialURLString = initialURLString
@@ -84,7 +86,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         webView.isOpaque = true
 
         if #available(iOS 16.4, *) {
-            webView.isInspectable = true // Safari Web Inspector support
+            webView.isInspectable = false // Safari Web Inspector support
         }
 
         view.addSubview(webView)
@@ -127,15 +129,25 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
     }
 
     private func showRoundLoader() {
+        loaderDismissWorkItem?.cancel()
         loaderHUD.isHidden = false
         activitySpinner.startAnimating()
-        UIView.animate(withDuration: 0.2) {
+        UIView.animate(withDuration: 0.15) {
             self.loaderHUD.alpha = 1.0
         }
+
+        // Safety auto-dismiss timeout (5 seconds)
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.hideRoundLoader()
+        }
+        loaderDismissWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0, execute: workItem)
     }
 
     private func hideRoundLoader() {
-        UIView.animate(withDuration: 0.25, animations: {
+        loaderDismissWorkItem?.cancel()
+        loaderDismissWorkItem = nil
+        UIView.animate(withDuration: 0.2, animations: {
             self.loaderHUD.alpha = 0.0
         }, completion: { _ in
             self.loaderHUD.isHidden = true
@@ -267,14 +279,21 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         present(alert, animated: true)
     }
 
+    // MARK: - Smart Network Monitoring (Prevents Redundant Auto-Reloads)
     private func setupNetworkMonitoring() {
         networkMonitor.pathUpdateHandler = { [weak self] path in
             DispatchQueue.main.async {
+                guard let self = self else { return }
                 let isNowConnected = path.status == .satisfied
-                self?.isConnected = isNowConnected
-                self?.offlineOverlayView.isHidden = isNowConnected
-                if isNowConnected {
-                    self?.webView.reload()
+                self.isConnected = isNowConnected
+                self.offlineOverlayView.isHidden = isNowConnected
+
+                if !isNowConnected {
+                    self.wasOffline = true
+                } else if self.wasOffline {
+                    // Only reload when recovering from a true disconnected state
+                    self.wasOffline = false
+                    self.webView.reload()
                 }
             }
         }
