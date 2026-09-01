@@ -1,7 +1,8 @@
 import Foundation
+import UIKit
 
 /// Central Application Configuration
-/// Contains all base URLs, API tokens, endpoints, Google OAuth settings, and global constants used throughout the SAT iOS App.
+/// Contains all base URLs, API tokens, endpoints, Google OAuth settings, push tokens, and global constants used throughout the SAT iOS App.
 struct AppConfig {
 
     // MARK: - Server Base URLs & Security
@@ -9,10 +10,55 @@ struct AppConfig {
     static let apiAccessToken = "piggyC@ins2019"
 
     // MARK: - Device Identifiers & Defaults
-    static let deviceType = "1" // 1 = iOS
-    static let deviceId = "SAT_IOS_DEVICE"
-    static let mobileDeviceId = "SAT_IOS_DEVICE"
+    static let deviceType = "1" // Mobile Client
     static let defaultLoginRole = "ho_user"
+
+    // MARK: - Push Notifications & Device Tokens (FCM & APNs)
+    static var fcmDeviceToken: String {
+        get {
+            return UserDefaults.standard.string(forKey: "sat_fcm_token") ?? ""
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "sat_fcm_token")
+        }
+    }
+
+    static var apnsDeviceToken: String {
+        get {
+            return UserDefaults.standard.string(forKey: "sat_apns_token") ?? ""
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "sat_apns_token")
+        }
+    }
+
+    static var deviceId: String {
+        if !fcmDeviceToken.isEmpty {
+            return fcmDeviceToken
+        }
+        if !apnsDeviceToken.isEmpty {
+            return apnsDeviceToken
+        }
+        return mobileDeviceId
+    }
+
+    static var mobileDeviceId: String {
+        let savedUUID = UserDefaults.standard.string(forKey: "sat_mobile_uuid")
+        if let uuid = savedUUID, !uuid.isEmpty {
+            return uuid
+        }
+        let newUUID = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+        UserDefaults.standard.set(newUUID, forKey: "sat_mobile_uuid")
+        return newUUID
+    }
+
+    static var deviceName: String {
+        return UIDevice.current.name
+    }
+
+    static var osVersion: String {
+        return "iOS \(UIDevice.current.systemVersion)"
+    }
 
     // MARK: - Google OAuth Configuration (Discovered from /api/get-settings)
     static var googleClientId = "713566498405-1gscd9htrfe1ac3e0o4vnfgok5cqml13.apps.googleusercontent.com"

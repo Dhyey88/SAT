@@ -946,6 +946,9 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             "provider_id": "google_\(email)",
             "email": email,
             "device_type": AppConfig.deviceType,
+            "device_id": AppConfig.deviceId,
+            "device_name": AppConfig.deviceName,
+            "os_version": AppConfig.osVersion,
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
 
@@ -1027,7 +1030,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             "password": password,
             "device_type": AppConfig.deviceType,
             "device_id": AppConfig.deviceId,
-            "device_name": "iPhone",
+            "device_name": AppConfig.deviceName,
+            "os_version": AppConfig.osVersion,
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
 
