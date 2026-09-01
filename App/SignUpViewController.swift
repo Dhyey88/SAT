@@ -64,7 +64,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let midTrustCodeField = UITextField()
     private let midTrustUnderline = UIView()
     private let midTrustCheckmark = UIImageView()
-    private let midTrustArrowButton = UIButton(type: .system)
     private let midTrustInfoButton = UIButton(type: .system)
 
     // Emblem Logo
@@ -122,7 +121,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let dtTrustCodeField = UITextField()
     private let dtTrustUnderline = UIView()
     private let dtTrustCheckmark = UIImageView()
-    private let dtTrustArrowButton = UIButton(type: .system)
     private let dtTrustInfoButton = UIButton(type: .system)
 
     // 2. Title*
@@ -172,7 +170,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let dtMobileField = UITextField()
     private let dtMobileUnderline = UIView()
     private let dtMobileCheckmark = UIImageView()
-    private let dtMobileArrowButton = UIButton(type: .system)
     private let dtMobileInfoButton = UIButton(type: .system)
 
     // 9. Mobile phone # for OTP
@@ -196,7 +193,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private let dtParentCodeField = UITextField()
     private let dtParentUnderline = UIView()
     private let dtParentCheckmark = UIImageView()
-    private let dtParentArrowButton = UIButton(type: .system)
     private let dtParentInfoButton = UIButton(type: .system)
 
     // 12. Id Document
@@ -448,6 +444,16 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             initTrustTitleLabel.leadingAnchor.constraint(equalTo: initTrustBadge.trailingAnchor, constant: 12),
             initTrustTitleLabel.topAnchor.constraint(equalTo: initialCardView.topAnchor, constant: 18),
 
+            initTrustInfoButton.trailingAnchor.constraint(equalTo: initialCardView.trailingAnchor, constant: -16),
+            initTrustInfoButton.centerYAnchor.constraint(equalTo: initTrustCodeField.centerYAnchor),
+            initTrustInfoButton.widthAnchor.constraint(equalToConstant: 24),
+            initTrustInfoButton.heightAnchor.constraint(equalToConstant: 24),
+
+            initTrustArrowButton.trailingAnchor.constraint(equalTo: initTrustInfoButton.leadingAnchor, constant: -8),
+            initTrustArrowButton.centerYAnchor.constraint(equalTo: initTrustCodeField.centerYAnchor),
+            initTrustArrowButton.widthAnchor.constraint(equalToConstant: 24),
+            initTrustArrowButton.heightAnchor.constraint(equalToConstant: 24),
+
             initTrustCodeField.leadingAnchor.constraint(equalTo: initTrustBadge.trailingAnchor, constant: 12),
             initTrustCodeField.topAnchor.constraint(equalTo: initTrustTitleLabel.bottomAnchor, constant: 4),
             initTrustCodeField.trailingAnchor.constraint(equalTo: initTrustArrowButton.leadingAnchor, constant: -8),
@@ -457,16 +463,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             initTrustUnderline.trailingAnchor.constraint(equalTo: initTrustCodeField.trailingAnchor),
             initTrustUnderline.topAnchor.constraint(equalTo: initTrustCodeField.bottomAnchor, constant: 2),
             initTrustUnderline.heightAnchor.constraint(equalToConstant: 1.5),
-
-            initTrustInfoButton.trailingAnchor.constraint(equalTo: initialCardView.trailingAnchor, constant: -16),
-            initTrustInfoButton.centerYAnchor.constraint(equalTo: initTrustCodeField.centerYAnchor),
-            initTrustInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            initTrustInfoButton.heightAnchor.constraint(equalToConstant: 26),
-
-            initTrustArrowButton.trailingAnchor.constraint(equalTo: initTrustInfoButton.leadingAnchor, constant: -8),
-            initTrustArrowButton.centerYAnchor.constraint(equalTo: initTrustCodeField.centerYAnchor),
-            initTrustArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            initTrustArrowButton.heightAnchor.constraint(equalToConstant: 26),
 
             initTrustSpinner.centerXAnchor.constraint(equalTo: initTrustArrowButton.centerXAnchor),
             initTrustSpinner.centerYAnchor.constraint(equalTo: initTrustArrowButton.centerYAnchor),
@@ -528,11 +524,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midTrustInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         midTrustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
         midTrustRowView.addSubview(midTrustInfoButton)
-
-        midTrustArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        midTrustArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
-        midTrustArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        midTrustRowView.addSubview(midTrustArrowButton)
 
         midTrustCheckmark.translatesAutoresizingMaskIntoConstraints = false
         midTrustCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
@@ -748,15 +739,10 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
             midTrustInfoButton.trailingAnchor.constraint(equalTo: midTrustRowView.trailingAnchor),
             midTrustInfoButton.centerYAnchor.constraint(equalTo: midTrustCodeField.centerYAnchor),
-            midTrustInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            midTrustInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            midTrustInfoButton.widthAnchor.constraint(equalToConstant: 24),
+            midTrustInfoButton.heightAnchor.constraint(equalToConstant: 24),
 
-            midTrustArrowButton.trailingAnchor.constraint(equalTo: midTrustInfoButton.leadingAnchor, constant: -6),
-            midTrustArrowButton.centerYAnchor.constraint(equalTo: midTrustCodeField.centerYAnchor),
-            midTrustArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            midTrustArrowButton.heightAnchor.constraint(equalToConstant: 26),
-
-            midTrustCheckmark.trailingAnchor.constraint(equalTo: midTrustArrowButton.leadingAnchor, constant: -6),
+            midTrustCheckmark.trailingAnchor.constraint(equalTo: midTrustInfoButton.leadingAnchor, constant: -6),
             midTrustCheckmark.centerYAnchor.constraint(equalTo: midTrustCodeField.centerYAnchor),
             midTrustCheckmark.widthAnchor.constraint(equalToConstant: 20),
             midTrustCheckmark.heightAnchor.constraint(equalToConstant: 20),
@@ -793,13 +779,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
             midEmailInfoButton.trailingAnchor.constraint(equalTo: midEmailRowView.trailingAnchor),
             midEmailInfoButton.centerYAnchor.constraint(equalTo: midEmailField.centerYAnchor),
-            midEmailInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            midEmailInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            midEmailInfoButton.widthAnchor.constraint(equalToConstant: 24),
+            midEmailInfoButton.heightAnchor.constraint(equalToConstant: 24),
 
             midEmailArrowButton.trailingAnchor.constraint(equalTo: midEmailInfoButton.leadingAnchor, constant: -6),
             midEmailArrowButton.centerYAnchor.constraint(equalTo: midEmailField.centerYAnchor),
-            midEmailArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            midEmailArrowButton.heightAnchor.constraint(equalToConstant: 26),
+            midEmailArrowButton.widthAnchor.constraint(equalToConstant: 24),
+            midEmailArrowButton.heightAnchor.constraint(equalToConstant: 24),
 
             midEmailCheckmark.trailingAnchor.constraint(equalTo: midEmailArrowButton.leadingAnchor, constant: -6),
             midEmailCheckmark.centerYAnchor.constraint(equalTo: midEmailField.centerYAnchor),
@@ -835,13 +821,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
             midMobileInfoButton.trailingAnchor.constraint(equalTo: midMobileRowView.trailingAnchor),
             midMobileInfoButton.centerYAnchor.constraint(equalTo: midMobileField.centerYAnchor),
-            midMobileInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            midMobileInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            midMobileInfoButton.widthAnchor.constraint(equalToConstant: 24),
+            midMobileInfoButton.heightAnchor.constraint(equalToConstant: 24),
 
             midMobileArrowButton.trailingAnchor.constraint(equalTo: midMobileInfoButton.leadingAnchor, constant: -6),
             midMobileArrowButton.centerYAnchor.constraint(equalTo: midMobileField.centerYAnchor),
-            midMobileArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            midMobileArrowButton.heightAnchor.constraint(equalToConstant: 26),
+            midMobileArrowButton.widthAnchor.constraint(equalToConstant: 24),
+            midMobileArrowButton.heightAnchor.constraint(equalToConstant: 24),
 
             midMobileCheckmark.trailingAnchor.constraint(equalTo: midMobileArrowButton.leadingAnchor, constant: -6),
             midMobileCheckmark.centerYAnchor.constraint(equalTo: midMobileField.centerYAnchor),
@@ -877,13 +863,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
             midParentInfoButton.trailingAnchor.constraint(equalTo: midParentRowView.trailingAnchor),
             midParentInfoButton.centerYAnchor.constraint(equalTo: midParentCodeField.centerYAnchor),
-            midParentInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            midParentInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            midParentInfoButton.widthAnchor.constraint(equalToConstant: 24),
+            midParentInfoButton.heightAnchor.constraint(equalToConstant: 24),
 
             midParentArrowButton.trailingAnchor.constraint(equalTo: midParentInfoButton.leadingAnchor, constant: -6),
             midParentArrowButton.centerYAnchor.constraint(equalTo: midParentCodeField.centerYAnchor),
-            midParentArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            midParentArrowButton.heightAnchor.constraint(equalToConstant: 26),
+            midParentArrowButton.widthAnchor.constraint(equalToConstant: 24),
+            midParentArrowButton.heightAnchor.constraint(equalToConstant: 24),
 
             midParentCheckmark.trailingAnchor.constraint(equalTo: midParentArrowButton.leadingAnchor, constant: -6),
             midParentCheckmark.centerYAnchor.constraint(equalTo: midParentCodeField.centerYAnchor),
@@ -925,35 +911,25 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         contentView.addSubview(detailsCardView)
 
         // 1. Trust Code Row
-        buildDetailRow(container: dtTrustRow, iconView: dtTrustBadgeIcon, iconWrapper: dtTrustBadge, isBadge: true, label: dtTrustTitleLabel, title: "Trust/Institution code*", field: dtTrustCodeField, placeholder: "Type your trust code", underline: dtTrustUnderline, isEnabled: false)
-        dtTrustCheckmark.translatesAutoresizingMaskIntoConstraints = false
-        dtTrustCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
-        dtTrustCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        dtTrustRow.addSubview(dtTrustCheckmark)
-
-        dtTrustArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        dtTrustArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
-        dtTrustArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        dtTrustRow.addSubview(dtTrustArrowButton)
-
+        buildDetailRow(container: dtTrustRow, iconView: dtTrustBadgeIcon, iconWrapper: dtTrustBadge, isBadge: true, label: dtTrustTitleLabel, title: "Trust/Institution code*", field: dtTrustCodeField, placeholder: "Type your trust code", underline: dtTrustUnderline, isEnabled: false, hasCustomTrailing: true)
         dtTrustInfoButton.translatesAutoresizingMaskIntoConstraints = false
         dtTrustInfoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
         dtTrustInfoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
         dtTrustInfoButton.addTarget(self, action: #selector(showTrustInfo), for: .touchUpInside)
         dtTrustRow.addSubview(dtTrustInfoButton)
 
+        dtTrustCheckmark.translatesAutoresizingMaskIntoConstraints = false
+        dtTrustCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
+        dtTrustCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        dtTrustRow.addSubview(dtTrustCheckmark)
+
         NSLayoutConstraint.activate([
             dtTrustInfoButton.trailingAnchor.constraint(equalTo: dtTrustRow.trailingAnchor),
             dtTrustInfoButton.centerYAnchor.constraint(equalTo: dtTrustCodeField.centerYAnchor),
-            dtTrustInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            dtTrustInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            dtTrustInfoButton.widthAnchor.constraint(equalToConstant: 24),
+            dtTrustInfoButton.heightAnchor.constraint(equalToConstant: 24),
 
-            dtTrustArrowButton.trailingAnchor.constraint(equalTo: dtTrustInfoButton.leadingAnchor, constant: -6),
-            dtTrustArrowButton.centerYAnchor.constraint(equalTo: dtTrustCodeField.centerYAnchor),
-            dtTrustArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            dtTrustArrowButton.heightAnchor.constraint(equalToConstant: 26),
-
-            dtTrustCheckmark.trailingAnchor.constraint(equalTo: dtTrustArrowButton.leadingAnchor, constant: -6),
+            dtTrustCheckmark.trailingAnchor.constraint(equalTo: dtTrustInfoButton.leadingAnchor, constant: -6),
             dtTrustCheckmark.centerYAnchor.constraint(equalTo: dtTrustCodeField.centerYAnchor),
             dtTrustCheckmark.widthAnchor.constraint(equalToConstant: 20),
             dtTrustCheckmark.heightAnchor.constraint(equalToConstant: 20),
@@ -1027,11 +1003,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         dtMobileInfoButton.addTarget(self, action: #selector(showMobileInfo), for: .touchUpInside)
         dtMobileRow.addSubview(dtMobileInfoButton)
 
-        dtMobileArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        dtMobileArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
-        dtMobileArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        dtMobileRow.addSubview(dtMobileArrowButton)
-
         dtMobileCheckmark.translatesAutoresizingMaskIntoConstraints = false
         dtMobileCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         dtMobileCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
@@ -1040,15 +1011,10 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         NSLayoutConstraint.activate([
             dtMobileInfoButton.trailingAnchor.constraint(equalTo: dtMobileRow.trailingAnchor),
             dtMobileInfoButton.centerYAnchor.constraint(equalTo: dtMobileField.centerYAnchor),
-            dtMobileInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            dtMobileInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            dtMobileInfoButton.widthAnchor.constraint(equalToConstant: 24),
+            dtMobileInfoButton.heightAnchor.constraint(equalToConstant: 24),
 
-            dtMobileArrowButton.trailingAnchor.constraint(equalTo: dtMobileInfoButton.leadingAnchor, constant: -6),
-            dtMobileArrowButton.centerYAnchor.constraint(equalTo: dtMobileField.centerYAnchor),
-            dtMobileArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            dtMobileArrowButton.heightAnchor.constraint(equalToConstant: 26),
-
-            dtMobileCheckmark.trailingAnchor.constraint(equalTo: dtMobileArrowButton.leadingAnchor, constant: -6),
+            dtMobileCheckmark.trailingAnchor.constraint(equalTo: dtMobileInfoButton.leadingAnchor, constant: -6),
             dtMobileCheckmark.centerYAnchor.constraint(equalTo: dtMobileField.centerYAnchor),
             dtMobileCheckmark.widthAnchor.constraint(equalToConstant: 20),
             dtMobileCheckmark.heightAnchor.constraint(equalToConstant: 20),
@@ -1115,12 +1081,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         dtParentInfoButton.addTarget(self, action: #selector(showParentInfo), for: .touchUpInside)
         dtParentRow.addSubview(dtParentInfoButton)
 
-        dtParentArrowButton.translatesAutoresizingMaskIntoConstraints = false
-        dtParentArrowButton.setImage(UIImage(systemName: "arrow.right.circle.fill"), for: .normal)
-        dtParentArrowButton.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        dtParentArrowButton.addTarget(self, action: #selector(handleParentCodeSubmitAndOpenDetails), for: .touchUpInside)
-        dtParentRow.addSubview(dtParentArrowButton)
-
         dtParentCheckmark.translatesAutoresizingMaskIntoConstraints = false
         dtParentCheckmark.image = UIImage(systemName: "checkmark.circle.fill")
         dtParentCheckmark.tintColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
@@ -1129,15 +1089,10 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         NSLayoutConstraint.activate([
             dtParentInfoButton.trailingAnchor.constraint(equalTo: dtParentRow.trailingAnchor),
             dtParentInfoButton.centerYAnchor.constraint(equalTo: dtParentCodeField.centerYAnchor),
-            dtParentInfoButton.widthAnchor.constraint(equalToConstant: 26),
-            dtParentInfoButton.heightAnchor.constraint(equalToConstant: 26),
+            dtParentInfoButton.widthAnchor.constraint(equalToConstant: 24),
+            dtParentInfoButton.heightAnchor.constraint(equalToConstant: 24),
 
-            dtParentArrowButton.trailingAnchor.constraint(equalTo: dtParentInfoButton.leadingAnchor, constant: -6),
-            dtParentArrowButton.centerYAnchor.constraint(equalTo: dtParentCodeField.centerYAnchor),
-            dtParentArrowButton.widthAnchor.constraint(equalToConstant: 26),
-            dtParentArrowButton.heightAnchor.constraint(equalToConstant: 26),
-
-            dtParentCheckmark.trailingAnchor.constraint(equalTo: dtParentArrowButton.leadingAnchor, constant: -6),
+            dtParentCheckmark.trailingAnchor.constraint(equalTo: dtParentInfoButton.leadingAnchor, constant: -6),
             dtParentCheckmark.centerYAnchor.constraint(equalTo: dtParentCodeField.centerYAnchor),
             dtParentCheckmark.widthAnchor.constraint(equalToConstant: 20),
             dtParentCheckmark.heightAnchor.constraint(equalToConstant: 20),
@@ -1804,6 +1759,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                         self.initialCardView.isHidden = true
                         self.midCardView.isHidden = false
                     }
+                    self.scrollView.setContentOffset(.zero, animated: true)
                     self.midEmailField.becomeFirstResponder()
                 } else {
                     self.initTrustUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
@@ -2129,6 +2085,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                     self.midCardView.isHidden = true
                     self.detailsCardView.isHidden = false
                 }
+                self.scrollView.setContentOffset(.zero, animated: true)
                 self.dtFnameField.becomeFirstResponder()
             }
         }.resume()
