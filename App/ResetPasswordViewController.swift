@@ -1,435 +1,882 @@
 import UIKit
 
-class ResetPasswordViewController: UIViewController {
+class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
-    // MARK: - State
-    private enum Step {
-        case enterEmail
-        case verifyOTP
-        case setNewPassword
-    }
+    var onResetPasswordSuccess: ((String) -> Void)?
 
-    private var currentStep: Step = .enterEmail
+    // MARK: - State Tracking
     private var userEmail: String = ""
     private var verifiedOTP: String = ""
 
-    // MARK: - UI Components
-    private let cardView = UIView()
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
+    // MARK: - Main UI Containers
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
+
+    private let headerTitleLabel = UILabel()
+    private let errorBanner = UIView()
     private let errorLabel = UILabel()
 
-    // Step 1: Email
-    private let emailField = UITextField()
+    // MARK: - Step 1 Card: Email Entry (Screenshot 1)
+    private let step1Card = UIView()
+    private let s1AvatarIcon = UIImageView()
+    private let s1TitleLabel = UILabel()
+    private let s1EmailField = UITextField()
+    private let s1Underline = UIView()
+    private let s1BottomBar = UIView()
+    private let s1CancelButton = UIButton(type: .system)
+    private let s1NextButton = UIButton(type: .system)
+    private let s1Spinner = UIActivityIndicatorView(style: .medium)
 
-    // Step 2: OTP
-    private let otpField = UITextField()
+    // MARK: - Step 2 Card: 6-Box OTP (Screenshot 2)
+    private let step2Card = UIView()
+    private let s2LockIcon = UIImageView()
+    private var s2OtpBoxes: [UITextField] = []
+    private let s2OtpStack = UIStackView()
+    private let s2BottomBar = UIView()
+    private let s2CancelButton = UIButton(type: .system)
+    private let s2NextButton = UIButton(type: .system)
+    private let s2Spinner = UIActivityIndicatorView(style: .medium)
 
-    // Step 3: Password
-    private let newPasswordField = UITextField()
-    private let confirmPasswordField = UITextField()
+    // MARK: - Step 3 Card: Password Entry (Screenshot 3)
+    private let step3Card = UIView()
 
-    private let actionButton = UIButton(type: .custom)
-    private let activityIndicator = UIActivityIndicatorView(style: .medium)
-    private let closeButton = UIButton(type: .system)
+    // Password Row
+    private let s3LockIcon1 = UIImageView()
+    private let s3PasswordTitleLabel = UILabel()
+    private let s3PasswordField = UITextField()
+    private let s3PasswordUnderline = UIView()
+    private let s3ShowPasswordButton1 = UIButton(type: .system)
+
+    // Confirm Password Row
+    private let s3LockIcon2 = UIImageView()
+    private let s3ConfirmTitleLabel = UILabel()
+    private let s3ConfirmPasswordField = UITextField()
+    private let s3ConfirmPasswordUnderline = UIView()
+    private let s3ShowPasswordButton2 = UIButton(type: .system)
+
+    // Step 3 Bottom Bar
+    private let s3BottomBar = UIView()
+    private let s3CancelButton = UIButton(type: .system)
+    private let s3NextButton = UIButton(type: .system)
+    private let s3Spinner = UIActivityIndicatorView(style: .medium)
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        updateStepUI()
+        setupKeyboardHandling()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - UI Setup
     private func setupUI() {
-        view.backgroundColor = UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 0.95)
+        // Match Theme: Dark Slate / Charcoal Canvas (#2E363F)
+        view.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
 
-        cardView.translatesAutoresizingMaskIntoConstraints = false
-        cardView.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        cardView.layer.cornerRadius = 16
-        cardView.layer.masksToBounds = true
-        view.addSubview(cardView)
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.keyboardDismissMode = .interactive
+        scrollView.alwaysBounceVertical = true
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
 
-        closeButton.translatesAutoresizingMaskIntoConstraints = false
-        closeButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
-        closeButton.tintColor = UIColor.white.withAlphaComponent(0.6)
-        closeButton.addTarget(self, action: #selector(dismissModal), for: .touchUpInside)
-        cardView.addSubview(closeButton)
-
-        let keyIcon = UIImageView()
-        keyIcon.translatesAutoresizingMaskIntoConstraints = false
-        keyIcon.image = UIImage(systemName: "key.fill")
-        keyIcon.tintColor = UIColor(red: 233/255, green: 50/255, blue: 45/255, alpha: 1.0)
-        keyIcon.contentMode = .scaleAspectFit
-        cardView.addSubview(keyIcon)
-
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "Reset Password"
-        titleLabel.textColor = .white
-        titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        titleLabel.textAlignment = .center
-        cardView.addSubview(titleLabel)
-
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.75)
-        subtitleLabel.font = UIFont.systemFont(ofSize: 14)
-        subtitleLabel.textAlignment = .center
-        subtitleLabel.numberOfLines = 0
-        cardView.addSubview(subtitleLabel)
-
-        errorLabel.translatesAutoresizingMaskIntoConstraints = false
-        errorLabel.backgroundColor = UIColor(red: 185/255, green: 74/255, blue: 72/255, alpha: 1.0)
-        errorLabel.textColor = .white
-        errorLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
-        errorLabel.textAlignment = .center
-        errorLabel.numberOfLines = 0
-        errorLabel.layer.cornerRadius = 4
-        errorLabel.layer.masksToBounds = true
-        errorLabel.isHidden = true
-        cardView.addSubview(errorLabel)
-
-        // Setup text fields
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
 
-        styleTextField(emailField, placeholder: "Enter registered email", iconName: "envelope.fill")
-        emailField.keyboardType = .emailAddress
-        cardView.addSubview(emailField)
+        // Header Title Label (Changes per step: "Forgot Password?", "Enter OTP", "Enter Password")
+        headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerTitleLabel.text = "Forgot Password?"
+        headerTitleLabel.textColor = .white
+        headerTitleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        headerTitleLabel.textAlignment = .center
+        contentView.addSubview(headerTitleLabel)
 
-        styleTextField(otpField, placeholder: "Enter 6-digit OTP", iconName: "number")
-        otpField.keyboardType = .numberPad
-        cardView.addSubview(otpField)
+        // Error Banner
+        errorBanner.translatesAutoresizingMaskIntoConstraints = false
+        errorBanner.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 0.95) // Terracotta Red #DA542E
+        errorBanner.layer.cornerRadius = 6
+        errorBanner.layer.masksToBounds = true
+        errorBanner.isHidden = true
+        contentView.addSubview(errorBanner)
 
-        styleTextField(newPasswordField, placeholder: "New Password", iconName: "lock.fill")
-        newPasswordField.isSecureTextEntry = true
-        cardView.addSubview(newPasswordField)
+        errorLabel.translatesAutoresizingMaskIntoConstraints = false
+        errorLabel.textColor = .white
+        errorLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        errorLabel.textAlignment = .center
+        errorLabel.numberOfLines = 0
+        errorBanner.addSubview(errorLabel)
 
-        styleTextField(confirmPasswordField, placeholder: "Confirm New Password", iconName: "lock.shield.fill")
-        confirmPasswordField.isSecureTextEntry = true
-        cardView.addSubview(confirmPasswordField)
+        // Build 3 Steps Cards
+        buildStep1Card()
+        buildStep2Card()
+        buildStep3Card()
 
-        // Action Button
-        actionButton.translatesAutoresizingMaskIntoConstraints = false
-        actionButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        actionButton.setTitleColor(.white, for: .normal)
-        actionButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        actionButton.layer.cornerRadius = 8
-        actionButton.addTarget(self, action: #selector(handleActionTap), for: .touchUpInside)
-        cardView.addSubview(actionButton)
-
-        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
-        activityIndicator.color = .white
-        activityIndicator.hidesWhenStopped = true
-        actionButton.addSubview(activityIndicator)
-
+        // Base Layout Constraints
         NSLayoutConstraint.activate([
-            cardView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            cardView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            cardView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            closeButton.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
-            closeButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            closeButton.widthAnchor.constraint(equalToConstant: 30),
-            closeButton.heightAnchor.constraint(equalToConstant: 30),
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
 
-            keyIcon.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 28),
-            keyIcon.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
-            keyIcon.widthAnchor.constraint(equalToConstant: 36),
-            keyIcon.heightAnchor.constraint(equalToConstant: 36),
+            headerTitleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 28),
+            headerTitleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
 
-            titleLabel.topAnchor.constraint(equalTo: keyIcon.bottomAnchor, constant: 12),
-            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
+            errorBanner.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 12),
+            errorBanner.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            errorBanner.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
 
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
-            subtitleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            subtitleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-
-            errorLabel.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 14),
-            errorLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            errorLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-
-            emailField.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 16),
-            emailField.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            emailField.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-            emailField.heightAnchor.constraint(equalToConstant: 48),
-
-            otpField.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 16),
-            otpField.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            otpField.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-            otpField.heightAnchor.constraint(equalToConstant: 48),
-
-            newPasswordField.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 16),
-            newPasswordField.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            newPasswordField.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-            newPasswordField.heightAnchor.constraint(equalToConstant: 48),
-
-            confirmPasswordField.topAnchor.constraint(equalTo: newPasswordField.bottomAnchor, constant: 12),
-            confirmPasswordField.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            confirmPasswordField.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-            confirmPasswordField.heightAnchor.constraint(equalToConstant: 48),
-
-            actionButton.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            actionButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-            actionButton.heightAnchor.constraint(equalToConstant: 48),
-            actionButton.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -24),
-
-            activityIndicator.centerYAnchor.constraint(equalTo: actionButton.centerYAnchor),
-            activityIndicator.trailingAnchor.constraint(equalTo: actionButton.trailingAnchor, constant: -16)
+            errorLabel.topAnchor.constraint(equalTo: errorBanner.topAnchor, constant: 8),
+            errorLabel.leadingAnchor.constraint(equalTo: errorBanner.leadingAnchor, constant: 12),
+            errorLabel.trailingAnchor.constraint(equalTo: errorBanner.trailingAnchor, constant: -12),
+            errorLabel.bottomAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: -8)
         ])
     }
 
-    private func styleTextField(_ tf: UITextField, placeholder: String, iconName: String) {
-        tf.translatesAutoresizingMaskIntoConstraints = false
-        tf.backgroundColor = .white
-        tf.layer.cornerRadius = 6
-        tf.layer.borderWidth = 1
-        tf.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
-        tf.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        tf.font = UIFont.systemFont(ofSize: 15, weight: .medium)
-        tf.autocapitalizationType = .none
-        tf.autocorrectionType = .no
-        tf.attributedPlaceholder = NSAttributedString(
-            string: placeholder,
-            attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
-        )
+    // MARK: - Step 1 Card: Email Entry (Screenshot 1)
+    private func buildStep1Card() {
+        step1Card.translatesAutoresizingMaskIntoConstraints = false
+        step1Card.backgroundColor = .white
+        step1Card.layer.cornerRadius = 16
+        step1Card.layer.masksToBounds = true
+        contentView.addSubview(step1Card)
 
-        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 44, height: 48))
-        let iconView = UIImageView(image: UIImage(systemName: iconName))
-        iconView.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        iconView.contentMode = .center
-        iconView.frame = paddingView.bounds
-        paddingView.addSubview(iconView)
-        tf.leftView = paddingView
-        tf.leftViewMode = .always
+        // Person Icon
+        s1AvatarIcon.translatesAutoresizingMaskIntoConstraints = false
+        s1AvatarIcon.image = UIImage(systemName: "person.crop.circle.fill") ?? UIImage(systemName: "person.fill")
+        s1AvatarIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Amber Gold #FFB848
+        s1AvatarIcon.contentMode = .scaleAspectFit
+        step1Card.addSubview(s1AvatarIcon)
+
+        // User Email Title
+        s1TitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        s1TitleLabel.text = "User Email"
+        s1TitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        s1TitleLabel.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+        step1Card.addSubview(s1TitleLabel)
+
+        // Email Field
+        s1EmailField.translatesAutoresizingMaskIntoConstraints = false
+        s1EmailField.placeholder = "Your Email"
+        s1EmailField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        s1EmailField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        s1EmailField.keyboardType = .emailAddress
+        s1EmailField.autocapitalizationType = .none
+        s1EmailField.autocorrectionType = .no
+        s1EmailField.returnKeyType = .next
+        s1EmailField.delegate = self
+        s1EmailField.addTarget(self, action: #selector(clearErrorBanner), for: .editingChanged)
+        step1Card.addSubview(s1EmailField)
+
+        // Sky Blue Underline
+        s1Underline.translatesAutoresizingMaskIntoConstraints = false
+        s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0) // Sky Blue
+        step1Card.addSubview(s1Underline)
+
+        // Bottom Bar (Matching Theme #262D35)
+        s1BottomBar.translatesAutoresizingMaskIntoConstraints = false
+        s1BottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
+        step1Card.addSubview(s1BottomBar)
+
+        s1CancelButton.translatesAutoresizingMaskIntoConstraints = false
+        s1CancelButton.setTitle("Cancel", for: .normal)
+        s1CancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        s1CancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        s1CancelButton.addTarget(self, action: #selector(handleCancel), for: .touchUpInside)
+        s1BottomBar.addSubview(s1CancelButton)
+
+        s1NextButton.translatesAutoresizingMaskIntoConstraints = false
+        s1NextButton.setTitle("Next  ➔", for: .normal)
+        s1NextButton.setTitleColor(.white, for: .normal)
+        s1NextButton.titleLabel?.font = UIFont.systemFont(ofSize: 15.5, weight: .bold)
+        s1NextButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0) // Green #28B779
+        s1NextButton.layer.cornerRadius = 6
+        s1NextButton.addTarget(self, action: #selector(handleStep1Submit), for: .touchUpInside)
+        s1BottomBar.addSubview(s1NextButton)
+
+        s1Spinner.translatesAutoresizingMaskIntoConstraints = false
+        s1Spinner.hidesWhenStopped = true
+        s1Spinner.color = .white
+        s1BottomBar.addSubview(s1Spinner)
+
+        NSLayoutConstraint.activate([
+            step1Card.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 16),
+            step1Card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            step1Card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            step1Card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
+
+            s1AvatarIcon.leadingAnchor.constraint(equalTo: step1Card.leadingAnchor, constant: 18),
+            s1AvatarIcon.topAnchor.constraint(equalTo: step1Card.topAnchor, constant: 22),
+            s1AvatarIcon.widthAnchor.constraint(equalToConstant: 32),
+            s1AvatarIcon.heightAnchor.constraint(equalToConstant: 32),
+
+            s1TitleLabel.leadingAnchor.constraint(equalTo: s1AvatarIcon.trailingAnchor, constant: 12),
+            s1TitleLabel.topAnchor.constraint(equalTo: step1Card.topAnchor, constant: 18),
+
+            s1EmailField.leadingAnchor.constraint(equalTo: s1AvatarIcon.trailingAnchor, constant: 12),
+            s1EmailField.trailingAnchor.constraint(equalTo: step1Card.trailingAnchor, constant: -18),
+            s1EmailField.topAnchor.constraint(equalTo: s1TitleLabel.bottomAnchor, constant: 4),
+            s1EmailField.heightAnchor.constraint(equalToConstant: 28),
+
+            s1Underline.leadingAnchor.constraint(equalTo: s1EmailField.leadingAnchor),
+            s1Underline.trailingAnchor.constraint(equalTo: s1EmailField.trailingAnchor),
+            s1Underline.topAnchor.constraint(equalTo: s1EmailField.bottomAnchor, constant: 2),
+            s1Underline.heightAnchor.constraint(equalToConstant: 1.5),
+
+            s1BottomBar.topAnchor.constraint(equalTo: s1Underline.bottomAnchor, constant: 24),
+            s1BottomBar.leadingAnchor.constraint(equalTo: step1Card.leadingAnchor),
+            s1BottomBar.trailingAnchor.constraint(equalTo: step1Card.trailingAnchor),
+            s1BottomBar.bottomAnchor.constraint(equalTo: step1Card.bottomAnchor),
+            s1BottomBar.heightAnchor.constraint(equalToConstant: 54),
+
+            s1CancelButton.leadingAnchor.constraint(equalTo: s1BottomBar.leadingAnchor, constant: 20),
+            s1CancelButton.centerYAnchor.constraint(equalTo: s1BottomBar.centerYAnchor),
+
+            s1NextButton.trailingAnchor.constraint(equalTo: s1BottomBar.trailingAnchor, constant: -16),
+            s1NextButton.centerYAnchor.constraint(equalTo: s1BottomBar.centerYAnchor),
+            s1NextButton.widthAnchor.constraint(equalToConstant: 100),
+            s1NextButton.heightAnchor.constraint(equalToConstant: 38),
+
+            s1Spinner.centerXAnchor.constraint(equalTo: s1NextButton.centerXAnchor),
+            s1Spinner.centerYAnchor.constraint(equalTo: s1NextButton.centerYAnchor)
+        ])
     }
 
-    private func updateStepUI() {
-        errorLabel.isHidden = true
+    // MARK: - Step 2 Card: 6-Box OTP (Screenshot 2)
+    private func buildStep2Card() {
+        step2Card.translatesAutoresizingMaskIntoConstraints = false
+        step2Card.backgroundColor = .white
+        step2Card.layer.cornerRadius = 16
+        step2Card.layer.masksToBounds = true
+        step2Card.isHidden = true
+        contentView.addSubview(step2Card)
+
+        // Lock Icon
+        s2LockIcon.translatesAutoresizingMaskIntoConstraints = false
+        s2LockIcon.image = UIImage(systemName: "lock.fill")
+        s2LockIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Amber Gold #FFB848
+        s2LockIcon.contentMode = .scaleAspectFit
+        step2Card.addSubview(s2LockIcon)
+
+        // 6 Individual OTP Boxes
+        s2OtpStack.translatesAutoresizingMaskIntoConstraints = false
+        s2OtpStack.axis = .horizontal
+        s2OtpStack.distribution = .fillEqually
+        s2OtpStack.spacing = 8
+        step2Card.addSubview(s2OtpStack)
+
+        for i in 0..<6 {
+            let tf = UITextField()
+            tf.translatesAutoresizingMaskIntoConstraints = false
+            tf.textAlignment = .center
+            tf.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+            tf.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+            tf.backgroundColor = .white
+            tf.layer.cornerRadius = 8
+            tf.layer.borderWidth = 1.5
+            tf.layer.borderColor = UIColor(red: 190/255, green: 195/255, blue: 205/255, alpha: 1.0).cgColor
+            tf.keyboardType = .numberPad
+            tf.tag = i
+            tf.delegate = self
+            tf.addTarget(self, action: #selector(otpTextChanged(_:)), for: .editingChanged)
+            s2OtpBoxes.append(tf)
+            s2OtpStack.addArrangedSubview(tf)
+        }
+
+        // Bottom Bar
+        s2BottomBar.translatesAutoresizingMaskIntoConstraints = false
+        s2BottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
+        step2Card.addSubview(s2BottomBar)
+
+        s2CancelButton.translatesAutoresizingMaskIntoConstraints = false
+        s2CancelButton.setTitle("Cancel", for: .normal)
+        s2CancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        s2CancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        s2CancelButton.addTarget(self, action: #selector(handleStep2Cancel), for: .touchUpInside)
+        s2BottomBar.addSubview(s2CancelButton)
+
+        s2NextButton.translatesAutoresizingMaskIntoConstraints = false
+        s2NextButton.setTitle("Next  ➔", for: .normal)
+        s2NextButton.setTitleColor(.white, for: .normal)
+        s2NextButton.titleLabel?.font = UIFont.systemFont(ofSize: 15.5, weight: .bold)
+        s2NextButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        s2NextButton.layer.cornerRadius = 6
+        s2NextButton.addTarget(self, action: #selector(handleStep2Submit), for: .touchUpInside)
+        s2BottomBar.addSubview(s2NextButton)
+
+        s2Spinner.translatesAutoresizingMaskIntoConstraints = false
+        s2Spinner.hidesWhenStopped = true
+        s2Spinner.color = .white
+        s2BottomBar.addSubview(s2Spinner)
+
+        NSLayoutConstraint.activate([
+            step2Card.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 16),
+            step2Card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            step2Card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            step2Card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
+
+            s2LockIcon.leadingAnchor.constraint(equalTo: step2Card.leadingAnchor, constant: 16),
+            s2LockIcon.centerYAnchor.constraint(equalTo: s2OtpStack.centerYAnchor),
+            s2LockIcon.widthAnchor.constraint(equalToConstant: 26),
+            s2LockIcon.heightAnchor.constraint(equalToConstant: 26),
+
+            s2OtpStack.leadingAnchor.constraint(equalTo: s2LockIcon.trailingAnchor, constant: 12),
+            s2OtpStack.trailingAnchor.constraint(equalTo: step2Card.trailingAnchor, constant: -16),
+            s2OtpStack.topAnchor.constraint(equalTo: step2Card.topAnchor, constant: 24),
+            s2OtpStack.heightAnchor.constraint(equalToConstant: 44),
+
+            s2BottomBar.topAnchor.constraint(equalTo: s2OtpStack.bottomAnchor, constant: 24),
+            s2BottomBar.leadingAnchor.constraint(equalTo: step2Card.leadingAnchor),
+            s2BottomBar.trailingAnchor.constraint(equalTo: step2Card.trailingAnchor),
+            s2BottomBar.bottomAnchor.constraint(equalTo: step2Card.bottomAnchor),
+            s2BottomBar.heightAnchor.constraint(equalToConstant: 54),
+
+            s2CancelButton.leadingAnchor.constraint(equalTo: s2BottomBar.leadingAnchor, constant: 20),
+            s2CancelButton.centerYAnchor.constraint(equalTo: s2BottomBar.centerYAnchor),
+
+            s2NextButton.trailingAnchor.constraint(equalTo: s2BottomBar.trailingAnchor, constant: -16),
+            s2NextButton.centerYAnchor.constraint(equalTo: s2BottomBar.centerYAnchor),
+            s2NextButton.widthAnchor.constraint(equalToConstant: 100),
+            s2NextButton.heightAnchor.constraint(equalToConstant: 38),
+
+            s2Spinner.centerXAnchor.constraint(equalTo: s2NextButton.centerXAnchor),
+            s2Spinner.centerYAnchor.constraint(equalTo: s2NextButton.centerYAnchor)
+        ])
+    }
+
+    // MARK: - Step 3 Card: Password Entry (Screenshot 3)
+    private func buildStep3Card() {
+        step3Card.translatesAutoresizingMaskIntoConstraints = false
+        step3Card.backgroundColor = .white
+        step3Card.layer.cornerRadius = 16
+        step3Card.layer.masksToBounds = true
+        step3Card.isHidden = true
+        contentView.addSubview(step3Card)
+
+        // 1. Password Row
+        s3LockIcon1.translatesAutoresizingMaskIntoConstraints = false
+        s3LockIcon1.image = UIImage(systemName: "lock.fill")
+        s3LockIcon1.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        s3LockIcon1.contentMode = .scaleAspectFit
+        step3Card.addSubview(s3LockIcon1)
+
+        s3PasswordTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        s3PasswordTitleLabel.text = "Password"
+        s3PasswordTitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        s3PasswordTitleLabel.font = UIFont.systemFont(ofSize: 14.5, weight: .bold)
+        step3Card.addSubview(s3PasswordTitleLabel)
+
+        s3PasswordField.translatesAutoresizingMaskIntoConstraints = false
+        s3PasswordField.placeholder = "Type Your Password"
+        s3PasswordField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        s3PasswordField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        s3PasswordField.isSecureTextEntry = true
+        s3PasswordField.returnKeyType = .next
+        s3PasswordField.delegate = self
+        s3PasswordField.addTarget(self, action: #selector(clearErrorBanner), for: .editingChanged)
+        step3Card.addSubview(s3PasswordField)
+
+        s3ShowPasswordButton1.translatesAutoresizingMaskIntoConstraints = false
+        s3ShowPasswordButton1.setTitle("Show", for: .normal)
+        s3ShowPasswordButton1.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        s3ShowPasswordButton1.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        s3ShowPasswordButton1.addTarget(self, action: #selector(toggleShowPassword1), for: .touchUpInside)
+        step3Card.addSubview(s3ShowPasswordButton1)
+
+        s3PasswordUnderline.translatesAutoresizingMaskIntoConstraints = false
+        s3PasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        step3Card.addSubview(s3PasswordUnderline)
+
+        // 2. Confirm Password Row
+        s3LockIcon2.translatesAutoresizingMaskIntoConstraints = false
+        s3LockIcon2.image = UIImage(systemName: "lock.fill")
+        s3LockIcon2.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        s3LockIcon2.contentMode = .scaleAspectFit
+        step3Card.addSubview(s3LockIcon2)
+
+        s3ConfirmTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        s3ConfirmTitleLabel.text = "Confirm Password"
+        s3ConfirmTitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        s3ConfirmTitleLabel.font = UIFont.systemFont(ofSize: 14.5, weight: .bold)
+        step3Card.addSubview(s3ConfirmTitleLabel)
+
+        s3ConfirmPasswordField.translatesAutoresizingMaskIntoConstraints = false
+        s3ConfirmPasswordField.placeholder = "Type Your Password Again"
+        s3ConfirmPasswordField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        s3ConfirmPasswordField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        s3ConfirmPasswordField.isSecureTextEntry = true
+        s3ConfirmPasswordField.returnKeyType = .go
+        s3ConfirmPasswordField.delegate = self
+        s3ConfirmPasswordField.addTarget(self, action: #selector(clearErrorBanner), for: .editingChanged)
+        step3Card.addSubview(s3ConfirmPasswordField)
+
+        s3ShowPasswordButton2.translatesAutoresizingMaskIntoConstraints = false
+        s3ShowPasswordButton2.setTitle("Show", for: .normal)
+        s3ShowPasswordButton2.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        s3ShowPasswordButton2.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        s3ShowPasswordButton2.addTarget(self, action: #selector(toggleShowPassword2), for: .touchUpInside)
+        step3Card.addSubview(s3ShowPasswordButton2)
+
+        s3ConfirmPasswordUnderline.translatesAutoresizingMaskIntoConstraints = false
+        s3ConfirmPasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        step3Card.addSubview(s3ConfirmPasswordUnderline)
+
+        // Step 3 Bottom Bar
+        s3BottomBar.translatesAutoresizingMaskIntoConstraints = false
+        s3BottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
+        step3Card.addSubview(s3BottomBar)
+
+        s3CancelButton.translatesAutoresizingMaskIntoConstraints = false
+        s3CancelButton.setTitle("Cancel", for: .normal)
+        s3CancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
+        s3CancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        s3CancelButton.addTarget(self, action: #selector(handleStep3Cancel), for: .touchUpInside)
+        s3BottomBar.addSubview(s3CancelButton)
+
+        s3NextButton.translatesAutoresizingMaskIntoConstraints = false
+        s3NextButton.setTitle("Next  ➔", for: .normal)
+        s3NextButton.setTitleColor(.white, for: .normal)
+        s3NextButton.titleLabel?.font = UIFont.systemFont(ofSize: 15.5, weight: .bold)
+        s3NextButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        s3NextButton.layer.cornerRadius = 6
+        s3NextButton.addTarget(self, action: #selector(handleStep3Submit), for: .touchUpInside)
+        s3BottomBar.addSubview(s3NextButton)
+
+        s3Spinner.translatesAutoresizingMaskIntoConstraints = false
+        s3Spinner.hidesWhenStopped = true
+        s3Spinner.color = .white
+        s3BottomBar.addSubview(s3Spinner)
+
+        NSLayoutConstraint.activate([
+            step3Card.topAnchor.constraint(equalTo: errorBanner.bottomAnchor, constant: 16),
+            step3Card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            step3Card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            step3Card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
+
+            // Password Row
+            s3LockIcon1.leadingAnchor.constraint(equalTo: step3Card.leadingAnchor, constant: 18),
+            s3LockIcon1.topAnchor.constraint(equalTo: step3Card.topAnchor, constant: 22),
+            s3LockIcon1.widthAnchor.constraint(equalToConstant: 24),
+            s3LockIcon1.heightAnchor.constraint(equalToConstant: 24),
+
+            s3PasswordTitleLabel.leadingAnchor.constraint(equalTo: s3LockIcon1.trailingAnchor, constant: 12),
+            s3PasswordTitleLabel.topAnchor.constraint(equalTo: step3Card.topAnchor, constant: 16),
+
+            s3ShowPasswordButton1.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor, constant: -16),
+            s3ShowPasswordButton1.centerYAnchor.constraint(equalTo: s3PasswordField.centerYAnchor),
+            s3ShowPasswordButton1.widthAnchor.constraint(equalToConstant: 44),
+
+            s3PasswordField.leadingAnchor.constraint(equalTo: s3LockIcon1.trailingAnchor, constant: 12),
+            s3PasswordField.trailingAnchor.constraint(equalTo: s3ShowPasswordButton1.leadingAnchor, constant: -8),
+            s3PasswordField.topAnchor.constraint(equalTo: s3PasswordTitleLabel.bottomAnchor, constant: 4),
+            s3PasswordField.heightAnchor.constraint(equalToConstant: 28),
+
+            s3PasswordUnderline.leadingAnchor.constraint(equalTo: s3PasswordField.leadingAnchor),
+            s3PasswordUnderline.trailingAnchor.constraint(equalTo: s3ShowPasswordButton1.trailingAnchor),
+            s3PasswordUnderline.topAnchor.constraint(equalTo: s3PasswordField.bottomAnchor, constant: 2),
+            s3PasswordUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+
+            // Confirm Password Row
+            s3LockIcon2.leadingAnchor.constraint(equalTo: step3Card.leadingAnchor, constant: 18),
+            s3LockIcon2.topAnchor.constraint(equalTo: s3PasswordUnderline.bottomAnchor, constant: 20),
+            s3LockIcon2.widthAnchor.constraint(equalToConstant: 24),
+            s3LockIcon2.heightAnchor.constraint(equalToConstant: 24),
+
+            s3ConfirmTitleLabel.leadingAnchor.constraint(equalTo: s3LockIcon2.trailingAnchor, constant: 12),
+            s3ConfirmTitleLabel.topAnchor.constraint(equalTo: s3PasswordUnderline.bottomAnchor, constant: 14),
+
+            s3ShowPasswordButton2.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor, constant: -16),
+            s3ShowPasswordButton2.centerYAnchor.constraint(equalTo: s3ConfirmPasswordField.centerYAnchor),
+            s3ShowPasswordButton2.widthAnchor.constraint(equalToConstant: 44),
+
+            s3ConfirmPasswordField.leadingAnchor.constraint(equalTo: s3LockIcon2.trailingAnchor, constant: 12),
+            s3ConfirmPasswordField.trailingAnchor.constraint(equalTo: s3ShowPasswordButton2.leadingAnchor, constant: -8),
+            s3ConfirmPasswordField.topAnchor.constraint(equalTo: s3ConfirmTitleLabel.bottomAnchor, constant: 4),
+            s3ConfirmPasswordField.heightAnchor.constraint(equalToConstant: 28),
+
+            s3ConfirmPasswordUnderline.leadingAnchor.constraint(equalTo: s3ConfirmPasswordField.leadingAnchor),
+            s3ConfirmPasswordUnderline.trailingAnchor.constraint(equalTo: s3ShowPasswordButton2.trailingAnchor),
+            s3ConfirmPasswordUnderline.topAnchor.constraint(equalTo: s3ConfirmPasswordField.bottomAnchor, constant: 2),
+            s3ConfirmPasswordUnderline.heightAnchor.constraint(equalToConstant: 1.5),
+
+            // Bottom Bar
+            s3BottomBar.topAnchor.constraint(equalTo: s3ConfirmPasswordUnderline.bottomAnchor, constant: 24),
+            s3BottomBar.leadingAnchor.constraint(equalTo: step3Card.leadingAnchor),
+            s3BottomBar.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor),
+            s3BottomBar.bottomAnchor.constraint(equalTo: step3Card.bottomAnchor),
+            s3BottomBar.heightAnchor.constraint(equalToConstant: 54),
+
+            s3CancelButton.leadingAnchor.constraint(equalTo: s3BottomBar.leadingAnchor, constant: 20),
+            s3CancelButton.centerYAnchor.constraint(equalTo: s3BottomBar.centerYAnchor),
+
+            s3NextButton.trailingAnchor.constraint(equalTo: s3BottomBar.trailingAnchor, constant: -16),
+            s3NextButton.centerYAnchor.constraint(equalTo: s3BottomBar.centerYAnchor),
+            s3NextButton.widthAnchor.constraint(equalToConstant: 100),
+            s3NextButton.heightAnchor.constraint(equalToConstant: 38),
+
+            s3Spinner.centerXAnchor.constraint(equalTo: s3NextButton.centerXAnchor),
+            s3Spinner.centerYAnchor.constraint(equalTo: s3NextButton.centerYAnchor)
+        ])
+    }
+
+    // MARK: - Actions & API Calls
+
+    // Step 1: Submit Email -> POST /api/forgot-password
+    @objc private func handleStep1Submit() {
         view.endEditing(true)
-
-        switch currentStep {
-        case .enterEmail:
-            subtitleLabel.text = "Enter your registered email to receive a 6-digit OTP verification code."
-            emailField.isHidden = false
-            otpField.isHidden = true
-            newPasswordField.isHidden = true
-            confirmPasswordField.isHidden = true
-            actionButton.setTitle("Send OTP", for: .normal)
-            actionButton.topAnchor.constraint(equalTo: emailField.bottomAnchor, constant: 20).isActive = true
-
-        case .verifyOTP:
-            subtitleLabel.text = "Enter the 6-digit verification code sent to:\n\(userEmail)"
-            emailField.isHidden = true
-            otpField.isHidden = false
-            newPasswordField.isHidden = true
-            confirmPasswordField.isHidden = true
-            actionButton.setTitle("Verify OTP", for: .normal)
-            actionButton.topAnchor.constraint(equalTo: otpField.bottomAnchor, constant: 20).isActive = true
-
-        case .setNewPassword:
-            subtitleLabel.text = "Create a strong new password for your account."
-            emailField.isHidden = true
-            otpField.isHidden = true
-            newPasswordField.isHidden = false
-            confirmPasswordField.isHidden = false
-            actionButton.setTitle("Update Password", for: .normal)
-            actionButton.topAnchor.constraint(equalTo: confirmPasswordField.bottomAnchor, constant: 20).isActive = true
+        let email = s1EmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !email.isEmpty, email.contains("@"), email.contains(".") else {
+            showError("Please enter a valid email address.")
+            return
         }
-    }
 
-    @objc private func handleActionTap() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        errorLabel.isHidden = true
+        s1NextButton.setTitle("", for: .normal)
+        s1Spinner.startAnimating()
+        clearErrorBanner()
 
-        switch currentStep {
-        case .enterEmail:
-            let email = emailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard !email.isEmpty, email.contains("@") else {
-                showError("Please enter a valid email address.")
-                return
-            }
-            userEmail = email
-            sendForgotPasswordOTP(email: email)
-
-        case .verifyOTP:
-            let otp = otpField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard !otp.isEmpty, otp.count >= 4 else {
-                showError("Please enter the verification OTP code.")
-                return
-            }
-            verifiedOTP = otp
-            verifyResetOTP(email: userEmail, otp: otp)
-
-        case .setNewPassword:
-            let newPass = newPasswordField.text ?? ""
-            let confirmPass = confirmPasswordField.text ?? ""
-            guard !newPass.isEmpty else {
-                showError("Please enter your new password.")
-                return
-            }
-            guard newPass.count >= 6 else {
-                showError("Password must be at least 6 characters long.")
-                return
-            }
-            guard newPass == confirmPass else {
-                showError("Passwords do not match.")
-                return
-            }
-            submitNewPassword(email: userEmail, otp: verifiedOTP, password: newPass)
-        }
-    }
-
-    // Step 1: POST /api/forgot-password
-    private func sendForgotPasswordOTP(email: String) {
-        startLoading()
         guard let url = URL(string: AppConfig.API.forgotPassword) else { return }
-
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        let body = "email=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+
+        let params: [String: String] = [
+            "email": email,
+            "device_type": AppConfig.deviceType,
+            "mobile_device_id": AppConfig.mobileDeviceId
+        ]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
-                self?.stopLoading()
+                guard let self = self else { return }
+                self.s1Spinner.stopAnimating()
+                self.s1NextButton.setTitle("Next  ➔", for: .normal)
+
                 if let error = error {
-                    self?.showError("Network error: \(error.localizedDescription)")
+                    self.showError("Network error: \(error.localizedDescription)")
                     return
                 }
+
                 guard let data = data,
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self?.showError("Invalid response from server.")
+                    self.showError("Invalid response from server.")
                     return
                 }
 
                 let status = json["status"] as? Bool ?? false
-                let message = json["message"] as? String ?? ""
+                let apiMessage = self.extractMessage(from: json, fallback: "Failed to send OTP. Please try again.")
 
                 if status {
-                    self?.currentStep = .verifyOTP
-                    self?.updateStepUI()
+                    self.userEmail = email
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+                    // Transition to Step 2 Card (Enter OTP)
+                    self.headerTitleLabel.text = "Enter OTP"
+                    UIView.transition(with: self.contentView, duration: 0.35, options: .transitionCrossDissolve) {
+                        self.step1Card.isHidden = true
+                        self.step2Card.isHidden = false
+                    }
+                    self.s2OtpBoxes.first?.becomeFirstResponder()
                 } else {
-                    self?.showError(message.isEmpty ? "Email not registered." : message)
+                    self.showError(apiMessage)
                 }
             }
         }.resume()
     }
 
-    // Step 2: POST /api/otp-verification
-    private func verifyResetOTP(email: String, otp: String) {
-        startLoading()
+    // Step 2: Submit OTP -> POST /api/otp-verification
+    @objc private func handleStep2Submit() {
+        view.endEditing(true)
+        let otp = s2OtpBoxes.map { $0.text ?? "" }.joined()
+        guard otp.count == 6 else {
+            showError("Please enter the complete 6-digit OTP.")
+            return
+        }
+
+        s2NextButton.setTitle("", for: .normal)
+        s2Spinner.startAnimating()
+        clearErrorBanner()
+
         guard let url = URL(string: AppConfig.API.otpVerification) else { return }
-
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        let body = "email=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&forgot_otp=\(otp)"
+
+        let params: [String: String] = [
+            "email": userEmail,
+            "forgot_otp": otp,
+            "device_type": AppConfig.deviceType,
+            "mobile_device_id": AppConfig.mobileDeviceId
+        ]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
-                self?.stopLoading()
+                guard let self = self else { return }
+                self.s2Spinner.stopAnimating()
+                self.s2NextButton.setTitle("Next  ➔", for: .normal)
+
                 if let error = error {
-                    self?.showError("Network error: \(error.localizedDescription)")
+                    self.showError("Network error: \(error.localizedDescription)")
                     return
                 }
+
                 guard let data = data,
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self?.showError("Invalid response from server.")
+                    self.showError("Invalid response from server.")
                     return
                 }
 
                 let status = json["status"] as? Bool ?? false
-                let message = json["message"] as? String ?? ""
+                let apiMessage = self.extractMessage(from: json, fallback: "Invalid OTP entered.")
 
                 if status {
-                    self?.currentStep = .setNewPassword
-                    self?.updateStepUI()
+                    self.verifiedOTP = otp
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+                    // Transition to Step 3 Card (Enter Password)
+                    self.headerTitleLabel.text = "Enter Password"
+                    UIView.transition(with: self.contentView, duration: 0.35, options: .transitionCrossDissolve) {
+                        self.step2Card.isHidden = true
+                        self.step3Card.isHidden = false
+                    }
+                    self.s3PasswordField.becomeFirstResponder()
                 } else {
-                    self?.showError(message.isEmpty ? "Invalid OTP code." : message)
+                    self.showError(apiMessage)
                 }
             }
         }.resume()
     }
 
-    // Step 3: POST /api/resent-password
-    private func submitNewPassword(email: String, otp: String, password: String) {
-        startLoading()
-        guard let url = URL(string: AppConfig.API.resetPassword) else { return }
+    // Step 3: Submit New Password -> POST /api/resent-password
+    @objc private func handleStep3Submit() {
+        view.endEditing(true)
+        let pass = s3PasswordField.text ?? ""
+        let confirmPass = s3ConfirmPasswordField.text ?? ""
 
+        guard !pass.isEmpty else {
+            showError("Please enter a new password.")
+            return
+        }
+
+        guard pass.count >= 6 else {
+            showError("Password must be at least 6 characters.")
+            return
+        }
+
+        guard pass == confirmPass else {
+            showError("Passwords do not match. Please re-type.")
+            return
+        }
+
+        s3NextButton.setTitle("", for: .normal)
+        s3Spinner.startAnimating()
+        clearErrorBanner()
+
+        guard let url = URL(string: AppConfig.API.resetPassword) else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        let body = "email=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&forgot_otp=\(otp)&password=\(password.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+
+        let params: [String: String] = [
+            "email": userEmail,
+            "forgot_otp": verifiedOTP,
+            "password": pass,
+            "device_type": AppConfig.deviceType,
+            "mobile_device_id": AppConfig.mobileDeviceId
+        ]
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             DispatchQueue.main.async {
-                self?.stopLoading()
+                guard let self = self else { return }
+                self.s3Spinner.stopAnimating()
+                self.s3NextButton.setTitle("Next  ➔", for: .normal)
+
                 if let error = error {
-                    self?.showError("Network error: \(error.localizedDescription)")
+                    self.showError("Network error: \(error.localizedDescription)")
                     return
                 }
+
                 guard let data = data,
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self?.showError("Invalid response from server.")
+                    self.showError("Invalid response from server.")
                     return
                 }
 
                 let status = json["status"] as? Bool ?? false
-                let message = json["message"] as? String ?? ""
+                let apiMessage = self.extractMessage(from: json, fallback: "Failed to reset password.")
 
                 if status {
+                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                     let alert = UIAlertController(
-                        title: "Password Updated",
-                        message: "Your password has been reset successfully. Please log in with your new password.",
+                        title: "Password Changed!",
+                        message: "Your password has been successfully updated.\nYou can now log in with your new credentials.",
                         preferredStyle: .alert
                     )
-                    alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-                        self?.dismiss(animated: true)
-                    }))
-                    self?.present(alert, animated: true)
+                    alert.addAction(UIAlertAction(title: "Log In Now", style: .default) { [weak self] _ in
+                        guard let self = self else { return }
+                        self.dismiss(animated: true) {
+                            self.onResetPasswordSuccess?(self.userEmail)
+                        }
+                    })
+                    self.present(alert, animated: true)
                 } else {
-                    self?.showError(message.isEmpty ? "Failed to update password." : message)
+                    self.showError(apiMessage)
                 }
             }
         }.resume()
     }
 
-    private func startLoading() {
-        actionButton.isEnabled = false
-        actionButton.setTitle("", for: .normal)
-        activityIndicator.startAnimating()
+    // MARK: - Navigation / Back Buttons
+    @objc private func handleCancel() {
+        dismiss(animated: true)
     }
 
-    private func stopLoading() {
-        actionButton.isEnabled = true
-        activityIndicator.stopAnimating()
-        switch currentStep {
-        case .enterEmail: actionButton.setTitle("Send OTP", for: .normal)
-        case .verifyOTP: actionButton.setTitle("Verify OTP", for: .normal)
-        case .setNewPassword: actionButton.setTitle("Update Password", for: .normal)
+    @objc private func handleStep2Cancel() {
+        clearErrorBanner()
+        headerTitleLabel.text = "Forgot Password?"
+        UIView.transition(with: contentView, duration: 0.3, options: .transitionCrossDissolve) {
+            self.step2Card.isHidden = true
+            self.step1Card.isHidden = false
+        }
+        s1EmailField.becomeFirstResponder()
+    }
+
+    @objc private func handleStep3Cancel() {
+        clearErrorBanner()
+        headerTitleLabel.text = "Enter OTP"
+        UIView.transition(with: contentView, duration: 0.3, options: .transitionCrossDissolve) {
+            self.step3Card.isHidden = true
+            self.step2Card.isHidden = false
+        }
+        s2OtpBoxes.first?.becomeFirstResponder()
+    }
+
+    // MARK: - Password Show/Hide
+    @objc private func toggleShowPassword1() {
+        s3PasswordField.isSecureTextEntry.toggle()
+        let title = s3PasswordField.isSecureTextEntry ? "Show" : "Hide"
+        s3ShowPasswordButton1.setTitle(title, for: .normal)
+    }
+
+    @objc private func toggleShowPassword2() {
+        s3ConfirmPasswordField.isSecureTextEntry.toggle()
+        let title = s3ConfirmPasswordField.isSecureTextEntry ? "Show" : "Hide"
+        s3ShowPasswordButton2.setTitle(title, for: .normal)
+    }
+
+    // MARK: - OTP 6-Box Logic (Auto-Advance & Backspace)
+    @objc private func otpTextChanged(_ textField: UITextField) {
+        let text = textField.text ?? ""
+        if text.count > 1 {
+            // If user pasted multi-character code
+            let chars = Array(text)
+            for (idx, ch) in chars.enumerated() {
+                if idx < s2OtpBoxes.count {
+                    s2OtpBoxes[idx].text = String(ch)
+                }
+            }
+            s2OtpBoxes.last?.becomeFirstResponder()
+            return
+        }
+
+        if text.count == 1 {
+            let nextIndex = textField.tag + 1
+            if nextIndex < s2OtpBoxes.count {
+                s2OtpBoxes[nextIndex].becomeFirstResponder()
+            } else {
+                textField.resignFirstResponder()
+            }
         }
     }
 
-    private func showError(_ message: String) {
-        errorLabel.text = "  \(message)  "
-        errorLabel.isHidden = false
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if textField.tag >= 0 && textField.tag < 6 && s2OtpBoxes.contains(textField) {
+            // Handle Backspace
+            if string.isEmpty {
+                textField.text = ""
+                let prevIndex = textField.tag - 1
+                if prevIndex >= 0 {
+                    s2OtpBoxes[prevIndex].becomeFirstResponder()
+                }
+                return false
+            }
+            // Only allow digits
+            guard CharacterSet.decimalDigits.isSuperset(of: CharacterSet(charactersIn: string)) else {
+                return false
+            }
+        }
+        return true
     }
 
-    @objc private func dismissModal() {
-        dismiss(animated: true)
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        if textField == s1EmailField {
+            handleStep1Submit()
+        } else if textField == s3PasswordField {
+            s3ConfirmPasswordField.becomeFirstResponder()
+        } else if textField == s3ConfirmPasswordField {
+            handleStep3Submit()
+        }
+        return true
+    }
+
+    // MARK: - Helpers
+    private func showError(_ msg: String) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        errorLabel.text = msg
+        errorBanner.isHidden = false
+    }
+
+    @objc private func clearErrorBanner() {
+        errorBanner.isHidden = true
+    }
+
+    private func extractMessage(from json: [String: Any], fallback: String) -> String {
+        if let msg = json["message"] as? String, !msg.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return msg
+        }
+        if let err = json["error"] as? String, !err.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return err
+        }
+        return fallback
     }
 
     @objc private func dismissKeyboard() {
         view.endEditing(true)
+    }
+
+    private func setupKeyboardHandling() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillShow(notification: Notification) {
+        guard let kbFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        scrollView.contentInset.bottom = kbFrame.height + 20
+        scrollView.verticalScrollIndicatorInsets.bottom = kbFrame.height
+    }
+
+    @objc private func keyboardWillHide(notification: Notification) {
+        scrollView.contentInset.bottom = 0
+        scrollView.verticalScrollIndicatorInsets.bottom = 0
     }
 }

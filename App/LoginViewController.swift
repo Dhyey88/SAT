@@ -691,6 +691,9 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     @objc private func openResetPasswordModal() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let resetVC = ResetPasswordViewController()
+        resetVC.onResetPasswordSuccess = { [weak self] resetEmail in
+            self?.emailTextField.text = resetEmail
+        }
         resetVC.modalPresentationStyle = .overFullScreen
         resetVC.modalTransitionStyle = .crossDissolve
         present(resetVC, animated: true)
