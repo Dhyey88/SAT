@@ -22,8 +22,10 @@
 	<false/>
 	<key>IS_GCM_ENABLED</key>
 	<true/>
-	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
+	<key>CLIENT_ID</key>
+	<string>898957149717-rkpn4o4qiom433eo9fsggsi38qggheop.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.898957149717-rkpn4o4qiom433eo9fsggsi38qggheop</string>
 	<key>GOOGLE_APP_ID</key>
 	<string>1:898063967168:ios:sat_ios_app</string>
 </dict>

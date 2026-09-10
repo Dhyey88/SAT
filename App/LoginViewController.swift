@@ -1,8 +1,12 @@
 import UIKit
 import Network
 import SafariServices
+import AuthenticationServices
 
-class LoginViewController: UIViewController, UITextFieldDelegate {
+class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthenticationPresentationContextProviding {
+
+    // MARK: - OAuth Session
+    private var authSession: ASWebAuthenticationSession?
 
     // MARK: - UI Elements
     private let scrollView = UIScrollView()
@@ -871,10 +875,134 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         }
     }
 
-    // MARK: - Google Account Chooser & Social Login
+    // MARK: - ASWebAuthenticationPresentationContextProviding
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        return view.window ?? UIWindow()
+    }
+
+    // MARK: - Google OAuth 2.0 Native Sign In (Live Account Chooser)
     @objc private func handleGoogleLogin() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
+        guard isNetworkAvailable else {
+            offlineOverlayView.isHidden = false
+            return
+        }
+
+        let clientId = AppConfig.googleIosClientId
+        let redirectUri = "\(AppConfig.googleReversedClientId):/oauth2redirect"
+        guard let encodedRedirect = redirectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            fallbackToSavedGoogleAccounts()
+            return
+        }
+
+        // Google OAuth 2.0 URL with prompt=select_account to force the Google Account list chooser
+        let authURLString = "https://accounts.google.com/o/oauth2/v2/auth?client_id=\(clientId)&redirect_uri=\(encodedRedirect)&response_type=token%20id_token&scope=openid%20email%20profile&prompt=select_account&nonce=\(UUID().uuidString)"
+
+        guard let authURL = URL(string: authURLString) else {
+            fallbackToSavedGoogleAccounts()
+            return
+        }
+
+        let scheme = AppConfig.googleReversedClientId
+
+        authSession = ASWebAuthenticationSession(url: authURL, callbackURLScheme: scheme) { [weak self] callbackURL, error in
+            guard let self = self else { return }
+
+            if let error = error as? ASWebAuthenticationSessionError, error.code == .canceledLogin {
+                // User intentionally dismissed login dialog
+                return
+            }
+
+            guard let callbackURL = callbackURL else {
+                // If browser session had an issue, fallback to account chooser sheet
+                self.fallbackToSavedGoogleAccounts()
+                return
+            }
+
+            self.processGoogleOAuthCallback(url: callbackURL)
+        }
+
+        authSession?.presentationContextProvider = self
+        authSession?.prefersEphemeralWebBrowserSession = false
+        authSession?.start()
+    }
+
+    private func processGoogleOAuthCallback(url: URL) {
+        var params: [String: String] = [:]
+        let paramString = url.fragment ?? url.query ?? ""
+        let pairs = paramString.components(separatedBy: "&")
+        for pair in pairs {
+            let kv = pair.components(separatedBy: "=")
+            if kv.count == 2 {
+                let key = kv[0]
+                let val = kv[1].removingPercentEncoding ?? kv[1]
+                params[key] = val
+            }
+        }
+
+        // 1. Check for id_token JWT (instant email decode without extra network request)
+        if let idToken = params["id_token"], let email = decodeEmailFromJWT(idToken), !email.isEmpty {
+            DispatchQueue.main.async {
+                self.performSocialLoginRequest(email: email)
+            }
+            return
+        }
+
+        // 2. Check for access_token (query Google UserInfo API)
+        if let accessToken = params["access_token"], !accessToken.isEmpty {
+            fetchGoogleUserInfo(accessToken: accessToken)
+            return
+        }
+
+        // 3. Fallback
+        DispatchQueue.main.async {
+            self.fallbackToSavedGoogleAccounts()
+        }
+    }
+
+    private func decodeEmailFromJWT(_ jwt: String) -> String? {
+        let parts = jwt.components(separatedBy: ".")
+        guard parts.count >= 2 else { return nil }
+        var base64 = parts[1]
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        while base64.count % 4 != 0 {
+            base64.append("=")
+        }
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return json["email"] as? String
+    }
+
+    private func fetchGoogleUserInfo(accessToken: String) {
+        guard let url = URL(string: "https://www.googleapis.com/oauth2/v3/userinfo") else {
+            fallbackToSavedGoogleAccounts()
+            return
+        }
+        var req = URLRequest(url: url)
+        req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: req) { [weak self] data, _, _ in
+            guard let self = self,
+                  let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let email = json["email"] as? String, !email.isEmpty else {
+                DispatchQueue.main.async {
+                    self?.fallbackToSavedGoogleAccounts()
+                }
+                return
+            }
+
+            DispatchQueue.main.async {
+                self.performSocialLoginRequest(email: email)
+            }
+        }.resume()
+    }
+
+    private func fallbackToSavedGoogleAccounts() {
         var accounts = UserDefaults.standard.stringArray(forKey: "saved_google_accounts") ?? []
         let currentFieldEmail = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if currentFieldEmail.contains("@") && !accounts.contains(currentFieldEmail) {
@@ -887,7 +1015,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             preferredStyle: .actionSheet
         )
 
-        // List each available account for direct 1-tap sign in
         for email in accounts {
             let accountAction = UIAlertAction(title: "👤  \(email)", style: .default) { [weak self] _ in
                 self?.performSocialLoginRequest(email: email)
@@ -895,7 +1022,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             actionSheet.addAction(accountAction)
         }
 
-        // Option to add/use another Google account
         let addAccountAction = UIAlertAction(title: "➕  Use another account...", style: .default) { [weak self] _ in
             self?.promptForNewGoogleAccount()
         }
@@ -903,7 +1029,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
         actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
 
-        // Support iPad popovers
         if let popover = actionSheet.popoverPresentationController {
             popover.sourceView = googleLoginButton
             popover.sourceRect = googleLoginButton.bounds

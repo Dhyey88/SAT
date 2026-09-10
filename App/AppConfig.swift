@@ -60,9 +60,11 @@ struct AppConfig {
         return "iOS \(UIDevice.current.systemVersion)"
     }
 
-    // MARK: - Google OAuth Configuration (Discovered from /api/get-settings)
-    static var googleClientId = "713566498405-1gscd9htrfe1ac3e0o4vnfgok5cqml13.apps.googleusercontent.com"
-    static var googleClientLoginId = "1091487569389-aathe6r7hkqq3p98n59eh85ljta13jdk.apps.googleusercontent.com"
+    // MARK: - Google OAuth Configuration
+    static let googleIosClientId = "898957149717-rkpn4o4qiom433eo9fsggsi38qggheop.apps.googleusercontent.com"
+    static let googleReversedClientId = "com.googleusercontent.apps.898957149717-rkpn4o4qiom433eo9fsggsi38qggheop"
+    static var googleClientId = "898957149717-rkpn4o4qiom433eo9fsggsi38qggheop.apps.googleusercontent.com"
+    static var googleClientLoginId = "898957149717-rkpn4o4qiom433eo9fsggsi38qggheop.apps.googleusercontent.com"
 
     // MARK: - Contact & Support Information (Dynamic with Live Defaults)
     static var supportEmail = "info@enin.io"

@@ -60,5 +60,16 @@
 	<string>This app requires camera access to upload receipts and photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires photo library access to select and upload documents.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.898957149717-rkpn4o4qiom433eo9fsggsi38qggheop</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
