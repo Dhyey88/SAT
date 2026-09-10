@@ -2,11 +2,13 @@ import UIKit
 import Network
 import SafariServices
 import AuthenticationServices
+import CommonCrypto
 
 class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthenticationPresentationContextProviding {
 
     // MARK: - OAuth Session
     private var authSession: ASWebAuthenticationSession?
+    private var currentCodeVerifier: String?
 
     // MARK: - UI Elements
     private let scrollView = UIScrollView()
@@ -880,7 +882,29 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         return view.window ?? UIWindow()
     }
 
-    // MARK: - Google OAuth 2.0 Native Sign In (Live Account Chooser)
+    // MARK: - PKCE Utilities (RFC 7636)
+    private func generateCodeVerifier() -> String {
+        var buffer = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, buffer.count, &buffer)
+        return Data(buffer).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "="))
+    }
+
+    private func generateCodeChallenge(for verifier: String) -> String {
+        guard let data = verifier.data(using: .utf8) else { return "" }
+        var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+        data.withUnsafeBytes {
+            _ = CC_SHA256($0.baseAddress, CC_LONG(data.count), &hash)
+        }
+        return Data(hash).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "="))
+    }
+
+    // MARK: - Google OAuth 2.0 Native Sign In (Live Account Chooser via PKCE)
     @objc private func handleGoogleLogin() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
@@ -896,8 +920,16 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             return
         }
 
-        // Google OAuth 2.0 URL with prompt=select_account to force the Google Account list chooser
-        let authURLString = "https://accounts.google.com/o/oauth2/v2/auth?client_id=\(clientId)&redirect_uri=\(encodedRedirect)&response_type=token%20id_token&scope=openid%20email%20profile&prompt=select_account&nonce=\(UUID().uuidString)"
+        let verifier = generateCodeVerifier()
+        self.currentCodeVerifier = verifier
+        let challenge = generateCodeChallenge(for: verifier)
+        guard let encodedChallenge = challenge.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            fallbackToSavedGoogleAccounts()
+            return
+        }
+
+        // Google OAuth 2.0 URL with PKCE (response_type=code) and prompt=select_account to force account selection
+        let authURLString = "https://accounts.google.com/o/oauth2/v2/auth?client_id=\(clientId)&redirect_uri=\(encodedRedirect)&response_type=code&scope=openid%20email%20profile&prompt=select_account&code_challenge=\(encodedChallenge)&code_challenge_method=S256"
 
         guard let authURL = URL(string: authURLString) else {
             fallbackToSavedGoogleAccounts()
@@ -930,7 +962,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     private func processGoogleOAuthCallback(url: URL) {
         var params: [String: String] = [:]
-        let paramString = url.fragment ?? url.query ?? ""
+        let paramString = url.query ?? url.fragment ?? ""
         let pairs = paramString.components(separatedBy: "&")
         for pair in pairs {
             let kv = pair.components(separatedBy: "=")
@@ -941,7 +973,14 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             }
         }
 
-        // 1. Check for id_token JWT (instant email decode without extra network request)
+        // 1. Authorization Code Exchange via PKCE
+        if let authCode = params["code"], !authCode.isEmpty {
+            let verifier = self.currentCodeVerifier ?? ""
+            exchangeAuthorizationCodeForTokens(code: authCode, verifier: verifier)
+            return
+        }
+
+        // 2. Direct ID Token / Access Token fallback
         if let idToken = params["id_token"], let email = decodeEmailFromJWT(idToken), !email.isEmpty {
             DispatchQueue.main.async {
                 self.performSocialLoginRequest(email: email)
@@ -949,7 +988,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             return
         }
 
-        // 2. Check for access_token (query Google UserInfo API)
         if let accessToken = params["access_token"], !accessToken.isEmpty {
             fetchGoogleUserInfo(accessToken: accessToken)
             return
@@ -959,6 +997,74 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         DispatchQueue.main.async {
             self.fallbackToSavedGoogleAccounts()
         }
+    }
+
+    private func exchangeAuthorizationCodeForTokens(code: String, verifier: String) {
+        guard let tokenURL = URL(string: "https://oauth2.googleapis.com/token") else {
+            DispatchQueue.main.async {
+                self.fallbackToSavedGoogleAccounts()
+            }
+            return
+        }
+
+        let redirectUri = "\(AppConfig.googleReversedClientId):/oauth2redirect"
+        var request = URLRequest(url: tokenURL)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let postParams: [String: String] = [
+            "client_id": AppConfig.googleIosClientId,
+            "code": code,
+            "code_verifier": verifier,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirectUri
+        ]
+
+        let body = postParams.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
+        request.httpBody = body.data(using: .utf8)
+
+        DispatchQueue.main.async {
+            self.loginButton.setTitle("", for: .normal)
+            self.activityIndicator.startAnimating()
+            self.loginButton.isEnabled = false
+        }
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            guard let self = self else { return }
+
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                DispatchQueue.main.async {
+                    self.activityIndicator.stopAnimating()
+                    self.loginButton.setTitle("Login  ➔", for: .normal)
+                    self.loginButton.isEnabled = true
+                    self.fallbackToSavedGoogleAccounts()
+                }
+                return
+            }
+
+            // 1. Decode Email directly from Google's id_token
+            if let idToken = json["id_token"] as? String,
+               let email = self.decodeEmailFromJWT(idToken), !email.isEmpty {
+                DispatchQueue.main.async {
+                    self.performSocialLoginRequest(email: email)
+                }
+                return
+            }
+
+            // 2. Query UserInfo API with access_token
+            if let accessToken = json["access_token"] as? String, !accessToken.isEmpty {
+                self.fetchGoogleUserInfo(accessToken: accessToken)
+                return
+            }
+
+            DispatchQueue.main.async {
+                self.activityIndicator.stopAnimating()
+                self.loginButton.setTitle("Login  ➔", for: .normal)
+                self.loginButton.isEnabled = true
+                self.fallbackToSavedGoogleAccounts()
+            }
+        }.resume()
     }
 
     private func decodeEmailFromJWT(_ jwt: String) -> String? {
