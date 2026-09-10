@@ -1685,7 +1685,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     @objc private func handleTrustCodeSubmit() {
         view.endEditing(true)
         let code = initTrustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !code.isEmpty else {
+        guard ValidationHelper.isNonEmpty(code) else {
             initTrustUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter valid trust code. Contact helpline.")
             return
@@ -1775,7 +1775,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         view.endEditing(true)
         let email = midEmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        guard !email.isEmpty, email.contains("@"), email.contains(".") else {
+        guard ValidationHelper.isValidEmail(email) else {
             midEmailUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter a valid Email address.")
             return
@@ -1836,13 +1836,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         let mobile = midMobileField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let trustCode = midTrustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        guard !email.isEmpty, email.contains("@"), email.contains(".") else {
+        guard ValidationHelper.isValidEmail(email) else {
             midEmailUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter a valid Email address.")
             return
         }
 
-        guard !mobile.isEmpty, mobile.count == 10 else {
+        guard ValidationHelper.isValid10DigitMobile(mobile) else {
             midMobileUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter a valid 10-digit mobile number.")
             return
@@ -1952,9 +1952,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     @objc private func handleVerifyOTP() {
         view.endEditing(true)
         let otp = otpInputField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !otp.isEmpty, otp.count == 4 else {
+        guard ValidationHelper.isNonEmpty(otp) else {
             otpUnderline.backgroundColor = UIColor(red: 255/255, green: 107/255, blue: 107/255, alpha: 1.0)
-            otpErrorLabel.text = "Please enter the 4-digit OTP."
+            otpErrorLabel.text = "Please enter the OTP."
             otpErrorLabel.isHidden = false
             UINotificationFeedbackGenerator().notificationOccurred(.error)
             return
@@ -2039,7 +2039,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     @objc private func handleParentCodeSubmitAndOpenDetails() {
         view.endEditing(true)
         let parentCode = midParentCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !parentCode.isEmpty else {
+        guard ValidationHelper.isNonEmpty(parentCode) else {
             midParentUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showBannerError("Please enter Main/Parent Branch Code.")
             return
@@ -2103,9 +2103,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         let trustCode = dtTrustCodeField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let govtId = dtGovtIdField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        guard !fname.isEmpty else { showBannerError("First Name is required."); return }
-        guard !lname.isEmpty else { showBannerError("Last Name is required."); return }
-        guard password.count >= 6 else { showBannerError("Password must be at least 6 characters."); return }
+        guard ValidationHelper.isNonEmpty(selectedTitle) else { showBannerError("Please select a Title."); return }
+        guard ValidationHelper.isNonEmpty(fname) else { showBannerError("First Name is required."); return }
+        guard ValidationHelper.isNonEmpty(lname) else { showBannerError("Last Name is required."); return }
+        let passValidation = ValidationHelper.isValidPassword(password, minLength: 6)
+        guard passValidation.isValid else { showBannerError(passValidation.message ?? "Password must be at least 6 characters."); return }
+        guard ValidationHelper.isNonEmpty(selectedIdDocument) else { showBannerError("Please select an ID Document."); return }
+        guard ValidationHelper.isNonEmpty(govtId) else { showBannerError("Please enter ID document number."); return }
 
         dtRegisterButton.setTitle("", for: .normal)
         dtRegisterSpinner.startAnimating()
@@ -2294,6 +2298,12 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
     @objc private func clearBannerError() {
         errorBanner.isHidden = true
+        initTrustUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        midEmailUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        midMobileUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        midParentUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        otpUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        otpErrorLabel.isHidden = true
     }
 
     // MARK: - Custom Info Modal Handlers

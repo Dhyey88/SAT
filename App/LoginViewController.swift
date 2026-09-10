@@ -338,6 +338,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             string: placeholder,
             attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
         )
+        textField.addTarget(self, action: #selector(onInputTextChanged), for: .editingChanged)
         container.addSubview(textField)
 
         NSLayoutConstraint.activate([
@@ -378,6 +379,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             string: "Type Your Password",
             attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
         )
+        passwordTextField.addTarget(self, action: #selector(onInputTextChanged), for: .editingChanged)
         passwordContainer.addSubview(passwordTextField)
 
         showPasswordTrailingButton.translatesAutoresizingMaskIntoConstraints = false
@@ -997,6 +999,13 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         }.resume()
     }
 
+    // Real-Time Input Text Change Listener (Auto-Clears Errors)
+    @objc private func onInputTextChanged() {
+        emailContainer.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
+        passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
+        clearError()
+    }
+
     // Standard User ID / Password Login (POST /api/login)
     @objc private func handleLoginTap() {
         view.endEditing(true)
@@ -1008,13 +1017,22 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         let email = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let password = passwordTextField.text ?? ""
 
-        guard !email.isEmpty else {
-            showError(message: "Please enter your User ID")
+        // Client-Side Validation using ValidationHelper
+        let userValidation = ValidationHelper.isValidUserId(email)
+        if !userValidation.isValid {
+            emailContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            showError(message: userValidation.message ?? "Please enter a valid User ID.")
+            emailTextField.becomeFirstResponder()
             return
         }
 
-        guard !password.isEmpty else {
-            showError(message: "Please enter your password")
+        let passwordValidation = ValidationHelper.isValidPassword(password, minLength: 1)
+        if !passwordValidation.isValid {
+            passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            showError(message: passwordValidation.message ?? "Please enter your password.")
+            passwordTextField.becomeFirstResponder()
             return
         }
 
@@ -1067,6 +1085,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
                     let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
                     self?.openWebDashboard(userId: userId)
                 } else {
+                    self?.emailContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
+                    self?.passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
                     self?.showError(message: message.isEmpty ? "Invalid credentials. Please try again." : message)
                 }
             }
@@ -1083,12 +1103,15 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
 
     private func showError(message: String) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
         errorLabel.text = message
         errorLabel.isHidden = false
     }
 
     private func clearError() {
         errorLabel.isHidden = true
+        emailContainer.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
+        passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
     }
 
     // MARK: - Offline Handling (App Store Guideline 4.2)

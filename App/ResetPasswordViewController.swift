@@ -521,7 +521,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     @objc private func handleStep1Submit() {
         view.endEditing(true)
         let email = s1EmailField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !email.isEmpty, email.contains("@"), email.contains(".") else {
+        guard ValidationHelper.isValidEmail(email) else {
             s1Underline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showError("Please enter a valid email address.")
             return
@@ -596,9 +596,9 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     // Step 2: Submit OTP -> POST /api/otp-verification
     @objc private func handleStep2Submit() {
         view.endEditing(true)
-        let otp = s2OtpBoxes.map { $0.text ?? "" }.joined()
-        guard otp.count == 6 else {
-            showError("Please enter the complete 6-digit OTP.")
+        let otp = s2OtpBoxes.map { $0.text ?? "" }.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard ValidationHelper.isNonEmpty(otp) else {
+            showError("Please enter the OTP.")
             return
         }
 
@@ -671,17 +671,15 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         let pass = s3PasswordField.text ?? ""
         let confirmPass = s3ConfirmPasswordField.text ?? ""
 
-        guard !pass.isEmpty else {
-            showError("Please enter a new password.")
-            return
-        }
-
-        guard pass.count >= 6 else {
-            showError("Password must be at least 6 characters.")
+        let passValidation = ValidationHelper.isValidPassword(pass, minLength: 6)
+        guard passValidation.isValid else {
+            s3PasswordUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+            showError(passValidation.message ?? "Password must be at least 6 characters.")
             return
         }
 
         guard pass == confirmPass else {
+            s3ConfirmPasswordUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
             showError("Passwords do not match. Please re-type.")
             return
         }
@@ -862,6 +860,8 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     @objc private func clearErrorBanner() {
         errorBanner.isHidden = true
         s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        s3PasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        s3ConfirmPasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
     }
 
     private func extractMessage(from json: [String: Any], fallback: String) -> String {
