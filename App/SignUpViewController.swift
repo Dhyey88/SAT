@@ -25,26 +25,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     private var isMobileVerified = false
     private var isParentCodeVerified = false
 
-    private var availableTitles: [TitleItem] = [
-        TitleItem(id: 1, title: "Mr"),
-        TitleItem(id: 2, title: "Mrs"),
-        TitleItem(id: 3, title: "Ms"),
-        TitleItem(id: 4, title: "Mh"),
-        TitleItem(id: 5, title: "Bai"),
-        TitleItem(id: 6, title: "Bh")
-    ]
+    private var availableTitles: [TitleItem] = []
     private var selectedTitleItem: TitleItem?
     private var selectedTitle: String {
         return selectedTitleItem?.title ?? ""
     }
 
-    private var idDocumentOptions: [DocumentItem] = [
-        DocumentItem(id: 1, title: "Aadhar Card"),
-        DocumentItem(id: 2, title: "PAN Card"),
-        DocumentItem(id: 3, title: "Voter ID Card"),
-        DocumentItem(id: 4, title: "Driving License"),
-        DocumentItem(id: 5, title: "Passport")
-    ]
+    private var idDocumentOptions: [DocumentItem] = []
     private var selectedIdDocumentItem: DocumentItem?
     private var selectedIdDocument: String {
         return selectedIdDocumentItem?.title ?? ""
@@ -2251,6 +2238,10 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
     // MARK: - Picker Action Sheets
     @objc private func presentTitlePickerSheet() {
+        guard !availableTitles.isEmpty else {
+            showBannerError("Titles are loading from server, please wait...")
+            return
+        }
         let alert = UIAlertController(title: "Choose Title", message: nil, preferredStyle: .actionSheet)
         for item in availableTitles {
             alert.addAction(UIAlertAction(title: item.title, style: .default) { [weak self] _ in
@@ -2268,6 +2259,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     }
 
     @objc private func presentIdDocumentPickerSheet() {
+        guard !idDocumentOptions.isEmpty else {
+            fetchDocumentTypes()
+            showBannerError("Loading documents from server, please wait...")
+            return
+        }
         let alert = UIAlertController(title: "Choose Id Document", message: nil, preferredStyle: .actionSheet)
         for doc in idDocumentOptions {
             alert.addAction(UIAlertAction(title: doc.title, style: .default) { [weak self] _ in
