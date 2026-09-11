@@ -3,22 +3,52 @@ import PhotosUI
 
 class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
 
+    // MARK: - Dynamic Data Models
+    struct TitleItem {
+        let id: Int
+        let title: String
+    }
+
+    struct DocumentItem {
+        let id: Int
+        let title: String
+    }
+
     var onSignUpSuccess: ((String) -> Void)?
 
-    // MARK: - State Tracking
-    private var verifiedMerchantId: Int = 6
-    private var verifiedMerchantName: String = "SHRI ANANDPUR TRUST"
+    // MARK: - State Tracking (Dynamic via Server APIs with Safe Offline Fallbacks)
+    private var verifiedMerchantId: Int = 0
+    private var verifiedMerchantName: String = ""
     private var verifiedRoleId: Int = 0
 
     private var isEmailVerified = false
     private var isMobileVerified = false
     private var isParentCodeVerified = false
 
-    private var availableTitles: [String] = ["Mr", "Mrs", "Ms", "Mh", "Bai", "Bh"]
-    private var selectedTitle: String = ""
+    private var availableTitles: [TitleItem] = [
+        TitleItem(id: 1, title: "Mr"),
+        TitleItem(id: 2, title: "Mrs"),
+        TitleItem(id: 3, title: "Ms"),
+        TitleItem(id: 4, title: "Mh"),
+        TitleItem(id: 5, title: "Bai"),
+        TitleItem(id: 6, title: "Bh")
+    ]
+    private var selectedTitleItem: TitleItem?
+    private var selectedTitle: String {
+        return selectedTitleItem?.title ?? ""
+    }
 
-    private let idDocumentOptions: [String] = ["Aadhar Card", "PAN Card", "Voter ID Card", "Driving License", "Passport"]
-    private var selectedIdDocument: String = ""
+    private var idDocumentOptions: [DocumentItem] = [
+        DocumentItem(id: 1, title: "Aadhar Card"),
+        DocumentItem(id: 2, title: "PAN Card"),
+        DocumentItem(id: 3, title: "Voter ID Card"),
+        DocumentItem(id: 4, title: "Driving License"),
+        DocumentItem(id: 5, title: "Passport")
+    ]
+    private var selectedIdDocumentItem: DocumentItem?
+    private var selectedIdDocument: String {
+        return selectedIdDocumentItem?.title ?? ""
+    }
 
     private var selectedGender: Int = 1 // 1 = Male, 2 = Female
     private var uploadedDocumentImage: UIImage?
@@ -250,6 +280,36 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         setupKeyboardHandling()
         setupOTPDialogUI()
         setupHelpDialogUI()
+        fetchDocumentTypes()
+    }
+
+    // MARK: - Dynamic Document Types Fetcher (GET /api/get-document)
+    private func fetchDocumentTypes() {
+        guard let url = URL(string: AppConfig.API.getDocument) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            guard let self = self,
+                  let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let list = json["data"] as? [[String: Any]], !list.isEmpty else {
+                return
+            }
+
+            let parsed = list.compactMap { dict -> DocumentItem? in
+                guard let id = dict["id"] as? Int,
+                      let title = dict["title"] as? String, !title.isEmpty else { return nil }
+                return DocumentItem(id: id, title: title)
+            }
+
+            if !parsed.isEmpty {
+                DispatchQueue.main.async {
+                    self.idDocumentOptions = parsed
+                }
+            }
+        }.resume()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -1730,14 +1790,21 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                 if status && dataDict != nil && merchantId > 0 {
                     let dataObj = dataDict!
                     self.verifiedMerchantId = merchantId
-                    self.verifiedMerchantName = (dataObj["name"] as? String) ?? "SHRI ANANDPUR TRUST"
+                    let merchantName = (dataObj["name"] as? String) ?? "SHRI ANANDPUR TRUST"
+                    self.verifiedMerchantName = merchantName
                     self.verifiedRoleId = (dataObj["role_id"] as? Int) ?? 0
 
                     self.midTrustCodeField.text = code
                     self.dtTrustCodeField.text = code
+                    self.midTrustTitleLabel.text = merchantName
+                    self.dtTrustTitleLabel.text = merchantName
 
                     if let titles = dataObj["MerchantTitle"] as? [[String: Any]], !titles.isEmpty {
-                        let parsed = titles.compactMap { $0["title"] as? String }.filter { !$0.isEmpty }
+                        let parsed = titles.compactMap { dict -> TitleItem? in
+                            guard let title = dict["title"] as? String, !title.isEmpty else { return nil }
+                            let id = dict["id"] as? Int ?? 0
+                            return TitleItem(id: id, title: title)
+                        }
                         if !parsed.isEmpty {
                             self.availableTitles = parsed
                         }
@@ -2130,9 +2197,10 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             "merchant_id": "\(verifiedMerchantId)",
             "trust_code": trustCode,
             "asharm_id": parentCode,
-            "title": selectedTitle,
+            "title": selectedTitleItem != nil && selectedTitleItem!.id > 0 ? "\(selectedTitleItem!.id)" : selectedTitle,
             "gender": "\(selectedGender)",
             "id_document": selectedIdDocument,
+            "document_id": selectedIdDocumentItem != nil ? "\(selectedIdDocumentItem!.id)" : "",
             "govt_id_number": govtId,
             "device_type": AppConfig.deviceType,
             "device_id": AppConfig.deviceId,
@@ -2184,25 +2252,35 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     // MARK: - Picker Action Sheets
     @objc private func presentTitlePickerSheet() {
         let alert = UIAlertController(title: "Choose Title", message: nil, preferredStyle: .actionSheet)
-        for t in availableTitles {
-            alert.addAction(UIAlertAction(title: t, style: .default) { [weak self] _ in
-                self?.selectedTitle = t
-                self?.dtTitleField.text = t
+        for item in availableTitles {
+            alert.addAction(UIAlertAction(title: item.title, style: .default) { [weak self] _ in
+                self?.selectedTitleItem = item
+                self?.dtTitleField.text = item.title
+                self?.dtTitleUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
             })
         }
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = dtTitleField
+            popover.sourceRect = dtTitleField.bounds
+        }
         present(alert, animated: true)
     }
 
     @objc private func presentIdDocumentPickerSheet() {
         let alert = UIAlertController(title: "Choose Id Document", message: nil, preferredStyle: .actionSheet)
         for doc in idDocumentOptions {
-            alert.addAction(UIAlertAction(title: doc, style: .default) { [weak self] _ in
-                self?.selectedIdDocument = doc
-                self?.dtIdDocField.text = doc
+            alert.addAction(UIAlertAction(title: doc.title, style: .default) { [weak self] _ in
+                self?.selectedIdDocumentItem = doc
+                self?.dtIdDocField.text = doc.title
+                self?.dtIdDocUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
             })
         }
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = dtIdDocField
+            popover.sourceRect = dtIdDocField.bounds
+        }
         present(alert, animated: true)
     }
 

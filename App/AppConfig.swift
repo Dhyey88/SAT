@@ -94,6 +94,7 @@ struct AppConfig {
         static let branchHelp = "\(baseURL)/api/get-branch-help"
         static let getHelpReg = "\(baseURL)/api/get-help-reg"
         static let getSettings = "\(baseURL)/api/get-settings"
+        static let getDocument = "\(baseURL)/api/get-document"
 
         /// Web Dashboard target URL for authenticated supplier agent sessions
         static func supplierAgentURL(userId: Int) -> String {
