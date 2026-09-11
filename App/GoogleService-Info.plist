@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.latitudetechnolabs.satapp</string>
+	<string>org.reactjs.native.example.BRE</string>
 	<key>PROJECT_ID</key>
 	<string>piggycoins-256011</string>
 	<key>STORAGE_BUCKET</key>
@@ -23,9 +23,9 @@
 	<key>IS_GCM_ENABLED</key>
 	<true/>
 	<key>CLIENT_ID</key>
-	<string>898957149717-rkpn4o4qiom433eo9fsggsi38qggheop.apps.googleusercontent.com</string>
+	<string>898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.898957149717-rkpn4o4qiom433eo9fsggsi38qggheop</string>
+	<string>com.googleusercontent.apps.898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1</string>
 	<key>GOOGLE_APP_ID</key>
 	<string>1:898063967168:ios:sat_ios_app</string>
 </dict>
