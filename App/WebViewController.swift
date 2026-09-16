@@ -2,7 +2,7 @@ import UIKit
 import WebKit
 import Network
 
-class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
+class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
 
     private let initialURLString: String
     private var webView: WKWebView!
@@ -42,6 +42,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         setupRefreshControl()
         setupOfflineOverlay()
         setupNetworkMonitoring()
+        setupPushNotificationObserver()
         loadInitialURL()
     }
 
@@ -75,6 +76,27 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         config.mediaTypesRequiringUserActionForPlayback = []
         config.websiteDataStore = WKWebsiteDataStore.default() // Persistent session & cache
         config.applicationNameForUserAgent = " SATMobileApp/1.0 (iOS/Swift; WKWebView)"
+
+        // Two-way Bridge between Web JavaScript and Native Swift
+        let contentController = WKUserContentController()
+        contentController.add(self, name: "satPushBridge")
+
+        let bridgeScript = WKUserScript(
+            source: """
+            window.isNativeIOSApp = true;
+            window.satApp = {
+                postMessage: function(msg) {
+                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
+                        window.webkit.messageHandlers.satPushBridge.postMessage(msg);
+                    }
+                }
+            };
+            """,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        )
+        contentController.addUserScript(bridgeScript)
+        config.userContentController = contentController
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.translatesAutoresizingMaskIntoConstraints = false
@@ -399,5 +421,73 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
             webView.load(navigationAction.request)
         }
         return nil
+    }
+
+    // MARK: - Push Notification & Deep Linking Support
+    private func setupPushNotificationObserver() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePushNotificationTapped(_:)),
+            name: NSNotification.Name("SATNotificationTapped"),
+            object: nil
+        )
+    }
+
+    @objc private func handlePushNotificationTapped(_ notification: Notification) {
+        guard let userInfo = notification.userInfo else { return }
+        print("[WebView] Push notification tapped, navigating with payload: \(userInfo)")
+
+        var targetURLString: String? = nil
+
+        // Check for order_id
+        if let orderId = (userInfo["order_id"] as? Int) ?? Int("\(userInfo["order_id"] ?? "")"), orderId > 0 {
+            targetURLString = "\(AppConfig.baseURL)/admin/orders/view/\(orderId)"
+        } else if let targetUrl = userInfo["target_url"] as? String, !targetUrl.isEmpty {
+            targetURLString = targetUrl.hasPrefix("http") ? targetUrl : "\(AppConfig.baseURL)\(targetUrl)"
+        }
+
+        if let urlString = targetURLString, let url = URL(string: urlString) {
+            DispatchQueue.main.async {
+                self.webView.load(URLRequest(url: url))
+            }
+        }
+
+        // Bridge to WebView JS runtime in case frontend web code listens for in-app events
+        if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            DispatchQueue.main.async {
+                self.webView.evaluateJavaScript("if (window.onSATPushNotification) { window.onSATPushNotification(\(jsonString)); }")
+            }
+        }
+    }
+
+    // MARK: - WKScriptMessageHandler (Web to Native Communication)
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "satPushBridge" else { return }
+        print("[WebView Bridge] Received message from Web JavaScript: \(message.body)")
+
+        if let dict = message.body as? [String: Any] {
+            let action = dict["action"] as? String ?? ""
+            if action == "showLocalNotification" || action == "notify" {
+                let title = (dict["title"] as? String) ?? "SAT Alert"
+                let body = (dict["body"] as? String) ?? (dict["message"] as? String) ?? ""
+                if !body.isEmpty {
+                    let content = UNMutableNotificationContent()
+                    content.title = title
+                    content.body = body
+                    content.sound = .default
+                    content.badge = 1
+                    content.userInfo = dict
+
+                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+                    UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+                }
+            }
+        }
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: "satPushBridge")
     }
 }

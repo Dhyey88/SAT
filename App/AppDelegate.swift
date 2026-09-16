@@ -79,6 +79,44 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         print("[APNs] Failed to register for remote notifications: \(error.localizedDescription)")
     }
 
+    // MARK: - Process Incoming Remote Notification (Background & Data Payload Support)
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        print("[Push Notification] Remote notification received: \(userInfo)")
+
+        // When backend sends a data-only payload while app is in background/inactive, display native banner
+        if application.applicationState != .active {
+            let title = (userInfo["title"] as? String) ?? "SAT Alert"
+            let body = (userInfo["body"] as? String) ?? (userInfo["message"] as? String) ?? ""
+
+            if !body.isEmpty {
+                let content = UNMutableNotificationContent()
+                content.title = title
+                content.body = body
+                content.sound = .default
+                content.badge = 1
+                content.userInfo = userInfo
+
+                let request = UNNotificationRequest(
+                    identifier: UUID().uuidString,
+                    content: content,
+                    trigger: nil // Deliver immediately
+                )
+
+                UNUserNotificationCenter.current().add(request) { error in
+                    if let error = error {
+                        print("[Push Notification] Error presenting local banner: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+
+        completionHandler(.newData)
+    }
+
     // MARK: - UNUserNotificationCenterDelegate (Foreground & Tap Handlers)
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,

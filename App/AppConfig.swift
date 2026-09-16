@@ -10,7 +10,8 @@ struct AppConfig {
     static let apiAccessToken = "piggyC@ins2019"
 
     // MARK: - Device Identifiers & Defaults
-    static let deviceType = "1" // Mobile Client
+    // Set to "1" so live server's existing helpers.php dispatches via Firebase FCM without requiring backend changes.
+    static let deviceType = "1" // Mobile FCM Client
     static let defaultLoginRole = "ho_user"
 
     // MARK: - Push Notifications & Device Tokens (FCM & APNs)
