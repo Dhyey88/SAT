@@ -374,7 +374,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         refreshControl.endRefreshing()
 
         // Sync native Firebase FCM token with backend /save-web-push-token
-        if let fcmToken = AppConfig.fcmDeviceToken, !fcmToken.isEmpty {
+        let fcmToken = AppConfig.fcmDeviceToken
+        if !fcmToken.isEmpty {
             syncFcmTokenWithBackend(token: fcmToken)
         }
     }
@@ -515,7 +516,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     }
 
     private func deactivateFcmTokenOnBackend() {
-        guard let token = AppConfig.fcmDeviceToken, !token.isEmpty else { return }
+        let token = AppConfig.fcmDeviceToken
+        guard !token.isEmpty else { return }
         lastRegisteredFcmToken = nil
 
         let js = """
