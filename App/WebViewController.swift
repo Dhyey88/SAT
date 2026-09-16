@@ -378,6 +378,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         if !fcmToken.isEmpty {
             syncFcmTokenWithBackend(token: fcmToken)
         }
+
+        // Smart Success-Only Detector: check for "Record added successfully" and forward to native iOS notification
+        detectAndForwardSuccessAlerts()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -591,18 +594,126 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                     content.title = title
                     content.body = body
                     content.sound = .default
-                    content.badge = 1
+                    content.badge = NSNumber(value: (UIApplication.shared.applicationIconBadgeNumber + 1))
                     content.userInfo = dict
 
                     let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
                     UNUserNotificationCenter.current().add(request) { error in
                         if let error = error {
                             print("[Push Notification] Failed to present local notification: \(error)")
+                        } else {
+                            print("[Push Notification] Successfully presented native banner: [\(title)] \(body)")
                         }
+                    }
+
+                    // Native haptic feedback
+                    DispatchQueue.main.async {
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.success)
                     }
                 }
             }
         }
+    }
+
+    // MARK: - Smart Success-Only In-App Notification Detector
+    private func detectAndForwardSuccessAlerts() {
+        let js = """
+        (function() {
+            function cleanText(text) {
+                if (!text) return '';
+                return text.replace(/^[×xX\\s]+/, '').replace(/[\\s\\r\\n]+/g, ' ').trim();
+            }
+
+            function isSuccessElement(el) {
+                if (!el) return false;
+
+                // STRICT NEGATIVE FILTER: Must NOT be an error, danger, or warning
+                if (el.classList.contains('alert-danger') ||
+                    el.classList.contains('alert-error') ||
+                    el.classList.contains('alert-warning') ||
+                    el.classList.contains('gritter-error') ||
+                    el.classList.contains('gritter-warning') ||
+                    el.classList.contains('validation-error') ||
+                    el.closest('.alert-danger') ||
+                    el.closest('.alert-error')) {
+                    return false;
+                }
+
+                // Check element visibility
+                var style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                    return false;
+                }
+
+                return true;
+            }
+
+            function checkSuccessAlerts() {
+                var successSelectors = [
+                    '.alert-success',
+                    '.hide-msgs.alert-success',
+                    'div.alert.alert-success',
+                    '.alert.alert-block.alert-success',
+                    '.gritter-item-wrapper.gritter-success .gritter-item',
+                    '.gritter-item-wrapper .gritter-item'
+                ];
+
+                var elements = document.querySelectorAll(successSelectors.join(', '));
+                for (var i = 0; i < elements.length; i++) {
+                    var el = elements[i];
+                    if (!isSuccessElement(el)) continue;
+
+                    var rawText = el.innerText || el.textContent || '';
+                    var text = cleanText(rawText);
+
+                    // Additional negative safety check on message content
+                    var lower = text.toLowerCase();
+                    if (lower.indexOf('error') !== -1 ||
+                        lower.indexOf('invalid') !== -1 ||
+                        lower.indexOf('failed') !== -1 ||
+                        lower.indexOf('danger') !== -1 ||
+                        lower.indexOf('wrong') !== -1) {
+                        continue;
+                    }
+
+                    // Only notify on meaningful positive confirmation
+                    if (text.length > 3) {
+                        var sigKey = 'sat_success_alert_' + encodeURIComponent(text);
+                        var lastFired = parseInt(sessionStorage.getItem(sigKey) || '0', 10);
+                        var now = Date.now();
+
+                        // 4-second anti-bounce cooldown
+                        if (now - lastFired > 4000) {
+                            sessionStorage.setItem(sigKey, String(now));
+                            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
+                                window.webkit.messageHandlers.satPushBridge.postMessage({
+                                    action: 'notify',
+                                    title: 'BRE',
+                                    body: text
+                                });
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            checkSuccessAlerts();
+
+            // Observe dynamic DOM changes (e.g. AJAX or Single-page form submits)
+            if (!window._satSuccessObserverAttached) {
+                window._satSuccessObserverAttached = true;
+                var observer = new MutationObserver(function(mutations) {
+                    checkSuccessAlerts();
+                });
+                if (document.body) {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                }
+            }
+        })();
+        """
+        webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
     deinit {
