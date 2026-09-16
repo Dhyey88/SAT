@@ -173,6 +173,12 @@ extension AppDelegate: MessagingDelegate {
         guard let token = fcmToken, !token.isEmpty else { return }
         AppConfig.fcmDeviceToken = token
         print("[FCM] Received Firebase Registration Token: \(token)")
+
+        NotificationCenter.default.post(
+            name: NSNotification.Name("SATFcmTokenUpdated"),
+            object: nil,
+            userInfo: ["token": token]
+        )
     }
 }
 #endif
