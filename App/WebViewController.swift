@@ -22,6 +22,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     private var isConnected: Bool = true
     private var wasOffline: Bool = false
     private var lastRegisteredFcmToken: String? = nil
+    private var lastFiredNotificationBody: String? = nil
+    private var lastFiredNotificationTime: Date? = nil
 
     init(initialURLString: String) {
         self.initialURLString = initialURLString
@@ -608,28 +610,37 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             } else if action == "showLocalNotification" || action == "notify" {
                 let title = (dict["title"] as? String) ?? "BRE"
                 let body = (dict["body"] as? String) ?? (dict["message"] as? String) ?? ""
-                if !body.isEmpty {
-                    let content = UNMutableNotificationContent()
-                    content.title = title
-                    content.body = body
-                    content.sound = .default
-                    content.badge = NSNumber(value: (UIApplication.shared.applicationIconBadgeNumber + 1))
-                    content.userInfo = dict
+                guard !body.isEmpty else { return }
 
-                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-                    UNUserNotificationCenter.current().add(request) { error in
-                        if let error = error {
-                            print("[Push Notification] Failed to present local notification: \(error)")
-                        } else {
-                            print("[Push Notification] Successfully presented native banner: [\(title)] \(body)")
-                        }
-                    }
+                // Native Swift Deduplication Gate: Discard duplicate identical notifications within 30s
+                if let lastBody = lastFiredNotificationBody, lastBody == body,
+                   let lastTime = lastFiredNotificationTime, Date().timeIntervalSince(lastTime) < 30.0 {
+                    print("[Push Notification] Discarding duplicate native notification within 30s: \(body)")
+                    return
+                }
+                lastFiredNotificationBody = body
+                lastFiredNotificationTime = Date()
 
-                    // Native haptic feedback
-                    DispatchQueue.main.async {
-                        let generator = UINotificationFeedbackGenerator()
-                        generator.notificationOccurred(.success)
+                let content = UNMutableNotificationContent()
+                content.title = title
+                content.body = body
+                content.sound = .default
+                content.badge = NSNumber(value: (UIApplication.shared.applicationIconBadgeNumber + 1))
+                content.userInfo = dict
+
+                let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+                UNUserNotificationCenter.current().add(request) { error in
+                    if let error = error {
+                        print("[Push Notification] Failed to present local notification: \(error)")
+                    } else {
+                        print("[Push Notification] Successfully presented native banner: [\(title)] \(body)")
                     }
+                }
+
+                // Native haptic feedback
+                DispatchQueue.main.async {
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.success)
                 }
             }
         }
@@ -646,6 +657,11 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
             function isSuccessElement(el) {
                 if (!el) return false;
+
+                // Check if already notified for this element
+                if (el.getAttribute('data-sat-notified') === 'true' || el.dataset.satNotified === 'true') {
+                    return false;
+                }
 
                 // STRICT NEGATIVE FILTER: Must NOT be an error, danger, or warning
                 if (el.classList.contains('alert-danger') ||
@@ -768,38 +784,56 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
                     if (text.length > 3) {
                         var sigKey = 'sat_success_alert_' + encodeURIComponent(window.location.pathname + '_' + text);
-                        var lastFired = parseInt(sessionStorage.getItem(sigKey) || '0', 10);
-                        var now = Date.now();
-
-                        // 5-second anti-bounce cooldown
-                        if (now - lastFired > 5000) {
-                            sessionStorage.setItem(sigKey, String(now));
-
-                            // Build the exact web notification message
-                            var webNotifBody = buildWebNotificationMessage();
-                            var currentPath = window.location.pathname + window.location.search;
-
-                            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
-                                window.webkit.messageHandlers.satPushBridge.postMessage({
-                                    action: 'notify',
-                                    title: 'BRE',
-                                    body: webNotifBody,
-                                    click_action: currentPath
-                                });
-                            }
-                            break;
+                        if (sessionStorage.getItem(sigKey) === 'fired') {
+                            el.setAttribute('data-sat-notified', 'true');
+                            continue;
                         }
+
+                        // Permanently mark both the DOM element and session storage as fired for this page visit
+                        el.setAttribute('data-sat-notified', 'true');
+                        sessionStorage.setItem(sigKey, 'fired');
+
+                        // Build the exact web notification message
+                        var webNotifBody = buildWebNotificationMessage();
+                        var currentPath = window.location.pathname + window.location.search;
+
+                        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
+                            window.webkit.messageHandlers.satPushBridge.postMessage({
+                                action: 'notify',
+                                title: 'BRE',
+                                body: webNotifBody,
+                                click_action: currentPath
+                            });
+                        }
+                        break;
                     }
                 }
             }
 
             checkSuccessAlerts();
 
-            // Observe dynamic DOM changes (e.g. AJAX or Single-page form submits)
+            // Observe dynamic DOM changes ONLY when an alert-success node is actually added (prevents menu/tap re-fires)
             if (!window._satSuccessObserverAttached) {
                 window._satSuccessObserverAttached = true;
                 var observer = new MutationObserver(function(mutations) {
-                    checkSuccessAlerts();
+                    var hasNewAlert = false;
+                    for (var i = 0; i < mutations.length; i++) {
+                        var added = mutations[i].addedNodes;
+                        for (var j = 0; j < added.length; j++) {
+                            var node = added[j];
+                            if (node.nodeType === 1) {
+                                if (node.classList && (node.classList.contains('alert-success') || node.classList.contains('gritter-item-wrapper')) ||
+                                    (node.querySelector && (node.querySelector('.alert-success') || node.querySelector('.gritter-item-wrapper')))) {
+                                    hasNewAlert = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (hasNewAlert) break;
+                    }
+                    if (hasNewAlert) {
+                        checkSuccessAlerts();
+                    }
                 });
                 if (document.body) {
                     observer.observe(document.body, { childList: true, subtree: true });
