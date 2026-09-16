@@ -56,6 +56,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: false)
+        BadgeManager.shared.syncWithDeliveredNotifications()
     }
 
     // MARK: - Top Blue App Frame (Covers Status Bar & Encloses Screen)
@@ -94,6 +95,15 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
                             window.webkit.messageHandlers.satPushBridge.postMessage(msg);
                         }
+                    },
+                    clearBadge: function() {
+                        this.postMessage({ action: 'clearBadge' });
+                    },
+                    setBadge: function(count) {
+                        this.postMessage({ action: 'setBadge', count: count });
+                    },
+                    decrementBadge: function() {
+                        this.postMessage({ action: 'decrementBadge' });
                     }
                 };
 
@@ -572,6 +582,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         guard let userInfo = notification.userInfo else { return }
         print("[WebView] Push notification tapped, navigating with payload: \(userInfo)")
 
+        // Keep app icon badge synchronized with remaining notifications
+        BadgeManager.shared.syncWithDeliveredNotifications()
+
         var targetURLString: String? = nil
 
         if let clickAction = (userInfo["click_action"] as? String) ?? (userInfo["target_url"] as? String), !clickAction.isEmpty {
@@ -607,6 +620,16 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                     self.lastRegisteredFcmToken = token
                     print("[SAT iOS] Web Push token registered successfully with backend: \(token)")
                 }
+            } else if action == "clearBadge" || action == "resetBadge" {
+                BadgeManager.shared.clearBadge()
+            } else if action == "clearAllDeliveredAndBadge" {
+                BadgeManager.shared.clearAllDeliveredAndBadge()
+            } else if action == "setBadge" {
+                let count = (dict["count"] as? Int) ?? Int("\(dict["count"] ?? "")") ?? 0
+                BadgeManager.shared.setBadgeCount(count)
+            } else if action == "decrementBadge" {
+                let amount = (dict["amount"] as? Int) ?? 1
+                BadgeManager.shared.decrementBadgeCount(by: amount)
             } else if action == "showLocalNotification" || action == "notify" {
                 let title = (dict["title"] as? String) ?? "BRE"
                 let body = (dict["body"] as? String) ?? (dict["message"] as? String) ?? ""

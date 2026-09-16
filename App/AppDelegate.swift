@@ -139,7 +139,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
-        print("[Push Notification] Notification tapped by user: \(userInfo)")
+        let identifier = response.notification.request.identifier
+        print("[Push Notification] Notification tapped by user: \(userInfo) (ID: \(identifier))")
+
+        // Immediately remove tapped notification and reduce the app icon badge count
+        BadgeManager.shared.handleNotificationTapped(identifier: identifier)
 
         NotificationCenter.default.post(
             name: NSNotification.Name("SATNotificationTapped"),
@@ -148,6 +152,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         )
 
         completionHandler()
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        print("[AppDelegate] Application became active, syncing badge count.")
+        BadgeManager.shared.syncWithDeliveredNotifications()
     }
 
     // MARK: UISceneSession Lifecycle
