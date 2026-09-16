@@ -82,7 +82,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let contentController = WKUserContentController()
         contentController.add(self, name: "satPushBridge")
 
-        // Polyfill window.Notification for in-page Firebase Web Push compatibility
+        // Polyfill window.Notification and navigator.serviceWorker for in-page Firebase Web Push compatibility
         let bridgeScript = WKUserScript(
             source: """
             (function() {
@@ -98,10 +98,12 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 // Polyfill window.Notification for in-page web push compatibility
                 function MockNotification(title, options) {
                     options = options || {};
+                    var clickAction = (options.data && options.data.click_action) || options.click_action || '';
                     window.satApp.postMessage({
                         action: 'notify',
                         title: title || 'BRE',
-                        body: options.body || ''
+                        body: options.body || '',
+                        click_action: clickAction
                     });
                 }
                 MockNotification.permission = 'granted';
@@ -109,6 +111,23 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                     return Promise.resolve('granted');
                 };
                 window.Notification = MockNotification;
+
+                // Polyfill navigator.serviceWorker so web push scripts initialize in WKWebView
+                if (navigator && !navigator.serviceWorker) {
+                    var mockRegistration = {
+                        scope: '/',
+                        showNotification: function(title, options) {
+                            MockNotification(title, options);
+                            return Promise.resolve();
+                        }
+                    };
+                    navigator.serviceWorker = {
+                        register: function() {
+                            return Promise.resolve(mockRegistration);
+                        },
+                        ready: Promise.resolve(mockRegistration)
+                    };
+                }
             })();
             """,
             injectionTime: .atDocumentStart,
@@ -616,7 +635,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         }
     }
 
-    // MARK: - Smart Success-Only In-App Notification Detector
+    // MARK: - Smart Web Notification Message Detector
     private func detectAndForwardSuccessAlerts() {
         let js = """
         (function() {
@@ -649,6 +668,76 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 return true;
             }
 
+            function buildWebNotificationMessage() {
+                var path = window.location.pathname || '';
+                var typeName = 'Expense - Petty Cash';
+
+                if (path.indexOf('cexp-pv') !== -1) {
+                    typeName = 'Expense - Petty Cash';
+                } else if (path.indexOf('advc') !== -1) {
+                    typeName = 'Advance Cash';
+                } else if (path.indexOf('crcpt') !== -1) {
+                    typeName = 'Cash Receipt';
+                } else if (path.indexOf('ctfr') !== -1) {
+                    typeName = 'Cash Transfer';
+                } else if (path.indexOf('sbill') !== -1) {
+                    typeName = 'Supplier Bill';
+                } else if (path.indexOf('day-book') !== -1) {
+                    typeName = 'Expense';
+                } else {
+                    var h1 = document.querySelector('.content-header h1, h1, .page-title');
+                    if (h1 && h1.innerText) {
+                        var cleaned = cleanText(h1.innerText);
+                        if (cleaned.length > 2 && cleaned.indexOf('List') === -1) {
+                            typeName = cleaned;
+                        }
+                    }
+                }
+
+                // Extract Branch Name
+                var branchName = '';
+                var branchSelect = document.querySelector('select[name="merchant_id"], select[name="parent_merchant_id"], select#merchant_id');
+                if (branchSelect && branchSelect.selectedIndex >= 0 && branchSelect.options[branchSelect.selectedIndex]) {
+                    var bText = branchSelect.options[branchSelect.selectedIndex].text;
+                    if (bText && bText !== 'All' && bText !== 'Select') {
+                        branchName = cleanText(bText);
+                    }
+                }
+                if (!branchName) {
+                    var s2Chosen = document.querySelector('.select2-chosen');
+                    if (s2Chosen && s2Chosen.innerText && s2Chosen.innerText !== 'All') {
+                        branchName = cleanText(s2Chosen.innerText);
+                    }
+                }
+                if (!branchName) {
+                    var branchCell = document.querySelector('table tbody tr:first-child td:nth-child(5)');
+                    if (branchCell && branchCell.innerText) {
+                        branchName = cleanText(branchCell.innerText);
+                    }
+                }
+
+                // Extract Amount
+                var amount = '';
+                var amountCell = document.querySelector('table tbody tr:first-child td.amount, table tbody tr:first-child td:nth-child(6), table tbody tr:first-child td:nth-child(7)');
+                if (amountCell && amountCell.innerText) {
+                    var amtClean = amountCell.innerText.replace(/[^0-9.]/g, '');
+                    if (amtClean.length > 0 && !isNaN(parseFloat(amtClean))) {
+                        amount = amtClean;
+                    }
+                }
+
+                // Format exact message matching CexpPVController.php:1451
+                var notif = 'Your ' + typeName;
+                if (amount) {
+                    notif += ' (' + amount + ')';
+                }
+                if (branchName) {
+                    notif += ' , ' + branchName + ' Branch';
+                }
+                notif += ' is Submitted, You can check transactions now.';
+                return notif;
+            }
+
             function checkSuccessAlerts() {
                 var successSelectors = [
                     '.alert-success',
@@ -677,20 +766,25 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                         continue;
                     }
 
-                    // Only notify on meaningful positive confirmation
                     if (text.length > 3) {
-                        var sigKey = 'sat_success_alert_' + encodeURIComponent(text);
+                        var sigKey = 'sat_success_alert_' + encodeURIComponent(window.location.pathname + '_' + text);
                         var lastFired = parseInt(sessionStorage.getItem(sigKey) || '0', 10);
                         var now = Date.now();
 
-                        // 4-second anti-bounce cooldown
-                        if (now - lastFired > 4000) {
+                        // 5-second anti-bounce cooldown
+                        if (now - lastFired > 5000) {
                             sessionStorage.setItem(sigKey, String(now));
+
+                            // Build the exact web notification message
+                            var webNotifBody = buildWebNotificationMessage();
+                            var currentPath = window.location.pathname + window.location.search;
+
                             if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
                                 window.webkit.messageHandlers.satPushBridge.postMessage({
                                     action: 'notify',
                                     title: 'BRE',
-                                    body: text
+                                    body: webNotifBody,
+                                    click_action: currentPath
                                 });
                             }
                             break;
