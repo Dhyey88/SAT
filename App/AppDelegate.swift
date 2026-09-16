@@ -127,7 +127,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         print("[Push Notification] Foreground message received: \(userInfo)")
 
         if #available(iOS 14.0, *) {
-            completionHandler([.banner, .sound, .badge])
+            completionHandler([.banner, .sound, .badge, .list])
         } else {
             completionHandler([.alert, .sound, .badge])
         }

@@ -81,16 +81,163 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let contentController = WKUserContentController()
         contentController.add(self, name: "satPushBridge")
 
+        // Comprehensive Web Alert Interceptor & DOM Observer
+        // Automatically captures any message displayed on the web dashboard (.alert-success, .alert-danger, Gritter, etc.)
+        // and sends the EXACT same message to the native iOS app as a system notification!
         let bridgeScript = WKUserScript(
             source: """
-            window.isNativeIOSApp = true;
-            window.satApp = {
-                postMessage: function(msg) {
-                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
-                        window.webkit.messageHandlers.satPushBridge.postMessage(msg);
+            (function() {
+                window.isNativeIOSApp = true;
+                window.satApp = {
+                    postMessage: function(msg) {
+                        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
+                            window.webkit.messageHandlers.satPushBridge.postMessage(msg);
+                        }
+                    }
+                };
+
+                // 1. Mock window.Notification so any in-page web push scripts route to native iOS
+                function MockNotification(title, options) {
+                    options = options || {};
+                    window.satApp.postMessage({
+                        action: 'notify',
+                        title: title || 'SAT Notification',
+                        body: options.body || ''
+                    });
+                }
+                MockNotification.permission = 'granted';
+                MockNotification.requestPermission = function() {
+                    return Promise.resolve('granted');
+                };
+                window.Notification = MockNotification;
+
+                var notifiedMessages = {};
+
+                function cleanAlertText(el) {
+                    var clone = el.cloneNode(true);
+                    var buttons = clone.querySelectorAll('.close, [data-dismiss="alert"], button');
+                    for (var i = 0; i < buttons.length; i++) {
+                        buttons[i].remove();
+                    }
+                    return (clone.textContent || clone.innerText || '').trim();
+                }
+
+                function checkAndForwardWebAlerts() {
+                    var selectors = [
+                        '.alert-success',
+                        '.alert-danger',
+                        '.alert-info',
+                        '.alert-warning',
+                        '.alert',
+                        '.gritter-item',
+                        '#gritter-notice-wrapper .gritter-item'
+                    ];
+
+                    var nodes = document.querySelectorAll(selectors.join(','));
+                    for (var i = 0; i < nodes.length; i++) {
+                        var el = nodes[i];
+                        if (el.dataset.satSent === 'true') continue;
+
+                        var text = cleanAlertText(el);
+                        if (!text || text.length < 2) continue;
+
+                        var style = window.getComputedStyle(el);
+                        if (style.display === 'none' || style.visibility === 'hidden') continue;
+
+                        var now = Date.now();
+                        if (notifiedMessages[text] && (now - notifiedMessages[text]) < 25000) {
+                            el.dataset.satSent = 'true';
+                            continue;
+                        }
+
+                        el.dataset.satSent = 'true';
+                        notifiedMessages[text] = now;
+
+                        var title = 'SAT Notification';
+                        var classes = el.className || '';
+                        if (classes.indexOf('alert-success') !== -1) {
+                            title = 'Success';
+                        } else if (classes.indexOf('alert-danger') !== -1) {
+                            title = 'Alert';
+                        } else if (classes.indexOf('alert-warning') !== -1) {
+                            title = 'Warning';
+                        } else if (classes.indexOf('alert-info') !== -1) {
+                            title = 'Notice';
+                        }
+
+                        var heading = el.querySelector('.gritter-title, strong, h4, .alert-heading');
+                        if (heading) {
+                            var headingText = cleanAlertText(heading);
+                            if (headingText && headingText.length > 1 && headingText.length < 35) {
+                                title = headingText;
+                            }
+                        }
+
+                        console.log('[SAT iOS] Captured Web Message:', text);
+                        window.satApp.postMessage({
+                            action: 'notify',
+                            title: title,
+                            body: text
+                        });
                     }
                 }
-            };
+
+                // 2. Intercept jQuery Gritter notifications if present
+                function hookGritter() {
+                    if (window.jQuery && window.jQuery.gritter && !window.jQuery.gritter.__satHooked) {
+                        window.jQuery.gritter.__satHooked = true;
+                        var originalAdd = window.jQuery.gritter.add;
+                        window.jQuery.gritter.add = function(params) {
+                            try {
+                                var gTitle = (typeof params === 'object' && params.title) ? params.title : 'SAT Alert';
+                                var gText = (typeof params === 'object' && params.text) ? params.text : (typeof params === 'string' ? params : '');
+                                if (gText) {
+                                    window.satApp.postMessage({
+                                        action: 'notify',
+                                        title: gTitle,
+                                        body: gText
+                                    });
+                                }
+                            } catch(e) {}
+                            return originalAdd.apply(this, arguments);
+                        };
+                    }
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        checkAndForwardWebAlerts();
+                        hookGritter();
+                    });
+                } else {
+                    checkAndForwardWebAlerts();
+                    hookGritter();
+                }
+
+                window.addEventListener('load', function() {
+                    checkAndForwardWebAlerts();
+                    hookGritter();
+                });
+
+                setInterval(function() {
+                    checkAndForwardWebAlerts();
+                    hookGritter();
+                }, 800);
+
+                var observer = new MutationObserver(function() {
+                    checkAndForwardWebAlerts();
+                    hookGritter();
+                });
+                if (document.body) {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                } else {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (document.body) {
+                            observer.observe(document.body, { childList: true, subtree: true });
+                        }
+                    });
+                }
+            })();
             """,
             injectionTime: .atDocumentStart,
             forMainFrameOnly: false
@@ -469,7 +616,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         if let dict = message.body as? [String: Any] {
             let action = dict["action"] as? String ?? ""
             if action == "showLocalNotification" || action == "notify" {
-                let title = (dict["title"] as? String) ?? "SAT Alert"
+                let title = (dict["title"] as? String) ?? "SAT Notification"
                 let body = (dict["body"] as? String) ?? (dict["message"] as? String) ?? ""
                 if !body.isEmpty {
                     let content = UNMutableNotificationContent()
@@ -480,7 +627,24 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                     content.userInfo = dict
 
                     let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-                    UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+                    UNUserNotificationCenter.current().add(request) { error in
+                        if let error = error {
+                            print("[Push Notification] Failed to present local notification: \(error)")
+                        }
+                    }
+
+                    // Native Haptic Feedback & Vibrations matching message type
+                    DispatchQueue.main.async {
+                        let generator = UINotificationFeedbackGenerator()
+                        let lowerTitle = title.lowercased()
+                        if lowerTitle.contains("success") {
+                            generator.notificationOccurred(.success)
+                        } else if lowerTitle.contains("alert") || lowerTitle.contains("error") {
+                            generator.notificationOccurred(.error)
+                        } else {
+                            generator.notificationOccurred(.warning)
+                        }
+                    }
                 }
             }
         }
