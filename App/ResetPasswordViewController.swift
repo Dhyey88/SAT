@@ -545,25 +545,16 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.s1Spinner.stopAnimating()
-                self.s1NextButton.setTitle("Next  ➔", for: .normal)
+        APIClient.post(endpoint: AppConfig.API.forgotPassword, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.s1Spinner.stopAnimating()
+            self.s1NextButton.setTitle("Next  ➔", for: .normal)
 
-                if let error = error {
-                    self.s1Underline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
-                    self.showError("Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.s1Underline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
-                    self.showError("Invalid response from server.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.s1Underline.backgroundColor = AppTheme.errorRed
+                self.showError("Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let apiMessage = self.extractMessage(from: json, fallback: "Email does not exist in our records.")
 
@@ -586,11 +577,11 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
                     self.scrollView.setContentOffset(.zero, animated: true)
                     self.s2OtpBoxes.first?.becomeFirstResponder()
                 } else {
-                    self.s1Underline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+                    self.s1Underline.backgroundColor = AppTheme.errorRed
                     self.showError(apiMessage)
                 }
             }
-        }.resume()
+        }
     }
 
     // Step 2: Submit OTP -> POST /api/otp-verification
@@ -621,23 +612,15 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.s2Spinner.stopAnimating()
-                self.s2NextButton.setTitle("Next  ➔", for: .normal)
+        APIClient.post(endpoint: AppConfig.API.otpVerification, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.s2Spinner.stopAnimating()
+            self.s2NextButton.setTitle("Next  ➔", for: .normal)
 
-                if let error = error {
-                    self.showError("Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.showError("Invalid response from server.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.showError("Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let apiMessage = self.extractMessage(from: json, fallback: "Invalid OTP entered.")
 
@@ -662,7 +645,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
                     self.showError(apiMessage)
                 }
             }
-        }.resume()
+        }
     }
 
     // Step 3: Submit New Password -> POST /api/resent-password
@@ -704,23 +687,15 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.s3Spinner.stopAnimating()
-                self.s3NextButton.setTitle("Next  ➔", for: .normal)
+        APIClient.post(endpoint: AppConfig.API.resetPassword, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.s3Spinner.stopAnimating()
+            self.s3NextButton.setTitle("Next  ➔", for: .normal)
 
-                if let error = error {
-                    self.showError("Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.showError("Invalid response from server.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.showError("Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let apiMessage = self.extractMessage(from: json, fallback: "Failed to reset password.")
 
@@ -742,7 +717,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
                     self.showError(apiMessage)
                 }
             }
-        }.resume()
+        }
     }
 
     // MARK: - Navigation / Back Buttons

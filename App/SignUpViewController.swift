@@ -272,15 +272,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
     // MARK: - Dynamic Document Types Fetcher (GET /api/get-document)
     private func fetchDocumentTypes() {
-        guard let url = URL(string: AppConfig.API.getDocument) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+        APIClient.get(endpoint: AppConfig.API.getDocument) { [weak self] result in
             guard let self = self,
-                  let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  case .success(let json) = result,
                   let list = json["data"] as? [[String: Any]], !list.isEmpty else {
                 return
             }
@@ -292,11 +286,9 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             }
 
             if !parsed.isEmpty {
-                DispatchQueue.main.async {
-                    self.idDocumentOptions = parsed
-                }
+                self.idDocumentOptions = parsed
             }
-        }.resume()
+        }
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -1689,32 +1681,19 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             self.helpOverlayBackdrop.alpha = 1.0
         }
 
-        guard let endpoint = apiEndpoint, let url = URL(string: endpoint) else { return }
+        guard let endpoint = apiEndpoint else { return }
 
         helpSpinner.startAnimating()
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
-        let params = postParams ?? [:]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.helpSpinner.stopAnimating()
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let dataObj = json["data"] as? [String: Any],
-                      let helpStr = dataObj["help"] as? String,
-                      !helpStr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    return
-                }
+        APIClient.post(endpoint: endpoint, parameters: postParams ?? [:]) { [weak self] result in
+            guard let self = self else { return }
+            self.helpSpinner.stopAnimating()
+            if case .success(let json) = result,
+               let dataObj = json["data"] as? [String: Any],
+               let helpStr = dataObj["help"] as? String,
+               !helpStr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 self.helpTextView.text = helpStr.replacingOccurrences(of: "\\r\\n", with: "\n").replacingOccurrences(of: "\r\n", with: "\n")
             }
-        }.resume()
+        }
     }
 
     @objc private func handleCloseHelpDialog() {
@@ -1742,33 +1721,17 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         initTrustSpinner.startAnimating()
         clearBannerError()
 
-        guard let url = URL(string: AppConfig.API.checkTrustCode) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params = ["code": code, "device_type": AppConfig.deviceType, "mobile_device_id": AppConfig.mobileDeviceId]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.initTrustArrowButton.isHidden = false
-                self.initTrustSpinner.stopAnimating()
+        APIClient.post(endpoint: AppConfig.API.checkTrustCode, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.initTrustArrowButton.isHidden = false
+            self.initTrustSpinner.stopAnimating()
 
-                if let error = error {
-                    self.showBannerError("Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.showBannerError("Invalid response from server.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.showBannerError("Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let dataDict = (json["data"] as? [String: Any]) ?? (json["response"] as? [String: Any])
                 let merchantId = (dataDict?["id"] as? Int) ?? (dataDict?["merchant_id"] as? Int) ?? 0
@@ -1816,12 +1779,12 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                     self.scrollView.setContentOffset(.zero, animated: true)
                     self.midEmailField.becomeFirstResponder()
                 } else {
-                    self.initTrustUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+                    self.initTrustUnderline.backgroundColor = AppTheme.errorRed
                     let apiMessage = self.extractMessage(from: json, fallback: "Please enter valid trust code. Contact helpline.")
                     self.showBannerError(apiMessage)
                 }
             }
-        }.resume()
+        }
     }
 
     // Step 2: Email verification via API (POST /api/check-email)
@@ -1839,33 +1802,17 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midEmailArrowButton.isHidden = true
         midEmailSpinner.startAnimating()
 
-        guard let url = URL(string: AppConfig.API.checkEmail) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params = ["email": email, "device_type": AppConfig.deviceType, "mobile_device_id": AppConfig.mobileDeviceId]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.midEmailSpinner.stopAnimating()
-                self.midEmailArrowButton.isHidden = false
+        APIClient.post(endpoint: AppConfig.API.checkEmail, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.midEmailSpinner.stopAnimating()
+            self.midEmailArrowButton.isHidden = false
 
-                if let error = error {
-                    self.showBannerError("Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.showBannerError("Invalid response from server.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.showBannerError("Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let apiMessage = self.extractMessage(from: json, fallback: "Email already exists or is invalid.")
 
@@ -1876,11 +1823,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     self.midMobileField.becomeFirstResponder()
                 } else {
-                    self.midEmailUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+                    self.midEmailUnderline.backgroundColor = AppTheme.errorRed
                     self.showBannerError(apiMessage)
                 }
             }
-        }.resume()
+        }
     }
 
     // Step 3: Send OTP for Mobile (POST /api/register-otp-send)
@@ -1906,12 +1853,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midMobileSpinner.startAnimating()
         clearBannerError()
 
-        guard let url = URL(string: AppConfig.API.registerOtpSend) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params: [String: String] = [
             "mobile_no": mobile,
             "email": email,
@@ -1920,26 +1861,16 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             "mobile_device_id": AppConfig.mobileDeviceId,
             "device_id": AppConfig.deviceId
         ]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.midMobileArrowButton.isHidden = false
-                self.midMobileSpinner.stopAnimating()
+        APIClient.post(endpoint: AppConfig.API.registerOtpSend, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.midMobileArrowButton.isHidden = false
+            self.midMobileSpinner.stopAnimating()
 
-                if let error = error {
-                    self.showBannerError("Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.showBannerError("Invalid response from server.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.showBannerError("Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let apiMessage = self.extractMessage(from: json, fallback: "Failed to send OTP. Please check mobile number.")
 
@@ -1949,11 +1880,11 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     self.presentOTPDialog()
                 } else {
-                    self.midMobileUnderline.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+                    self.midMobileUnderline.backgroundColor = AppTheme.errorRed
                     self.showBannerError(apiMessage)
                 }
             }
-        }.resume()
+        }
     }
 
     private func presentOTPDialog() {
@@ -2019,39 +1950,22 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         otpVerifyButton.setTitle("", for: .normal)
         otpSpinner.startAnimating()
 
-        guard let url = URL(string: AppConfig.API.checkRegisterOtp) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params: [String: String] = [
             "mobile_no": mobile,
             "register_otp": otp,
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.otpSpinner.stopAnimating()
-                self.otpVerifyButton.setTitle("Verify OTP", for: .normal)
+        APIClient.post(endpoint: AppConfig.API.checkRegisterOtp, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.otpSpinner.stopAnimating()
+            self.otpVerifyButton.setTitle("Verify OTP", for: .normal)
 
-                if let error = error {
-                    self.otpErrorLabel.text = "Network error: \(error.localizedDescription)"
-                    self.otpErrorLabel.isHidden = false
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.otpErrorLabel.text = "Invalid response from server."
-                    self.otpErrorLabel.isHidden = false
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.otpErrorLabel.text = "Network error: \(error.localizedDescription)"
+                self.otpErrorLabel.isHidden = false
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let apiMessage = self.extractMessage(from: json, fallback: "Invalid OTP code entered.")
 
@@ -2086,7 +2000,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                     UINotificationFeedbackGenerator().notificationOccurred(.error)
                 }
             }
-        }.resume()
+        }
     }
 
     // Step 5: Verify Parent Code & Reveal Detailed User Registration Form (Screenshot 1 & 2)
@@ -2103,22 +2017,17 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         midParentSpinner.startAnimating()
         clearBannerError()
 
-        guard let url = URL(string: AppConfig.API.checkTrustCode) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params = ["code": parentCode, "device_type": AppConfig.deviceType, "mobile_device_id": AppConfig.mobileDeviceId]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.midParentArrowButton.isHidden = false
-                self.midParentSpinner.stopAnimating()
+        APIClient.post(endpoint: AppConfig.API.checkTrustCode, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.midParentArrowButton.isHidden = false
+            self.midParentSpinner.stopAnimating()
 
+            switch result {
+            case .failure(let error):
+                self.showBannerError("Network error: \(error.localizedDescription)")
+            case .success:
                 // Sync verified values to details card
                 self.dtTrustCodeField.text = self.midTrustCodeField.text
                 self.dtEmailField.text = self.midEmailField.text
@@ -2142,7 +2051,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                 self.scrollView.setContentOffset(.zero, animated: true)
                 self.dtFnameField.becomeFirstResponder()
             }
-        }.resume()
+        }
     }
 
     // Step 6: Final User Registration (POST /api/register)
@@ -2169,12 +2078,6 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         dtRegisterSpinner.startAnimating()
         clearBannerError()
 
-        guard let url = URL(string: AppConfig.API.register) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params: [String: String] = [
             "fname": fname,
             "lname": lname,
@@ -2193,26 +2096,16 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             "device_id": AppConfig.deviceId,
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.dtRegisterSpinner.stopAnimating()
-                self.dtRegisterButton.setTitle("Register Branch  ➔", for: .normal)
+        APIClient.post(endpoint: AppConfig.API.register, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.dtRegisterSpinner.stopAnimating()
+            self.dtRegisterButton.setTitle("Register Branch  ➔", for: .normal)
 
-                if let error = error {
-                    self.showBannerError("Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.showBannerError("Invalid server response.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.showBannerError("Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let apiMessage = self.extractMessage(from: json, fallback: "Registration failed. Please try again.")
 
@@ -2233,7 +2126,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
                     self.showBannerError(apiMessage)
                 }
             }
-        }.resume()
+        }
     }
 
     // MARK: - Picker Action Sheets

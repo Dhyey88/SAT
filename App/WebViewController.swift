@@ -1,26 +1,45 @@
 import UIKit
 import WebKit
-import Network
+import UserNotifications
 
+/// High-performance WebViewController hosting the SAT responsive web dashboard.
+/// Encapsulates native loaders, pull-to-refresh, offline recovery, push notifications,
+/// haptic feedback, and two-way JavaScript bridge communication.
 class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+
+    // MARK: - Supported Bridge Actions
+    private enum BridgeAction: String {
+        case fcmTokenRegistered
+        case clearBadge
+        case resetBadge
+        case clearAllDeliveredAndBadge
+        case setBadge
+        case decrementBadge
+        case showLocalNotification
+        case notify
+    }
 
     private let initialURLString: String
     private var webView: WKWebView!
-    private var refreshControl: UIRefreshControl!
-    private var offlineOverlayView: UIView!
 
-    // MARK: - Native Blue App Frame
+    // MARK: - Native Header Bar / Status Bar Protection Frame
     private let topFrameView = UIView()
+
+    // MARK: - Pull to Refresh Control
+    private let refreshControl = UIRefreshControl()
 
     // MARK: - Native Round Activity Loader (Replaces Web Line Loader)
     private let loaderHUD = UIView()
     private let activitySpinner = UIActivityIndicatorView(style: .large)
     private var loaderDismissWorkItem: DispatchWorkItem?
 
-    private let networkMonitor = NWPathMonitor()
-    private let monitorQueue = DispatchQueue(label: "WebNetworkMonitorQueue")
+    // MARK: - Connectivity & Feedback
     private var isConnected: Bool = true
     private var wasOffline: Bool = false
+    private let offlineOverlayView = UIView()
+    private let notificationFeedback = UINotificationFeedbackGenerator()
+
+    // MARK: - Notification Tracking & State
     private var lastRegisteredFcmToken: String? = nil
     private var lastFiredNotificationBody: String? = nil
     private var lastFiredNotificationTime: Date? = nil
@@ -37,7 +56,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationController?.setNavigationBarHidden(true, animated: false)
-        view.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0) // Rich SAT Deep Blue
+        view.backgroundColor = AppTheme.satDeepBlue
+
+        notificationFeedback.prepare()
 
         setupTopFrame()
         setupWebView()
@@ -62,7 +83,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     // MARK: - Top Blue App Frame (Covers Status Bar & Encloses Screen)
     private func setupTopFrame() {
         topFrameView.translatesAutoresizingMaskIntoConstraints = false
-        topFrameView.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0) // Android-matched SAT Deep Blue
+        topFrameView.backgroundColor = AppTheme.satDeepBlue
         view.addSubview(topFrameView)
 
         NSLayoutConstraint.activate([
@@ -73,92 +94,46 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         ])
     }
 
-    // MARK: - WKWebView Setup (Enclosed Inside Native App Shell)
+    // MARK: - WKWebView Setup
     private func setupWebView() {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
-        config.websiteDataStore = WKWebsiteDataStore.default() // Persistent session & cache
-        config.applicationNameForUserAgent = " SATMobileApp/1.0 (iOS/Swift; WKWebView)"
+        config.websiteDataStore = WKWebsiteDataStore.default()
+        config.applicationNameForUserAgent = " SATMobileApp/\(AppConfig.appVersion) (iOS/Swift; WKWebView)"
 
-        // Two-way Bridge between Web JavaScript and Native Swift
         let contentController = WKUserContentController()
         contentController.add(self, name: "satPushBridge")
 
-        // Polyfill window.Notification and navigator.serviceWorker for in-page Firebase Web Push compatibility
+        // 1. In-page Web Push and Bridge Polyfill Script (Document Start)
         let bridgeScript = WKUserScript(
-            source: """
-            (function() {
-                window.isNativeIOSApp = true;
-                window.satApp = {
-                    postMessage: function(msg) {
-                        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
-                            window.webkit.messageHandlers.satPushBridge.postMessage(msg);
-                        }
-                    },
-                    clearBadge: function() {
-                        this.postMessage({ action: 'clearBadge' });
-                    },
-                    setBadge: function(count) {
-                        this.postMessage({ action: 'setBadge', count: count });
-                    },
-                    decrementBadge: function() {
-                        this.postMessage({ action: 'decrementBadge' });
-                    }
-                };
-
-                // Polyfill window.Notification for in-page web push compatibility
-                function MockNotification(title, options) {
-                    options = options || {};
-                    var clickAction = (options.data && options.data.click_action) || options.click_action || '';
-                    window.satApp.postMessage({
-                        action: 'notify',
-                        title: title || 'BRE',
-                        body: options.body || '',
-                        click_action: clickAction
-                    });
-                }
-                MockNotification.permission = 'granted';
-                MockNotification.requestPermission = function() {
-                    return Promise.resolve('granted');
-                };
-                window.Notification = MockNotification;
-
-                // Polyfill navigator.serviceWorker so web push scripts initialize in WKWebView
-                if (navigator && !navigator.serviceWorker) {
-                    var mockRegistration = {
-                        scope: '/',
-                        showNotification: function(title, options) {
-                            MockNotification(title, options);
-                            return Promise.resolve();
-                        }
-                    };
-                    navigator.serviceWorker = {
-                        register: function() {
-                            return Promise.resolve(mockRegistration);
-                        },
-                        ready: Promise.resolve(mockRegistration)
-                    };
-                }
-            })();
-            """,
+            source: WebViewController.webBridgePolyfillScript,
             injectionTime: .atDocumentStart,
             forMainFrameOnly: false
         )
         contentController.addUserScript(bridgeScript)
+
+        // 2. Success Alert Detector & Mutation Observer (Document End)
+        let detectorScript = WKUserScript(
+            source: WebViewController.successAlertDetectorScript,
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: false
+        )
+        contentController.addUserScript(detectorScript)
+
         config.userContentController = contentController
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        webView.allowsBackForwardNavigationGestures = true // Native swipe back/forward
+        webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.bounces = true
-        webView.backgroundColor = UIColor(red: 245/255, green: 247/255, blue: 252/255, alpha: 1.0) // Dashboard light background
+        webView.backgroundColor = UIColor(red: 245/255, green: 247/255, blue: 252/255, alpha: 1.0)
         webView.isOpaque = true
 
         if #available(iOS 16.4, *) {
-            webView.isInspectable = false // Safari Web Inspector support
+            webView.isInspectable = false
         }
 
         view.addSubview(webView)
@@ -174,7 +149,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     // MARK: - Native Round Circular Loader (App-Like Spinner)
     private func setupLoaderHUD() {
         loaderHUD.translatesAutoresizingMaskIntoConstraints = false
-        loaderHUD.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 0.92) // Deep SAT Blue Glass HUD
+        loaderHUD.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 0.92)
         loaderHUD.layer.cornerRadius = 16
         loaderHUD.layer.shadowColor = UIColor.black.cgColor
         loaderHUD.layer.shadowOpacity = 0.25
@@ -192,8 +167,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         NSLayoutConstraint.activate([
             loaderHUD.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             loaderHUD.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            loaderHUD.widthAnchor.constraint(equalToConstant: 72),
-            loaderHUD.heightAnchor.constraint(equalToConstant: 72),
+            loaderHUD.widthAnchor.constraint(equalToConstant: 80),
+            loaderHUD.heightAnchor.constraint(equalToConstant: 80),
 
             activitySpinner.centerXAnchor.constraint(equalTo: loaderHUD.centerXAnchor),
             activitySpinner.centerYAnchor.constraint(equalTo: loaderHUD.centerYAnchor)
@@ -202,174 +177,165 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
     private func showRoundLoader() {
         loaderDismissWorkItem?.cancel()
+        loaderDismissWorkItem = nil
+
         loaderHUD.isHidden = false
         activitySpinner.startAnimating()
-        UIView.animate(withDuration: 0.15) {
+        UIView.animate(withDuration: 0.2) {
             self.loaderHUD.alpha = 1.0
         }
 
-        // Safety auto-dismiss timeout (5 seconds)
+        // Safety watchdog: auto-hide after 8s to prevent stuck overlays
         let workItem = DispatchWorkItem { [weak self] in
             self?.hideRoundLoader()
         }
         loaderDismissWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0, execute: workItem)
     }
 
     private func hideRoundLoader() {
         loaderDismissWorkItem?.cancel()
         loaderDismissWorkItem = nil
-        UIView.animate(withDuration: 0.2, animations: {
+
+        UIView.animate(withDuration: 0.25, animations: {
             self.loaderHUD.alpha = 0.0
-        }, completion: { _ in
-            self.loaderHUD.isHidden = true
+        }) { _ in
             self.activitySpinner.stopAnimating()
-        })
+            self.loaderHUD.isHidden = true
+        }
     }
 
+    // MARK: - Native Pull to Refresh
     private func setupRefreshControl() {
-        refreshControl = UIRefreshControl()
-        refreshControl.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        refreshControl.tintColor = AppTheme.satDeepBlue
         refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
         webView.scrollView.refreshControl = refreshControl
     }
 
-    // MARK: - Native Offline Screen (App Store Guideline 4.2 Compliant)
+    // MARK: - App Store Compliant Offline Overlay (Guideline 4.2)
     private func setupOfflineOverlay() {
-        offlineOverlayView = UIView()
         offlineOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        offlineOverlayView.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0)
+        offlineOverlayView.backgroundColor = UIColor(red: 245/255, green: 247/255, blue: 252/255, alpha: 1.0)
         offlineOverlayView.isHidden = true
         view.addSubview(offlineOverlayView)
 
-        NSLayoutConstraint.activate([
-            offlineOverlayView.topAnchor.constraint(equalTo: view.topAnchor),
-            offlineOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            offlineOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            offlineOverlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
+        let container = UIStackView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.axis = .vertical
+        container.alignment = .center
+        container.spacing = 16
+        offlineOverlayView.addSubview(container)
 
-        let iconContainer = UIView()
-        iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        iconContainer.backgroundColor = UIColor(red: 30/255, green: 60/255, blue: 115/255, alpha: 1.0)
-        iconContainer.layer.cornerRadius = 45
-        offlineOverlayView.addSubview(iconContainer)
-
-        let wifiIcon = UIImageView()
-        wifiIcon.translatesAutoresizingMaskIntoConstraints = false
-        wifiIcon.image = UIImage(systemName: "wifi.slash")
-        wifiIcon.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        wifiIcon.contentMode = .scaleAspectFit
-        iconContainer.addSubview(wifiIcon)
+        let icon = UIImageView()
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.image = UIImage(systemName: "wifi.slash")
+        icon.tintColor = UIColor(red: 231/255, green: 76/255, blue: 60/255, alpha: 1.0)
+        icon.contentMode = .scaleAspectFit
+        container.addArrangedSubview(icon)
 
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "No Internet Connection"
-        titleLabel.textColor = .white
-        titleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        titleLabel.textColor = UIColor(red: 44/255, green: 62/255, blue: 80/255, alpha: 1.0)
         titleLabel.textAlignment = .center
-        offlineOverlayView.addSubview(titleLabel)
+        container.addArrangedSubview(titleLabel)
 
-        let subtitleLabel = UILabel()
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Please connect to Wi-Fi or Mobile Data to use SAT."
-        subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.8)
-        subtitleLabel.font = UIFont.systemFont(ofSize: 15)
-        subtitleLabel.textAlignment = .center
-        subtitleLabel.numberOfLines = 0
-        offlineOverlayView.addSubview(subtitleLabel)
+        let subLabel = UILabel()
+        subLabel.translatesAutoresizingMaskIntoConstraints = false
+        subLabel.text = "Please check your network settings and try again."
+        subLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        subLabel.textColor = UIColor.gray
+        subLabel.textAlignment = .center
+        subLabel.numberOfLines = 0
+        container.addArrangedSubview(subLabel)
 
         let retryButton = UIButton(type: .system)
         retryButton.translatesAutoresizingMaskIntoConstraints = false
-        retryButton.setTitle("Try Again", for: .normal)
+        retryButton.setTitle("Retry Connection", for: .normal)
         retryButton.setTitleColor(.white, for: .normal)
-        retryButton.setImage(UIImage(systemName: "arrow.clockwise"), for: .normal)
-        retryButton.tintColor = .white
         retryButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        retryButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        retryButton.layer.cornerRadius = 6
-        retryButton.addTarget(self, action: #selector(handleRefresh), for: .touchUpInside)
-        offlineOverlayView.addSubview(retryButton)
+        retryButton.backgroundColor = AppTheme.satDeepBlue
+        retryButton.layer.cornerRadius = 8
+        retryButton.addTarget(self, action: #selector(handleOfflineRetry), for: .touchUpInside)
+        container.addArrangedSubview(retryButton)
 
-        // Offline Contact / Help Button
         let helpButton = UIButton(type: .system)
         helpButton.translatesAutoresizingMaskIntoConstraints = false
-        helpButton.setTitle("Need Help? View Offline Support", for: .normal)
-        helpButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        helpButton.setImage(UIImage(systemName: "questionmark.circle"), for: .normal)
-        helpButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        helpButton.setTitle("Helpline Support", for: .normal)
+        helpButton.setTitleColor(AppTheme.satDeepBlue, for: .normal)
         helpButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        helpButton.addTarget(self, action: #selector(showOfflineHelp), for: .touchUpInside)
-        offlineOverlayView.addSubview(helpButton)
+        helpButton.addTarget(self, action: #selector(handleOfflineHelp), for: .touchUpInside)
+        container.addArrangedSubview(helpButton)
 
         NSLayoutConstraint.activate([
-            iconContainer.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
-            iconContainer.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor, constant: -90),
-            iconContainer.widthAnchor.constraint(equalToConstant: 90),
-            iconContainer.heightAnchor.constraint(equalToConstant: 90),
+            offlineOverlayView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            offlineOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            offlineOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            offlineOverlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            wifiIcon.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
-            wifiIcon.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
-            wifiIcon.widthAnchor.constraint(equalToConstant: 48),
-            wifiIcon.heightAnchor.constraint(equalToConstant: 48),
+            container.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
+            container.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor),
+            container.leadingAnchor.constraint(equalTo: offlineOverlayView.leadingAnchor, constant: 32),
+            container.trailingAnchor.constraint(equalTo: offlineOverlayView.trailingAnchor, constant: -32),
 
-            titleLabel.topAnchor.constraint(equalTo: iconContainer.bottomAnchor, constant: 24),
-            titleLabel.leadingAnchor.constraint(equalTo: offlineOverlayView.leadingAnchor, constant: 32),
-            titleLabel.trailingAnchor.constraint(equalTo: offlineOverlayView.trailingAnchor, constant: -32),
+            icon.widthAnchor.constraint(equalToConstant: 64),
+            icon.heightAnchor.constraint(equalToConstant: 64),
 
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
-            subtitleLabel.leadingAnchor.constraint(equalTo: offlineOverlayView.leadingAnchor, constant: 32),
-            subtitleLabel.trailingAnchor.constraint(equalTo: offlineOverlayView.trailingAnchor, constant: -32),
-
-            retryButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 28),
-            retryButton.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
-            retryButton.widthAnchor.constraint(equalToConstant: 160),
-            retryButton.heightAnchor.constraint(equalToConstant: 48),
-
-            helpButton.topAnchor.constraint(equalTo: retryButton.bottomAnchor, constant: 20),
-            helpButton.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor)
+            retryButton.widthAnchor.constraint(equalToConstant: 200),
+            retryButton.heightAnchor.constraint(equalToConstant: 44)
         ])
     }
 
-    @objc private func showOfflineHelp() {
+    @objc private func handleOfflineRetry() {
+        if NetworkMonitor.shared.isConnected {
+            offlineOverlayView.isHidden = true
+            webView.reload()
+        } else {
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.warning)
+
+            let animation = CAKeyframeAnimation(keyPath: "transform.translation.x")
+            animation.timingFunction = CAMediaTimingFunction(name: .linear)
+            animation.duration = 0.4
+            animation.values = [-10.0, 10.0, -8.0, 8.0, -5.0, 5.0, 0.0]
+            offlineOverlayView.layer.add(animation, forKey: "shake")
+        }
+    }
+
+    @objc private func handleOfflineHelp() {
         let alert = UIAlertController(
-            title: "SAT Support & Assistance",
-            message: "You are currently offline. You can contact support directly via telephone or email.\n\n• Helpline: \(AppConfig.helplineNumber)\n• Email: \(AppConfig.supportEmail)",
-            preferredStyle: .actionSheet
+            title: "Support Contact",
+            message: "For technical assistance:\n\nHelpline: \(AppConfig.helplineNumber)\nEmail: \(AppConfig.supportEmail)",
+            preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "📞  Call Helpline", style: .default, handler: { _ in
-            if let url = URL(string: "tel://\(AppConfig.helplineNumber)"), UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url)
-            }
-        }))
-        alert.addAction(UIAlertAction(title: "✉️  Send Support Email", style: .default, handler: { _ in
-            if let url = URL(string: "mailto:\(AppConfig.supportEmail)"), UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url)
-            }
-        }))
+        if let phoneURL = URL(string: "tel://\(AppConfig.helplineNumber)") {
+            alert.addAction(UIAlertAction(title: "Call Helpline", style: .default, handler: { _ in
+                if UIApplication.shared.canOpenURL(phoneURL) {
+                    UIApplication.shared.open(phoneURL)
+                }
+            }))
+        }
         alert.addAction(UIAlertAction(title: "Close", style: .cancel))
         present(alert, animated: true)
     }
 
-    // MARK: - Smart Network Monitoring (Prevents Redundant Auto-Reloads)
+    // MARK: - Centralized Network Monitoring
     private func setupNetworkMonitoring() {
-        networkMonitor.pathUpdateHandler = { [weak self] path in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                let isNowConnected = path.status == .satisfied
-                self.isConnected = isNowConnected
-                self.offlineOverlayView.isHidden = isNowConnected
+        NetworkMonitor.shared.onStatusChange = { [weak self] isNowConnected in
+            guard let self = self else { return }
+            self.isConnected = isNowConnected
+            self.offlineOverlayView.isHidden = isNowConnected
 
-                if !isNowConnected {
-                    self.wasOffline = true
-                } else if self.wasOffline {
-                    // Only reload when recovering from a true disconnected state
-                    self.wasOffline = false
-                    self.webView.reload()
-                }
+            if !isNowConnected {
+                self.wasOffline = true
+            } else if self.wasOffline {
+                self.wasOffline = false
+                self.webView.reload()
             }
         }
-        networkMonitor.start(queue: monitorQueue)
+        isConnected = NetworkMonitor.shared.isConnected
+        offlineOverlayView.isHidden = isConnected
     }
 
     private func loadInitialURL() {
@@ -382,7 +348,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
 
-        if networkMonitor.currentPath.status == .satisfied {
+        if NetworkMonitor.shared.isConnected {
             offlineOverlayView.isHidden = true
             webView.reload()
         } else {
@@ -395,7 +361,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         refreshControl.endRefreshing()
     }
 
-    // MARK: - WKNavigationDelegate (Native Round Spinner Control & Apple Standards)
+    // MARK: - WKNavigationDelegate
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         showRoundLoader()
     }
@@ -410,7 +376,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             syncFcmTokenWithBackend(token: fcmToken)
         }
 
-        // Smart Success-Only Detector: check for "Record added successfully" and forward to native iOS notification
+        // Trigger detection on document end
         detectAndForwardSuccessAlerts()
     }
 
@@ -428,7 +394,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
              nsError.code == NSURLErrorTimedOut) {
             offlineOverlayView.isHidden = false
         }
-        refreshControl.endRefreshing()
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -458,11 +423,10 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        // Apple Crash Recovery: Automatically reload web content if process was killed by iOS
         webView.reload()
     }
 
-    // MARK: - WKUIDelegate (Native iOS Alerts per Apple Documentation)
+    // MARK: - WKUIDelegate
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
         let alert = UIAlertController(title: "SAT", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in completionHandler() }))
@@ -474,13 +438,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in completionHandler(false) }))
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in completionHandler(true) }))
         present(alert, animated: true)
-    }
-
-    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if navigationAction.targetFrame == nil {
-            webView.load(navigationAction.request)
-        }
-        return nil
     }
 
     // MARK: - Push Notification & Deep Linking Support
@@ -582,7 +539,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         guard let userInfo = notification.userInfo else { return }
         print("[WebView] Push notification tapped, navigating with payload: \(userInfo)")
 
-        // Keep app icon badge synchronized with remaining notifications
         BadgeManager.shared.syncWithDeliveredNotifications()
 
         var targetURLString: String? = nil
@@ -599,7 +555,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             }
         }
 
-        // Bridge to WebView JS runtime in case frontend web code listens for in-app events
         if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
            let jsonString = String(data: jsonData, encoding: .utf8) {
             DispatchQueue.main.async {
@@ -608,267 +563,330 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         }
     }
 
-    // MARK: - WKScriptMessageHandler (Web to Native Communication)
+    // MARK: - WKScriptMessageHandler (Type-Safe Web to Native Dispatcher)
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == "satPushBridge" else { return }
         print("[WebView Bridge] Received message from Web JavaScript: \(message.body)")
 
-        if let dict = message.body as? [String: Any] {
-            let action = dict["action"] as? String ?? ""
-            if action == "fcmTokenRegistered" {
-                if let token = dict["token"] as? String {
-                    self.lastRegisteredFcmToken = token
-                    print("[SAT iOS] Web Push token registered successfully with backend: \(token)")
-                }
-            } else if action == "clearBadge" || action == "resetBadge" {
-                BadgeManager.shared.clearBadge()
-            } else if action == "clearAllDeliveredAndBadge" {
-                BadgeManager.shared.clearAllDeliveredAndBadge()
-            } else if action == "setBadge" {
-                let count = (dict["count"] as? Int) ?? Int("\(dict["count"] ?? "")") ?? 0
-                BadgeManager.shared.setBadgeCount(count)
-            } else if action == "decrementBadge" {
-                let amount = (dict["amount"] as? Int) ?? 1
-                BadgeManager.shared.decrementBadgeCount(by: amount)
-            } else if action == "showLocalNotification" || action == "notify" {
-                let title = (dict["title"] as? String) ?? "BRE"
-                let body = (dict["body"] as? String) ?? (dict["message"] as? String) ?? ""
-                guard !body.isEmpty else { return }
+        guard let dict = message.body as? [String: Any],
+              let rawAction = dict["action"] as? String,
+              let action = BridgeAction(rawValue: rawAction) else {
+            return
+        }
 
-                // Native Swift Deduplication Gate: Discard duplicate identical notifications within 30s
-                if let lastBody = lastFiredNotificationBody, lastBody == body,
-                   let lastTime = lastFiredNotificationTime, Date().timeIntervalSince(lastTime) < 30.0 {
-                    print("[Push Notification] Discarding duplicate native notification within 30s: \(body)")
-                    return
-                }
-                lastFiredNotificationBody = body
-                lastFiredNotificationTime = Date()
+        switch action {
+        case .fcmTokenRegistered:
+            if let token = dict["token"] as? String {
+                self.lastRegisteredFcmToken = token
+                print("[SAT iOS] Web Push token registered successfully with backend: \(token)")
+            }
 
-                let content = UNMutableNotificationContent()
-                content.title = title
-                content.body = body
-                content.sound = .default
-                content.badge = NSNumber(value: (UIApplication.shared.applicationIconBadgeNumber + 1))
-                content.userInfo = dict
+        case .clearBadge, .resetBadge:
+            BadgeManager.shared.clearBadge()
 
-                let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-                UNUserNotificationCenter.current().add(request) { error in
-                    if let error = error {
-                        print("[Push Notification] Failed to present local notification: \(error)")
-                    } else {
-                        print("[Push Notification] Successfully presented native banner: [\(title)] \(body)")
-                    }
-                }
+        case .clearAllDeliveredAndBadge:
+            BadgeManager.shared.clearAllDeliveredAndBadge()
 
-                // Native haptic feedback
-                DispatchQueue.main.async {
-                    let generator = UINotificationFeedbackGenerator()
-                    generator.notificationOccurred(.success)
+        case .setBadge:
+            let count = (dict["count"] as? Int) ?? Int("\(dict["count"] ?? "")") ?? 0
+            BadgeManager.shared.setBadgeCount(count)
+
+        case .decrementBadge:
+            let amount = (dict["amount"] as? Int) ?? 1
+            BadgeManager.shared.decrementBadgeCount(by: amount)
+
+        case .showLocalNotification, .notify:
+            let title = (dict["title"] as? String) ?? "BRE"
+            let body = (dict["body"] as? String) ?? (dict["message"] as? String) ?? ""
+            guard !body.isEmpty else { return }
+
+            // Native Swift Deduplication Gate: Discard duplicate identical notifications within 30s
+            if let lastBody = lastFiredNotificationBody, lastBody == body,
+               let lastTime = lastFiredNotificationTime, Date().timeIntervalSince(lastTime) < 30.0 {
+                print("[Push Notification] Discarding duplicate native notification within 30s: \(body)")
+                return
+            }
+            lastFiredNotificationBody = body
+            lastFiredNotificationTime = Date()
+
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            content.badge = NSNumber(value: (UIApplication.shared.applicationIconBadgeNumber + 1))
+            content.userInfo = dict
+
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("[Push Notification] Failed to present local notification: \(error)")
+                } else {
+                    print("[Push Notification] Successfully presented native banner: [\(title)] \(body)")
                 }
+            }
+
+            // Native haptic feedback
+            DispatchQueue.main.async {
+                self.notificationFeedback.notificationOccurred(.success)
+                self.notificationFeedback.prepare()
             }
         }
     }
 
     // MARK: - Smart Web Notification Message Detector
     private func detectAndForwardSuccessAlerts() {
-        let js = """
-        (function() {
-            function cleanText(text) {
-                if (!text) return '';
-                return text.replace(/^[×xX\\s]+/, '').replace(/[\\s\\r\\n]+/g, ' ').trim();
-            }
-
-            function isSuccessElement(el) {
-                if (!el) return false;
-
-                // Check if already notified for this element
-                if (el.getAttribute('data-sat-notified') === 'true' || el.dataset.satNotified === 'true') {
-                    return false;
-                }
-
-                // STRICT NEGATIVE FILTER: Must NOT be an error, danger, or warning
-                if (el.classList.contains('alert-danger') ||
-                    el.classList.contains('alert-error') ||
-                    el.classList.contains('alert-warning') ||
-                    el.classList.contains('gritter-error') ||
-                    el.classList.contains('gritter-warning') ||
-                    el.classList.contains('validation-error') ||
-                    el.closest('.alert-danger') ||
-                    el.closest('.alert-error')) {
-                    return false;
-                }
-
-                // Check element visibility
-                var style = window.getComputedStyle(el);
-                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-                    return false;
-                }
-
-                return true;
-            }
-
-            function buildWebNotificationMessage() {
-                var path = window.location.pathname || '';
-                var typeName = 'Expense - Petty Cash';
-
-                if (path.indexOf('cexp-pv') !== -1) {
-                    typeName = 'Expense - Petty Cash';
-                } else if (path.indexOf('advc') !== -1) {
-                    typeName = 'Advance Cash';
-                } else if (path.indexOf('crcpt') !== -1) {
-                    typeName = 'Cash Receipt';
-                } else if (path.indexOf('ctfr') !== -1) {
-                    typeName = 'Cash Transfer';
-                } else if (path.indexOf('sbill') !== -1) {
-                    typeName = 'Supplier Bill';
-                } else if (path.indexOf('day-book') !== -1) {
-                    typeName = 'Expense';
-                } else {
-                    var h1 = document.querySelector('.content-header h1, h1, .page-title');
-                    if (h1 && h1.innerText) {
-                        var cleaned = cleanText(h1.innerText);
-                        if (cleaned.length > 2 && cleaned.indexOf('List') === -1) {
-                            typeName = cleaned;
-                        }
-                    }
-                }
-
-                // Extract Branch Name
-                var branchName = '';
-                var branchSelect = document.querySelector('select[name="merchant_id"], select[name="parent_merchant_id"], select#merchant_id');
-                if (branchSelect && branchSelect.selectedIndex >= 0 && branchSelect.options[branchSelect.selectedIndex]) {
-                    var bText = branchSelect.options[branchSelect.selectedIndex].text;
-                    if (bText && bText !== 'All' && bText !== 'Select') {
-                        branchName = cleanText(bText);
-                    }
-                }
-                if (!branchName) {
-                    var s2Chosen = document.querySelector('.select2-chosen');
-                    if (s2Chosen && s2Chosen.innerText && s2Chosen.innerText !== 'All') {
-                        branchName = cleanText(s2Chosen.innerText);
-                    }
-                }
-                if (!branchName) {
-                    var branchCell = document.querySelector('table tbody tr:first-child td:nth-child(5)');
-                    if (branchCell && branchCell.innerText) {
-                        branchName = cleanText(branchCell.innerText);
-                    }
-                }
-
-                // Extract Amount
-                var amount = '';
-                var amountCell = document.querySelector('table tbody tr:first-child td.amount, table tbody tr:first-child td:nth-child(6), table tbody tr:first-child td:nth-child(7)');
-                if (amountCell && amountCell.innerText) {
-                    var amtClean = amountCell.innerText.replace(/[^0-9.]/g, '');
-                    if (amtClean.length > 0 && !isNaN(parseFloat(amtClean))) {
-                        amount = amtClean;
-                    }
-                }
-
-                // Format exact message matching CexpPVController.php:1451
-                var notif = 'Your ' + typeName;
-                if (amount) {
-                    notif += ' (' + amount + ')';
-                }
-                if (branchName) {
-                    notif += ' , ' + branchName + ' Branch';
-                }
-                notif += ' is Submitted, You can check transactions now.';
-                return notif;
-            }
-
-            function checkSuccessAlerts() {
-                var successSelectors = [
-                    '.alert-success',
-                    '.hide-msgs.alert-success',
-                    'div.alert.alert-success',
-                    '.alert.alert-block.alert-success',
-                    '.gritter-item-wrapper.gritter-success .gritter-item',
-                    '.gritter-item-wrapper .gritter-item'
-                ];
-
-                var elements = document.querySelectorAll(successSelectors.join(', '));
-                for (var i = 0; i < elements.length; i++) {
-                    var el = elements[i];
-                    if (!isSuccessElement(el)) continue;
-
-                    var rawText = el.innerText || el.textContent || '';
-                    var text = cleanText(rawText);
-
-                    // Additional negative safety check on message content
-                    var lower = text.toLowerCase();
-                    if (lower.indexOf('error') !== -1 ||
-                        lower.indexOf('invalid') !== -1 ||
-                        lower.indexOf('failed') !== -1 ||
-                        lower.indexOf('danger') !== -1 ||
-                        lower.indexOf('wrong') !== -1) {
-                        continue;
-                    }
-
-                    if (text.length > 3) {
-                        var sigKey = 'sat_success_alert_' + encodeURIComponent(window.location.pathname + '_' + text);
-                        if (sessionStorage.getItem(sigKey) === 'fired') {
-                            el.setAttribute('data-sat-notified', 'true');
-                            continue;
-                        }
-
-                        // Permanently mark both the DOM element and session storage as fired for this page visit
-                        el.setAttribute('data-sat-notified', 'true');
-                        sessionStorage.setItem(sigKey, 'fired');
-
-                        // Build the exact web notification message
-                        var webNotifBody = buildWebNotificationMessage();
-                        var currentPath = window.location.pathname + window.location.search;
-
-                        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
-                            window.webkit.messageHandlers.satPushBridge.postMessage({
-                                action: 'notify',
-                                title: 'BRE',
-                                body: webNotifBody,
-                                click_action: currentPath
-                            });
-                        }
-                        break;
-                    }
-                }
-            }
-
-            checkSuccessAlerts();
-
-            // Observe dynamic DOM changes ONLY when an alert-success node is actually added (prevents menu/tap re-fires)
-            if (!window._satSuccessObserverAttached) {
-                window._satSuccessObserverAttached = true;
-                var observer = new MutationObserver(function(mutations) {
-                    var hasNewAlert = false;
-                    for (var i = 0; i < mutations.length; i++) {
-                        var added = mutations[i].addedNodes;
-                        for (var j = 0; j < added.length; j++) {
-                            var node = added[j];
-                            if (node.nodeType === 1) {
-                                if (node.classList && (node.classList.contains('alert-success') || node.classList.contains('gritter-item-wrapper')) ||
-                                    (node.querySelector && (node.querySelector('.alert-success') || node.querySelector('.gritter-item-wrapper')))) {
-                                    hasNewAlert = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (hasNewAlert) break;
-                    }
-                    if (hasNewAlert) {
-                        checkSuccessAlerts();
-                    }
-                });
-                if (document.body) {
-                    observer.observe(document.body, { childList: true, subtree: true });
-                }
-            }
-        })();
-        """
-        webView.evaluateJavaScript(js, completionHandler: nil)
+        webView.evaluateJavaScript("if (window.satApp && window.satApp.checkSuccessAlerts) { window.satApp.checkSuccessAlerts(); }", completionHandler: nil)
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self)
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: "satPushBridge")
     }
+
+    // MARK: - Static JavaScript Injections
+    private static let webBridgePolyfillScript = """
+    (function() {
+        window.isNativeIOSApp = true;
+        window.satApp = {
+            postMessage: function(msg) {
+                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
+                    window.webkit.messageHandlers.satPushBridge.postMessage(msg);
+                }
+            },
+            clearBadge: function() {
+                this.postMessage({ action: 'clearBadge' });
+            },
+            setBadge: function(count) {
+                this.postMessage({ action: 'setBadge', count: count });
+            },
+            decrementBadge: function() {
+                this.postMessage({ action: 'decrementBadge' });
+            }
+        };
+
+        // Polyfill window.Notification for in-page web push compatibility
+        function MockNotification(title, options) {
+            options = options || {};
+            var clickAction = (options.data && options.data.click_action) || options.click_action || '';
+            window.satApp.postMessage({
+                action: 'notify',
+                title: title || 'BRE',
+                body: options.body || '',
+                click_action: clickAction
+            });
+        }
+        MockNotification.permission = 'granted';
+        MockNotification.requestPermission = function() {
+            return Promise.resolve('granted');
+        };
+        window.Notification = MockNotification;
+
+        // Polyfill navigator.serviceWorker so web push scripts initialize in WKWebView
+        if (navigator && !navigator.serviceWorker) {
+            var mockRegistration = {
+                scope: '/',
+                showNotification: function(title, options) {
+                    MockNotification(title, options);
+                    return Promise.resolve();
+                }
+            };
+            navigator.serviceWorker = {
+                register: function() {
+                    return Promise.resolve(mockRegistration);
+                },
+                ready: Promise.resolve(mockRegistration)
+            };
+        }
+    })();
+    """
+
+    private static let successAlertDetectorScript = """
+    (function() {
+        function cleanText(text) {
+            if (!text) return '';
+            return text.replace(/^[×xX\\s]+/, '').replace(/[\\s\\r\\n]+/g, ' ').trim();
+        }
+
+        function isSuccessElement(el) {
+            if (!el) return false;
+
+            if (el.getAttribute('data-sat-notified') === 'true' || el.dataset.satNotified === 'true') {
+                return false;
+            }
+
+            if (el.classList.contains('alert-danger') ||
+                el.classList.contains('alert-error') ||
+                el.classList.contains('alert-warning') ||
+                el.classList.contains('gritter-error') ||
+                el.classList.contains('gritter-warning') ||
+                el.classList.contains('validation-error') ||
+                el.closest('.alert-danger') ||
+                el.closest('.alert-error')) {
+                return false;
+            }
+
+            var style = window.getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                return false;
+            }
+
+            return true;
+        }
+
+        function buildWebNotificationMessage() {
+            var path = window.location.pathname || '';
+            var typeName = 'Expense - Petty Cash';
+
+            if (path.indexOf('cexp-pv') !== -1) {
+                typeName = 'Expense - Petty Cash';
+            } else if (path.indexOf('advc') !== -1) {
+                typeName = 'Advance Cash';
+            } else if (path.indexOf('crcpt') !== -1) {
+                typeName = 'Cash Receipt';
+            } else if (path.indexOf('ctfr') !== -1) {
+                typeName = 'Cash Transfer';
+            } else if (path.indexOf('sbill') !== -1) {
+                typeName = 'Supplier Bill';
+            } else if (path.indexOf('day-book') !== -1) {
+                typeName = 'Expense';
+            } else {
+                var h1 = document.querySelector('.content-header h1, h1, .page-title');
+                if (h1 && h1.innerText) {
+                    var cleaned = cleanText(h1.innerText);
+                    if (cleaned.length > 2 && cleaned.indexOf('List') === -1) {
+                        typeName = cleaned;
+                    }
+                }
+            }
+
+            var branchName = '';
+            var branchSelect = document.querySelector('select[name="merchant_id"], select[name="parent_merchant_id"], select#merchant_id');
+            if (branchSelect && branchSelect.selectedIndex >= 0 && branchSelect.options[branchSelect.selectedIndex]) {
+                var bText = branchSelect.options[branchSelect.selectedIndex].text;
+                if (bText && bText !== 'All' && bText !== 'Select') {
+                    branchName = cleanText(bText);
+                }
+            }
+            if (!branchName) {
+                var s2Chosen = document.querySelector('.select2-chosen');
+                if (s2Chosen && s2Chosen.innerText && s2Chosen.innerText !== 'All') {
+                    branchName = cleanText(s2Chosen.innerText);
+                }
+            }
+            if (!branchName) {
+                var branchCell = document.querySelector('table tbody tr:first-child td:nth-child(5)');
+                if (branchCell && branchCell.innerText) {
+                    branchName = cleanText(branchCell.innerText);
+                }
+            }
+
+            var amount = '';
+            var amountCell = document.querySelector('table tbody tr:first-child td.amount, table tbody tr:first-child td:nth-child(6), table tbody tr:first-child td:nth-child(7)');
+            if (amountCell && amountCell.innerText) {
+                var amtClean = amountCell.innerText.replace(/[^0-9.]/g, '');
+                if (amtClean.length > 0 && !isNaN(parseFloat(amtClean))) {
+                    amount = amtClean;
+                }
+            }
+
+            var notif = 'Your ' + typeName;
+            if (amount) {
+                notif += ' (' + amount + ')';
+            }
+            if (branchName) {
+                notif += ' , ' + branchName + ' Branch';
+            }
+            notif += ' is Submitted, You can check transactions now.';
+            return notif;
+        }
+
+        function checkSuccessAlerts() {
+            var successSelectors = [
+                '.alert-success',
+                '.hide-msgs.alert-success',
+                'div.alert.alert-success',
+                '.alert.alert-block.alert-success',
+                '.gritter-item-wrapper.gritter-success .gritter-item',
+                '.gritter-item-wrapper .gritter-item'
+            ];
+
+            var elements = document.querySelectorAll(successSelectors.join(', '));
+            for (var i = 0; i < elements.length; i++) {
+                var el = elements[i];
+                if (!isSuccessElement(el)) continue;
+
+                var rawText = el.innerText || el.textContent || '';
+                var text = cleanText(rawText);
+
+                var lower = text.toLowerCase();
+                if (lower.indexOf('error') !== -1 ||
+                    lower.indexOf('invalid') !== -1 ||
+                    lower.indexOf('failed') !== -1 ||
+                    lower.indexOf('danger') !== -1 ||
+                    lower.indexOf('wrong') !== -1) {
+                    continue;
+                }
+
+                if (text.length > 3) {
+                    var sigKey = 'sat_success_alert_' + encodeURIComponent(window.location.pathname + '_' + text);
+                    if (sessionStorage.getItem(sigKey) === 'fired') {
+                        el.setAttribute('data-sat-notified', 'true');
+                        continue;
+                    }
+
+                    el.setAttribute('data-sat-notified', 'true');
+                    sessionStorage.setItem(sigKey, 'fired');
+
+                    var webNotifBody = buildWebNotificationMessage();
+                    var currentPath = window.location.pathname + window.location.search;
+
+                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
+                        window.webkit.messageHandlers.satPushBridge.postMessage({
+                            action: 'notify',
+                            title: 'BRE',
+                            body: webNotifBody,
+                            click_action: currentPath
+                        });
+                    }
+                    break;
+                }
+            }
+        }
+
+        window.satApp = window.satApp || {};
+        window.satApp.checkSuccessAlerts = checkSuccessAlerts;
+
+        // Auto-check at document end
+        checkSuccessAlerts();
+
+        if (!window._satSuccessObserverAttached) {
+            window._satSuccessObserverAttached = true;
+            var observer = new MutationObserver(function(mutations) {
+                var hasNewAlert = false;
+                for (var i = 0; i < mutations.length; i++) {
+                    var added = mutations[i].addedNodes;
+                    for (var j = 0; j < added.length; j++) {
+                        var node = added[j];
+                        if (node.nodeType === 1) {
+                            if (node.matches && (node.matches('.alert-success, .gritter-item-wrapper') || node.matches('.alert-success *, .gritter-item-wrapper *'))) {
+                                hasNewAlert = true;
+                                break;
+                            } else if (node.querySelector && (node.querySelector('.alert-success') || node.querySelector('.gritter-item-wrapper'))) {
+                                hasNewAlert = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasNewAlert) break;
+                }
+                if (hasNewAlert) {
+                    checkSuccessAlerts();
+                }
+            });
+            if (document.body) {
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+        }
+    })();
+    """
 }

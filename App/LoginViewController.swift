@@ -83,8 +83,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     // MARK: - Offline View (App Store Guideline 4.2 Compliant)
     private let offlineOverlayView = UIView()
-    private let networkMonitor = NWPathMonitor()
-    private let monitorQueue = DispatchQueue(label: "NetworkMonitorQueue")
     private var isNetworkAvailable = true
 
     // MARK: - Lifecycle
@@ -618,32 +616,19 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             self.helpOverlayBackdrop.alpha = 1.0
         }
 
-        guard let endpoint = apiEndpoint, let url = URL(string: endpoint) else { return }
+        guard let endpoint = apiEndpoint else { return }
 
         helpSpinner.startAnimating()
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
-        let params = postParams ?? [:]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.helpSpinner.stopAnimating()
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let dataObj = json["data"] as? [String: Any],
-                      let helpStr = dataObj["help"] as? String,
-                      !helpStr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    return
-                }
+        APIClient.post(endpoint: endpoint, parameters: postParams ?? [:]) { [weak self] result in
+            guard let self = self else { return }
+            self.helpSpinner.stopAnimating()
+            if case .success(let json) = result,
+               let dataObj = json["data"] as? [String: Any],
+               let helpStr = dataObj["help"] as? String,
+               !helpStr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 self.helpTextView.text = helpStr.replacingOccurrences(of: "\\r\\n", with: "\n").replacingOccurrences(of: "\r\n", with: "\n")
             }
-        }.resume()
+        }
     }
 
     @objc private func handleCloseHelpDialog() {
@@ -1185,36 +1170,20 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        APIClient.post(endpoint: AppConfig.API.socialLogin, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.activityIndicator.stopAnimating()
+            self.loginButton.setTitle("Login  ➔", for: .normal)
+            self.loginButton.isEnabled = true
 
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                self?.activityIndicator.stopAnimating()
-                self?.loginButton.setTitle("Login  ➔", for: .normal)
-                self?.loginButton.isEnabled = true
-
-                if let error = error {
-                    self?.showError(message: "Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self?.showError(message: "Invalid response from server.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.showError(message: "Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let message = json["message"] as? String ?? ""
 
                 if status, let dataObj = json["data"] as? [String: Any] {
-                    // Save email into saved_google_accounts list so it's always listed for 1-tap login
                     var savedAccounts = UserDefaults.standard.stringArray(forKey: "saved_google_accounts") ?? []
                     if !savedAccounts.contains(email) {
                         savedAccounts.append(email)
@@ -1222,12 +1191,12 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
                     }
 
                     let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
-                    self?.openWebDashboard(userId: userId)
+                    self.openWebDashboard(userId: userId)
                 } else {
-                    self?.showError(message: message.isEmpty ? "Social login failed." : message)
+                    self.showError(message: message.isEmpty ? "Social login failed." : message)
                 }
             }
-        }.resume()
+        }
     }
 
     // Real-Time Input Text Change Listener (Auto-Clears Errors)
@@ -1284,44 +1253,29 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        APIClient.post(endpoint: AppConfig.API.login, parameters: params) { [weak self] result in
+            guard let self = self else { return }
+            self.activityIndicator.stopAnimating()
+            self.loginButton.setTitle("Login  ➔", for: .normal)
+            self.loginButton.isEnabled = true
 
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                self?.activityIndicator.stopAnimating()
-                self?.loginButton.setTitle("Login  ➔", for: .normal)
-                self?.loginButton.isEnabled = true
-
-                if let error = error {
-                    self?.showError(message: "Network error: \(error.localizedDescription)")
-                    return
-                }
-
-                guard let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self?.showError(message: "Invalid response from server.")
-                    return
-                }
-
+            switch result {
+            case .failure(let error):
+                self.showError(message: "Network error: \(error.localizedDescription)")
+            case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let message = json["message"] as? String ?? ""
 
                 if status, let dataObj = json["data"] as? [String: Any] {
                     let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
-                    self?.openWebDashboard(userId: userId)
+                    self.openWebDashboard(userId: userId)
                 } else {
-                    self?.emailContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
-                    self?.passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
-                    self?.showError(message: message.isEmpty ? "Invalid credentials. Please try again." : message)
+                    self.emailContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
+                    self.passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
+                    self.showError(message: message.isEmpty ? "Invalid credentials. Please try again." : message)
                 }
             }
-        }.resume()
+        }
     }
 
     private func openWebDashboard(userId: Int) {
@@ -1347,15 +1301,13 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     // MARK: - Offline Handling (App Store Guideline 4.2)
     private func setupNetworkMonitoring() {
-        networkMonitor.pathUpdateHandler = { [weak self] path in
-            DispatchQueue.main.async {
-                self?.isNetworkAvailable = (path.status == .satisfied)
-                if path.status == .satisfied {
-                    self?.offlineOverlayView.isHidden = true
-                }
-            }
+        NetworkMonitor.shared.onStatusChange = { [weak self] isConnected in
+            guard let self = self else { return }
+            self.isNetworkAvailable = isConnected
+            self.offlineOverlayView.isHidden = isConnected
         }
-        networkMonitor.start(queue: monitorQueue)
+        isNetworkAvailable = NetworkMonitor.shared.isConnected
+        offlineOverlayView.isHidden = isNetworkAvailable
     }
 
     private func setupOfflineView() {
@@ -1445,7 +1397,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     }
 
     @objc private func retryConnection() {
-        if networkMonitor.currentPath.status == .satisfied {
+        if NetworkMonitor.shared.isConnected {
             offlineOverlayView.isHidden = true
         } else {
             showError(message: "Still offline. Please check your connection.")

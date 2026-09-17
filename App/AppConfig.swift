@@ -105,50 +105,32 @@ struct AppConfig {
 
     // MARK: - Remote Settings Synchronizer (Fetches Google Auth, Helplines & Configurations)
     static func fetchRemoteSettings(completion: (() -> Void)? = nil) {
-        guard let url = URL(string: API.getSettings) else {
-            completion?()
-            return
-        }
+        APIClient.post(endpoint: API.getSettings) { result in
+            defer { completion?() }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            defer {
-                DispatchQueue.main.async { completion?() }
-            }
-
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            guard case .success(let json) = result,
                   let list = json["data"] as? [[String: Any]] else {
                 return
             }
 
             for item in list {
                 guard let slug = item["slug"] as? String, let val = item["data"] as? String else { continue }
+                let trimmed = val.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { continue }
+
                 switch slug {
                 case "google_client_id":
-                    if !val.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        googleClientId = val.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
+                    googleClientId = trimmed
                 case "google_client_login_id":
-                    if !val.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        googleClientLoginId = val.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
+                    googleClientLoginId = trimmed
                 case "default_help_contact":
-                    if !val.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        helplineNumber = val.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
+                    helplineNumber = trimmed
                 case "from_email":
-                    if !val.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        supportEmail = val.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
+                    supportEmail = trimmed
                 default:
                     break
                 }
             }
-        }.resume()
+        }
     }
 }

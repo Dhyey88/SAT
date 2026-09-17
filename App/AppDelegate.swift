@@ -154,11 +154,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         completionHandler()
     }
 
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        print("[AppDelegate] Application became active, syncing badge count.")
-        BadgeManager.shared.syncWithDeliveredNotifications()
-    }
-
     // MARK: UISceneSession Lifecycle
     func application(
         _ application: UIApplication,
