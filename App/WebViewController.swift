@@ -149,12 +149,10 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     // MARK: - Native Round Circular Loader (App-Like Spinner)
     private func setupLoaderHUD() {
         loaderHUD.translatesAutoresizingMaskIntoConstraints = false
-        loaderHUD.backgroundColor = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 0.92)
-        loaderHUD.layer.cornerRadius = 16
-        loaderHUD.layer.shadowColor = UIColor.black.cgColor
-        loaderHUD.layer.shadowOpacity = 0.25
-        loaderHUD.layer.shadowOffset = CGSize(width: 0, height: 4)
-        loaderHUD.layer.shadowRadius = 8
+        loaderHUD.backgroundColor = AppTheme.satDeepBlue.withAlphaComponent(0.92)
+        AppTheme.applyCardElevation(to: loaderHUD, cornerRadius: AppTheme.CornerRadius.xlarge)
+        loaderHUD.layer.borderWidth = 1.0
+        loaderHUD.layer.borderColor = UIColor.white.withAlphaComponent(0.15).cgColor
         loaderHUD.alpha = 0
         loaderHUD.isHidden = true
         view.addSubview(loaderHUD)
@@ -219,25 +217,38 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         offlineOverlayView.isHidden = true
         view.addSubview(offlineOverlayView)
 
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.backgroundColor = .white
+        AppTheme.applyCardElevation(to: card, cornerRadius: AppTheme.CornerRadius.xlarge)
+        offlineOverlayView.addSubview(card)
+
         let container = UIStackView()
         container.translatesAutoresizingMaskIntoConstraints = false
         container.axis = .vertical
         container.alignment = .center
         container.spacing = 16
-        offlineOverlayView.addSubview(container)
+        card.addSubview(container)
+
+        let badgeView = UIView()
+        badgeView.translatesAutoresizingMaskIntoConstraints = false
+        badgeView.backgroundColor = AppTheme.errorRed.withAlphaComponent(0.12)
+        badgeView.layer.cornerRadius = 36
+        badgeView.layer.masksToBounds = true
+        container.addArrangedSubview(badgeView)
 
         let icon = UIImageView()
         icon.translatesAutoresizingMaskIntoConstraints = false
         icon.image = UIImage(systemName: "wifi.slash")
-        icon.tintColor = UIColor(red: 231/255, green: 76/255, blue: 60/255, alpha: 1.0)
+        icon.tintColor = AppTheme.errorRed
         icon.contentMode = .scaleAspectFit
-        container.addArrangedSubview(icon)
+        badgeView.addSubview(icon)
 
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "No Internet Connection"
         titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        titleLabel.textColor = UIColor(red: 44/255, green: 62/255, blue: 80/255, alpha: 1.0)
+        titleLabel.textColor = AppTheme.canvasBackground
         titleLabel.textAlignment = .center
         container.addArrangedSubview(titleLabel)
 
@@ -245,26 +256,29 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         subLabel.translatesAutoresizingMaskIntoConstraints = false
         subLabel.text = "Please check your network settings and try again."
         subLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
-        subLabel.textColor = UIColor.gray
+        subLabel.textColor = UIColor(red: 100/255, green: 110/255, blue: 125/255, alpha: 1.0)
         subLabel.textAlignment = .center
         subLabel.numberOfLines = 0
         container.addArrangedSubview(subLabel)
 
         let retryButton = UIButton(type: .system)
         retryButton.translatesAutoresizingMaskIntoConstraints = false
-        retryButton.setTitle("Retry Connection", for: .normal)
+        retryButton.setTitle("Retry Connection  ↻", for: .normal)
         retryButton.setTitleColor(.white, for: .normal)
-        retryButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        retryButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         retryButton.backgroundColor = AppTheme.satDeepBlue
-        retryButton.layer.cornerRadius = 8
+        retryButton.layer.cornerRadius = AppTheme.CornerRadius.medium
+        AppTheme.applyButtonElevation(to: retryButton)
         retryButton.addTarget(self, action: #selector(handleOfflineRetry), for: .touchUpInside)
         container.addArrangedSubview(retryButton)
 
         let helpButton = UIButton(type: .system)
         helpButton.translatesAutoresizingMaskIntoConstraints = false
-        helpButton.setTitle("Helpline Support", for: .normal)
-        helpButton.setTitleColor(AppTheme.satDeepBlue, for: .normal)
-        helpButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        helpButton.setTitle(" Helpline Support", for: .normal)
+        helpButton.setTitleColor(AppTheme.skyBlueAccent, for: .normal)
+        helpButton.setImage(UIImage(systemName: "phone.circle.fill"), for: .normal)
+        helpButton.tintColor = AppTheme.skyBlueAccent
+        helpButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         helpButton.addTarget(self, action: #selector(handleOfflineHelp), for: .touchUpInside)
         container.addArrangedSubview(helpButton)
 
@@ -274,26 +288,36 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             offlineOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             offlineOverlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            container.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
-            container.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor),
-            container.leadingAnchor.constraint(equalTo: offlineOverlayView.leadingAnchor, constant: 32),
-            container.trailingAnchor.constraint(equalTo: offlineOverlayView.trailingAnchor, constant: -32),
+            card.centerXAnchor.constraint(equalTo: offlineOverlayView.centerXAnchor),
+            card.centerYAnchor.constraint(equalTo: offlineOverlayView.centerYAnchor),
+            card.leadingAnchor.constraint(equalTo: offlineOverlayView.leadingAnchor, constant: 24),
+            card.trailingAnchor.constraint(equalTo: offlineOverlayView.trailingAnchor, constant: -24),
 
-            icon.widthAnchor.constraint(equalToConstant: 64),
-            icon.heightAnchor.constraint(equalToConstant: 64),
+            container.topAnchor.constraint(equalTo: card.topAnchor, constant: 28),
+            container.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -24),
+            container.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            container.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
 
-            retryButton.widthAnchor.constraint(equalToConstant: 200),
+            badgeView.widthAnchor.constraint(equalToConstant: 72),
+            badgeView.heightAnchor.constraint(equalToConstant: 72),
+
+            icon.centerXAnchor.constraint(equalTo: badgeView.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: badgeView.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 36),
+            icon.heightAnchor.constraint(equalToConstant: 36),
+
+            retryButton.widthAnchor.constraint(equalToConstant: 220),
             retryButton.heightAnchor.constraint(equalToConstant: 44)
         ])
     }
 
     @objc private func handleOfflineRetry() {
         if NetworkMonitor.shared.isConnected {
+            AppTheme.triggerHapticFeedback(notificationType: .success)
             offlineOverlayView.isHidden = true
             webView.reload()
         } else {
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.warning)
+            AppTheme.triggerHapticFeedback(notificationType: .warning)
 
             let animation = CAKeyframeAnimation(keyPath: "transform.translation.x")
             animation.timingFunction = CAMediaTimingFunction(name: .linear)
@@ -304,6 +328,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     }
 
     @objc private func handleOfflineHelp() {
+        AppTheme.triggerHapticFeedback(style: .light)
         let alert = UIAlertController(
             title: "Support Contact",
             message: "For technical assistance:\n\nHelpline: \(AppConfig.helplineNumber)\nEmail: \(AppConfig.supportEmail)",

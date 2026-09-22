@@ -77,8 +77,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
     // MARK: - UI Setup
     private func setupUI() {
-        // Match Theme: Dark Slate / Charcoal Canvas (#2E363F)
-        view.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        view.backgroundColor = AppTheme.canvasBackground
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.keyboardDismissMode = .interactive
@@ -94,22 +93,22 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         // Header Title Label (Changes per step: "Forgot Password?", "Enter OTP", "Enter Password")
         headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerTitleLabel.text = "Forgot Password?"
-        headerTitleLabel.textColor = .white
-        headerTitleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        headerTitleLabel.textColor = AppTheme.textPrimaryLight
+        headerTitleLabel.font = AppTheme.Typography.titleHeader
         headerTitleLabel.textAlignment = .center
         contentView.addSubview(headerTitleLabel)
 
-        // Error Banner (Matching Login/SignUp Terracotta Red #DA542E)
+        // Error Banner
         errorBanner.translatesAutoresizingMaskIntoConstraints = false
-        errorBanner.backgroundColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 0.95)
-        errorBanner.layer.cornerRadius = 6
+        errorBanner.backgroundColor = AppTheme.errorRed
+        errorBanner.layer.cornerRadius = AppTheme.CornerRadius.small
         errorBanner.layer.masksToBounds = true
         errorBanner.isHidden = true
         contentView.addSubview(errorBanner)
 
         errorLabel.translatesAutoresizingMaskIntoConstraints = false
         errorLabel.textColor = .white
-        errorLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        errorLabel.font = AppTheme.Typography.captionMedium
         errorLabel.textAlignment = .center
         errorLabel.numberOfLines = 0
         errorBanner.addSubview(errorLabel)
@@ -154,29 +153,30 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     private func buildStep1Card() {
         step1Card.translatesAutoresizingMaskIntoConstraints = false
         step1Card.backgroundColor = .white
-        step1Card.layer.cornerRadius = 16
+        step1Card.layer.cornerRadius = AppTheme.CornerRadius.large
         step1Card.layer.masksToBounds = true
+        AppTheme.applyCardElevation(to: step1Card, cornerRadius: AppTheme.CornerRadius.large)
         contentView.addSubview(step1Card)
 
         // Person / Avatar Icon
         s1AvatarIcon.translatesAutoresizingMaskIntoConstraints = false
         s1AvatarIcon.image = UIImage(systemName: "person.crop.circle.fill") ?? UIImage(systemName: "person.fill")
-        s1AvatarIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Amber Gold #FFB848
+        s1AvatarIcon.tintColor = AppTheme.actionGold
         s1AvatarIcon.contentMode = .scaleAspectFit
         step1Card.addSubview(s1AvatarIcon)
 
         // User Email Title Label
         s1TitleLabel.translatesAutoresizingMaskIntoConstraints = false
         s1TitleLabel.text = "User Email"
-        s1TitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        s1TitleLabel.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+        s1TitleLabel.textColor = AppTheme.textPrimaryDark
+        s1TitleLabel.font = AppTheme.Typography.titleCard
         step1Card.addSubview(s1TitleLabel)
 
         // Email Text Field
         s1EmailField.translatesAutoresizingMaskIntoConstraints = false
         s1EmailField.placeholder = "Your Email"
-        s1EmailField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        s1EmailField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        s1EmailField.textColor = AppTheme.textPrimaryDark
+        s1EmailField.font = AppTheme.Typography.bodyMedium
         s1EmailField.keyboardType = .emailAddress
         s1EmailField.autocapitalizationType = .none
         s1EmailField.autocorrectionType = .no
@@ -187,27 +187,31 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
         // Sky Blue Underline
         s1Underline.translatesAutoresizingMaskIntoConstraints = false
-        s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        s1Underline.backgroundColor = AppTheme.accentSkyBlue
         step1Card.addSubview(s1Underline)
 
         // Bottom Bar (Matching Theme #262D35)
         s1BottomBar.translatesAutoresizingMaskIntoConstraints = false
-        s1BottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
+        s1BottomBar.backgroundColor = AppTheme.cardBottomBar
+        s1BottomBar.layer.cornerRadius = AppTheme.CornerRadius.large
+        s1BottomBar.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        s1BottomBar.layer.masksToBounds = true
         step1Card.addSubview(s1BottomBar)
 
         s1CancelButton.translatesAutoresizingMaskIntoConstraints = false
         s1CancelButton.setTitle("Cancel", for: .normal)
-        s1CancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        s1CancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        s1CancelButton.setTitleColor(AppTheme.accentSkyBlue, for: .normal)
+        s1CancelButton.titleLabel?.font = AppTheme.Typography.bodyBold
         s1CancelButton.addTarget(self, action: #selector(handleCancel), for: .touchUpInside)
         s1BottomBar.addSubview(s1CancelButton)
 
         s1NextButton.translatesAutoresizingMaskIntoConstraints = false
         s1NextButton.setTitle("Next  ➔", for: .normal)
         s1NextButton.setTitleColor(.white, for: .normal)
-        s1NextButton.titleLabel?.font = UIFont.systemFont(ofSize: 15.5, weight: .bold)
-        s1NextButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0) // Emerald Green #28B779
-        s1NextButton.layer.cornerRadius = 6
+        s1NextButton.titleLabel?.font = AppTheme.Typography.titleCard
+        s1NextButton.backgroundColor = AppTheme.emeraldGreen
+        s1NextButton.layer.cornerRadius = AppTheme.CornerRadius.medium
+        AppTheme.applyButtonElevation(to: s1NextButton)
         s1NextButton.addTarget(self, action: #selector(handleStep1Submit), for: .touchUpInside)
         s1BottomBar.addSubview(s1NextButton)
 
@@ -232,7 +236,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             s1EmailField.leadingAnchor.constraint(equalTo: s1AvatarIcon.trailingAnchor, constant: 12),
             s1EmailField.trailingAnchor.constraint(equalTo: step1Card.trailingAnchor, constant: -18),
             s1EmailField.topAnchor.constraint(equalTo: s1TitleLabel.bottomAnchor, constant: 4),
-            s1EmailField.heightAnchor.constraint(equalToConstant: 28),
+            s1EmailField.heightAnchor.constraint(equalToConstant: 30),
 
             s1Underline.leadingAnchor.constraint(equalTo: s1EmailField.leadingAnchor),
             s1Underline.trailingAnchor.constraint(equalTo: s1EmailField.trailingAnchor),
@@ -250,7 +254,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
             s1NextButton.trailingAnchor.constraint(equalTo: s1BottomBar.trailingAnchor, constant: -16),
             s1NextButton.centerYAnchor.constraint(equalTo: s1BottomBar.centerYAnchor),
-            s1NextButton.widthAnchor.constraint(equalToConstant: 100),
+            s1NextButton.widthAnchor.constraint(equalToConstant: 104),
             s1NextButton.heightAnchor.constraint(equalToConstant: 38),
 
             s1Spinner.centerXAnchor.constraint(equalTo: s1NextButton.centerXAnchor),
@@ -262,15 +266,16 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     private func buildStep2Card() {
         step2Card.translatesAutoresizingMaskIntoConstraints = false
         step2Card.backgroundColor = .white
-        step2Card.layer.cornerRadius = 16
+        step2Card.layer.cornerRadius = AppTheme.CornerRadius.large
         step2Card.layer.masksToBounds = true
         step2Card.isHidden = true
+        AppTheme.applyCardElevation(to: step2Card, cornerRadius: AppTheme.CornerRadius.large)
         contentView.addSubview(step2Card)
 
         // Lock Icon
         s2LockIcon.translatesAutoresizingMaskIntoConstraints = false
         s2LockIcon.image = UIImage(systemName: "lock.fill")
-        s2LockIcon.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Amber Gold #FFB848
+        s2LockIcon.tintColor = AppTheme.actionGold
         s2LockIcon.contentMode = .scaleAspectFit
         step2Card.addSubview(s2LockIcon)
 
@@ -285,12 +290,12 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             let tf = UITextField()
             tf.translatesAutoresizingMaskIntoConstraints = false
             tf.textAlignment = .center
-            tf.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-            tf.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-            tf.backgroundColor = .white
-            tf.layer.cornerRadius = 8
+            tf.font = AppTheme.Typography.otpDigits
+            tf.textColor = AppTheme.textPrimaryDark
+            tf.backgroundColor = UIColor(red: 245/255, green: 247/255, blue: 250/255, alpha: 1.0)
+            tf.layer.cornerRadius = AppTheme.CornerRadius.medium
             tf.layer.borderWidth = 1.5
-            tf.layer.borderColor = UIColor(red: 190/255, green: 195/255, blue: 205/255, alpha: 1.0).cgColor
+            tf.layer.borderColor = AppTheme.inputBorderNormal.cgColor
             tf.keyboardType = .numberPad
             tf.tag = i
             tf.delegate = self
@@ -301,22 +306,26 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
         // Bottom Bar
         s2BottomBar.translatesAutoresizingMaskIntoConstraints = false
-        s2BottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
+        s2BottomBar.backgroundColor = AppTheme.cardBottomBar
+        s2BottomBar.layer.cornerRadius = AppTheme.CornerRadius.large
+        s2BottomBar.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        s2BottomBar.layer.masksToBounds = true
         step2Card.addSubview(s2BottomBar)
 
         s2CancelButton.translatesAutoresizingMaskIntoConstraints = false
         s2CancelButton.setTitle("Cancel", for: .normal)
-        s2CancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        s2CancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        s2CancelButton.setTitleColor(AppTheme.accentSkyBlue, for: .normal)
+        s2CancelButton.titleLabel?.font = AppTheme.Typography.bodyBold
         s2CancelButton.addTarget(self, action: #selector(handleStep2Cancel), for: .touchUpInside)
         s2BottomBar.addSubview(s2CancelButton)
 
         s2NextButton.translatesAutoresizingMaskIntoConstraints = false
         s2NextButton.setTitle("Next  ➔", for: .normal)
         s2NextButton.setTitleColor(.white, for: .normal)
-        s2NextButton.titleLabel?.font = UIFont.systemFont(ofSize: 15.5, weight: .bold)
-        s2NextButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        s2NextButton.layer.cornerRadius = 6
+        s2NextButton.titleLabel?.font = AppTheme.Typography.titleCard
+        s2NextButton.backgroundColor = AppTheme.emeraldGreen
+        s2NextButton.layer.cornerRadius = AppTheme.CornerRadius.medium
+        AppTheme.applyButtonElevation(to: s2NextButton)
         s2NextButton.addTarget(self, action: #selector(handleStep2Submit), for: .touchUpInside)
         s2BottomBar.addSubview(s2NextButton)
 
@@ -338,7 +347,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             s2OtpStack.leadingAnchor.constraint(equalTo: s2LockIcon.trailingAnchor, constant: 12),
             s2OtpStack.trailingAnchor.constraint(equalTo: step2Card.trailingAnchor, constant: -16),
             s2OtpStack.topAnchor.constraint(equalTo: step2Card.topAnchor, constant: 24),
-            s2OtpStack.heightAnchor.constraint(equalToConstant: 44),
+            s2OtpStack.heightAnchor.constraint(equalToConstant: 48),
 
             s2BottomBar.topAnchor.constraint(equalTo: s2OtpStack.bottomAnchor, constant: 24),
             s2BottomBar.leadingAnchor.constraint(equalTo: step2Card.leadingAnchor),
@@ -351,7 +360,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
             s2NextButton.trailingAnchor.constraint(equalTo: s2BottomBar.trailingAnchor, constant: -16),
             s2NextButton.centerYAnchor.constraint(equalTo: s2BottomBar.centerYAnchor),
-            s2NextButton.widthAnchor.constraint(equalToConstant: 100),
+            s2NextButton.widthAnchor.constraint(equalToConstant: 104),
             s2NextButton.heightAnchor.constraint(equalToConstant: 38),
 
             s2Spinner.centerXAnchor.constraint(equalTo: s2NextButton.centerXAnchor),
@@ -363,29 +372,30 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     private func buildStep3Card() {
         step3Card.translatesAutoresizingMaskIntoConstraints = false
         step3Card.backgroundColor = .white
-        step3Card.layer.cornerRadius = 16
+        step3Card.layer.cornerRadius = AppTheme.CornerRadius.large
         step3Card.layer.masksToBounds = true
         step3Card.isHidden = true
+        AppTheme.applyCardElevation(to: step3Card, cornerRadius: AppTheme.CornerRadius.large)
         contentView.addSubview(step3Card)
 
         // 1. Password Row
         s3LockIcon1.translatesAutoresizingMaskIntoConstraints = false
         s3LockIcon1.image = UIImage(systemName: "lock.fill")
-        s3LockIcon1.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        s3LockIcon1.tintColor = AppTheme.actionGold
         s3LockIcon1.contentMode = .scaleAspectFit
         step3Card.addSubview(s3LockIcon1)
 
         s3ShowPasswordButton1.translatesAutoresizingMaskIntoConstraints = false
-        s3ShowPasswordButton1.setTitle("Show", for: .normal)
-        s3ShowPasswordButton1.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        s3ShowPasswordButton1.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        s3ShowPasswordButton1.setTitle("", for: .normal)
+        s3ShowPasswordButton1.setImage(UIImage(systemName: "eye.slash.fill"), for: .normal)
+        s3ShowPasswordButton1.tintColor = AppTheme.textPlaceholder
         s3ShowPasswordButton1.addTarget(self, action: #selector(toggleShowPassword1), for: .touchUpInside)
         step3Card.addSubview(s3ShowPasswordButton1)
 
         s3PasswordField.translatesAutoresizingMaskIntoConstraints = false
         s3PasswordField.placeholder = "Type Your Password"
-        s3PasswordField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        s3PasswordField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        s3PasswordField.textColor = AppTheme.textPrimaryDark
+        s3PasswordField.font = AppTheme.Typography.bodyMedium
         s3PasswordField.isSecureTextEntry = true
         s3PasswordField.returnKeyType = .next
         s3PasswordField.delegate = self
@@ -393,27 +403,27 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         step3Card.addSubview(s3PasswordField)
 
         s3PasswordUnderline.translatesAutoresizingMaskIntoConstraints = false
-        s3PasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        s3PasswordUnderline.backgroundColor = AppTheme.accentSkyBlue
         step3Card.addSubview(s3PasswordUnderline)
 
         // 2. Confirm Password Row
         s3LockIcon2.translatesAutoresizingMaskIntoConstraints = false
         s3LockIcon2.image = UIImage(systemName: "lock.fill")
-        s3LockIcon2.tintColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+        s3LockIcon2.tintColor = AppTheme.actionGold
         s3LockIcon2.contentMode = .scaleAspectFit
         step3Card.addSubview(s3LockIcon2)
 
         s3ShowPasswordButton2.translatesAutoresizingMaskIntoConstraints = false
-        s3ShowPasswordButton2.setTitle("Show", for: .normal)
-        s3ShowPasswordButton2.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        s3ShowPasswordButton2.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        s3ShowPasswordButton2.setTitle("", for: .normal)
+        s3ShowPasswordButton2.setImage(UIImage(systemName: "eye.slash.fill"), for: .normal)
+        s3ShowPasswordButton2.tintColor = AppTheme.textPlaceholder
         s3ShowPasswordButton2.addTarget(self, action: #selector(toggleShowPassword2), for: .touchUpInside)
         step3Card.addSubview(s3ShowPasswordButton2)
 
         s3ConfirmPasswordField.translatesAutoresizingMaskIntoConstraints = false
         s3ConfirmPasswordField.placeholder = "Type Your Password Again"
-        s3ConfirmPasswordField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        s3ConfirmPasswordField.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        s3ConfirmPasswordField.textColor = AppTheme.textPrimaryDark
+        s3ConfirmPasswordField.font = AppTheme.Typography.bodyMedium
         s3ConfirmPasswordField.isSecureTextEntry = true
         s3ConfirmPasswordField.returnKeyType = .go
         s3ConfirmPasswordField.delegate = self
@@ -421,27 +431,31 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         step3Card.addSubview(s3ConfirmPasswordField)
 
         s3ConfirmPasswordUnderline.translatesAutoresizingMaskIntoConstraints = false
-        s3ConfirmPasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        s3ConfirmPasswordUnderline.backgroundColor = AppTheme.accentSkyBlue
         step3Card.addSubview(s3ConfirmPasswordUnderline)
 
         // Step 3 Bottom Bar
         s3BottomBar.translatesAutoresizingMaskIntoConstraints = false
-        s3BottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
+        s3BottomBar.backgroundColor = AppTheme.cardBottomBar
+        s3BottomBar.layer.cornerRadius = AppTheme.CornerRadius.large
+        s3BottomBar.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        s3BottomBar.layer.masksToBounds = true
         step3Card.addSubview(s3BottomBar)
 
         s3CancelButton.translatesAutoresizingMaskIntoConstraints = false
         s3CancelButton.setTitle("Cancel", for: .normal)
-        s3CancelButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        s3CancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        s3CancelButton.setTitleColor(AppTheme.accentSkyBlue, for: .normal)
+        s3CancelButton.titleLabel?.font = AppTheme.Typography.bodyBold
         s3CancelButton.addTarget(self, action: #selector(handleStep3Cancel), for: .touchUpInside)
         s3BottomBar.addSubview(s3CancelButton)
 
         s3NextButton.translatesAutoresizingMaskIntoConstraints = false
-        s3NextButton.setTitle("Next  ➔", for: .normal)
+        s3NextButton.setTitle("Reset Password ➔", for: .normal)
         s3NextButton.setTitleColor(.white, for: .normal)
-        s3NextButton.titleLabel?.font = UIFont.systemFont(ofSize: 15.5, weight: .bold)
-        s3NextButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        s3NextButton.layer.cornerRadius = 6
+        s3NextButton.titleLabel?.font = AppTheme.Typography.titleCard
+        s3NextButton.backgroundColor = AppTheme.emeraldGreen
+        s3NextButton.layer.cornerRadius = AppTheme.CornerRadius.medium
+        AppTheme.applyButtonElevation(to: s3NextButton)
         s3NextButton.addTarget(self, action: #selector(handleStep3Submit), for: .touchUpInside)
         s3BottomBar.addSubview(s3NextButton)
 
@@ -464,14 +478,15 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             s3ShowPasswordButton1.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor, constant: -16),
             s3ShowPasswordButton1.centerYAnchor.constraint(equalTo: s3PasswordField.centerYAnchor),
             s3ShowPasswordButton1.widthAnchor.constraint(equalToConstant: 44),
+            s3ShowPasswordButton1.heightAnchor.constraint(equalToConstant: 44),
 
             s3PasswordField.leadingAnchor.constraint(equalTo: s3LockIcon1.trailingAnchor, constant: 12),
             s3PasswordField.trailingAnchor.constraint(equalTo: s3ShowPasswordButton1.leadingAnchor, constant: -8),
             s3PasswordField.topAnchor.constraint(equalTo: step3Card.topAnchor, constant: 22),
-            s3PasswordField.heightAnchor.constraint(equalToConstant: 32),
+            s3PasswordField.heightAnchor.constraint(equalToConstant: 30),
 
             s3PasswordUnderline.leadingAnchor.constraint(equalTo: s3PasswordField.leadingAnchor),
-            s3PasswordUnderline.trailingAnchor.constraint(equalTo: s3ShowPasswordButton1.trailingAnchor),
+            s3PasswordUnderline.trailingAnchor.constraint(equalTo: s3PasswordField.trailingAnchor),
             s3PasswordUnderline.topAnchor.constraint(equalTo: s3PasswordField.bottomAnchor, constant: 2),
             s3PasswordUnderline.heightAnchor.constraint(equalToConstant: 1.5),
 
@@ -484,18 +499,19 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             s3ShowPasswordButton2.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor, constant: -16),
             s3ShowPasswordButton2.centerYAnchor.constraint(equalTo: s3ConfirmPasswordField.centerYAnchor),
             s3ShowPasswordButton2.widthAnchor.constraint(equalToConstant: 44),
+            s3ShowPasswordButton2.heightAnchor.constraint(equalToConstant: 44),
 
             s3ConfirmPasswordField.leadingAnchor.constraint(equalTo: s3LockIcon2.trailingAnchor, constant: 12),
             s3ConfirmPasswordField.trailingAnchor.constraint(equalTo: s3ShowPasswordButton2.leadingAnchor, constant: -8),
             s3ConfirmPasswordField.topAnchor.constraint(equalTo: s3PasswordUnderline.bottomAnchor, constant: 18),
-            s3ConfirmPasswordField.heightAnchor.constraint(equalToConstant: 32),
+            s3ConfirmPasswordField.heightAnchor.constraint(equalToConstant: 30),
 
             s3ConfirmPasswordUnderline.leadingAnchor.constraint(equalTo: s3ConfirmPasswordField.leadingAnchor),
-            s3ConfirmPasswordUnderline.trailingAnchor.constraint(equalTo: s3ShowPasswordButton2.trailingAnchor),
+            s3ConfirmPasswordUnderline.trailingAnchor.constraint(equalTo: s3ConfirmPasswordField.trailingAnchor),
             s3ConfirmPasswordUnderline.topAnchor.constraint(equalTo: s3ConfirmPasswordField.bottomAnchor, constant: 2),
             s3ConfirmPasswordUnderline.heightAnchor.constraint(equalToConstant: 1.5),
 
-            // Bottom Bar (Clean 54pt bar properly enclosing buttons)
+            // Bottom Bar
             s3BottomBar.topAnchor.constraint(equalTo: s3ConfirmPasswordUnderline.bottomAnchor, constant: 24),
             s3BottomBar.leadingAnchor.constraint(equalTo: step3Card.leadingAnchor),
             s3BottomBar.trailingAnchor.constraint(equalTo: step3Card.trailingAnchor),
@@ -507,7 +523,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
             s3NextButton.trailingAnchor.constraint(equalTo: s3BottomBar.trailingAnchor, constant: -16),
             s3NextButton.centerYAnchor.constraint(equalTo: s3BottomBar.centerYAnchor),
-            s3NextButton.widthAnchor.constraint(equalToConstant: 100),
+            s3NextButton.widthAnchor.constraint(equalToConstant: 154),
             s3NextButton.heightAnchor.constraint(equalToConstant: 38),
 
             s3Spinner.centerXAnchor.constraint(equalTo: s3NextButton.centerXAnchor),
@@ -759,15 +775,17 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
     // MARK: - Password Show/Hide
     @objc private func toggleShowPassword1() {
+        AppTheme.triggerHapticFeedback(.light)
         s3PasswordField.isSecureTextEntry.toggle()
-        let title = s3PasswordField.isSecureTextEntry ? "Show" : "Hide"
-        s3ShowPasswordButton1.setTitle(title, for: .normal)
+        let icon = s3PasswordField.isSecureTextEntry ? "eye.slash.fill" : "eye.fill"
+        s3ShowPasswordButton1.setImage(UIImage(systemName: icon), for: .normal)
     }
 
     @objc private func toggleShowPassword2() {
+        AppTheme.triggerHapticFeedback(.light)
         s3ConfirmPasswordField.isSecureTextEntry.toggle()
-        let title = s3ConfirmPasswordField.isSecureTextEntry ? "Show" : "Hide"
-        s3ShowPasswordButton2.setTitle(title, for: .normal)
+        let icon = s3ConfirmPasswordField.isSecureTextEntry ? "eye.slash.fill" : "eye.fill"
+        s3ShowPasswordButton2.setImage(UIImage(systemName: icon), for: .normal)
     }
 
     // MARK: - OTP 6-Box Logic (Auto-Advance & Backspace)
@@ -782,15 +800,31 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
                 }
             }
             s2OtpBoxes.last?.becomeFirstResponder()
-            return
-        }
-
-        if text.count == 1 {
+        } else if text.count == 1 {
+            // Auto advance
             let nextIndex = textField.tag + 1
             if nextIndex < s2OtpBoxes.count {
                 s2OtpBoxes[nextIndex].becomeFirstResponder()
             } else {
                 textField.resignFirstResponder()
+            }
+        }
+    }
+
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        if s2OtpBoxes.contains(textField) {
+            UIView.animate(withDuration: 0.15) {
+                textField.layer.borderColor = AppTheme.inputBorderActive.cgColor
+                textField.layer.borderWidth = 2.0
+            }
+        }
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        if s2OtpBoxes.contains(textField) {
+            UIView.animate(withDuration: 0.15) {
+                textField.layer.borderColor = AppTheme.inputBorderNormal.cgColor
+                textField.layer.borderWidth = 1.5
             }
         }
     }
@@ -827,16 +861,26 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
     // MARK: - Helpers
     private func showError(_ msg: String) {
-        UINotificationFeedbackGenerator().notificationOccurred(.error)
-        errorLabel.text = msg
+        AppTheme.triggerNotificationFeedback(.error)
+        errorLabel.text = "  ⚠️  \(msg)  "
+        errorBanner.alpha = 0
         errorBanner.isHidden = false
+        UIView.animate(withDuration: 0.25) {
+            self.errorBanner.alpha = 1.0
+        }
     }
 
     @objc private func clearErrorBanner() {
-        errorBanner.isHidden = true
-        s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        s3PasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        s3ConfirmPasswordUnderline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        if !errorBanner.isHidden {
+            UIView.animate(withDuration: 0.2, animations: {
+                self.errorBanner.alpha = 0
+            }) { _ in
+                self.errorBanner.isHidden = true
+            }
+        }
+        s1Underline.backgroundColor = AppTheme.accentSkyBlue
+        s3PasswordUnderline.backgroundColor = AppTheme.accentSkyBlue
+        s3ConfirmPasswordUnderline.backgroundColor = AppTheme.accentSkyBlue
     }
 
     private func extractMessage(from json: [String: Any], fallback: String) -> String {

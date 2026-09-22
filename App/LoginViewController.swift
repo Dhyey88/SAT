@@ -106,7 +106,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     // MARK: - UI Setup
     private func setupUI() {
-        view.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
+        view.backgroundColor = AppTheme.canvasBackground
 
         // ScrollView Setup
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -132,12 +132,12 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         // 1. Welcome Title
         welcomeLabel.translatesAutoresizingMaskIntoConstraints = false
         welcomeLabel.text = "Welcome"
-        welcomeLabel.textColor = .white
-        welcomeLabel.font = UIFont.systemFont(ofSize: 26, weight: .bold)
+        welcomeLabel.textColor = AppTheme.textPrimaryLight
+        welcomeLabel.font = AppTheme.Typography.titleHero
         welcomeLabel.textAlignment = .center
         contentView.addSubview(welcomeLabel)
 
-        // 2. App Logo
+        // 2. App Logo (Circular Embossed Seal)
         appLogoImageView.translatesAutoresizingMaskIntoConstraints = false
         if let emblem = UIImage(named: "trust_emblem") ?? UIImage(named: "AppIcon-1024") ?? UIImage(named: "AppIcon") {
             appLogoImageView.image = emblem
@@ -145,6 +145,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             appLogoImageView.image = UIImage(systemName: "seal.fill")
         }
         appLogoImageView.contentMode = .scaleAspectFit
+        appLogoImageView.layer.cornerRadius = 42
+        appLogoImageView.layer.masksToBounds = true
+        appLogoImageView.layer.borderWidth = 2
+        appLogoImageView.layer.borderColor = UIColor.white.withAlphaComponent(0.25).cgColor
         contentView.addSubview(appLogoImageView)
 
         // 3. Login Via Gmail Button
@@ -153,32 +157,29 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         googleLoginButton.setImage(UIImage(systemName: "g.circle.fill"), for: .normal)
         googleLoginButton.tintColor = .white
         googleLoginButton.setTitleColor(.white, for: .normal)
-        googleLoginButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        googleLoginButton.backgroundColor = UIColor(red: 234/255, green: 67/255, blue: 53/255, alpha: 1.0)
-        googleLoginButton.layer.cornerRadius = 8
-        googleLoginButton.layer.shadowColor = UIColor.black.cgColor
-        googleLoginButton.layer.shadowOpacity = 0.2
-        googleLoginButton.layer.shadowOffset = CGSize(width: 0, height: 3)
-        googleLoginButton.layer.shadowRadius = 4
+        googleLoginButton.titleLabel?.font = AppTheme.Typography.titleCard
+        googleLoginButton.backgroundColor = AppTheme.googleRed
+        googleLoginButton.layer.cornerRadius = AppTheme.CornerRadius.medium
+        AppTheme.applyButtonElevation(to: googleLoginButton)
         googleLoginButton.addTarget(self, action: #selector(handleGoogleLogin), for: .touchUpInside)
         contentView.addSubview(googleLoginButton)
 
         // 4. Top "OR"
         topOrLabel.translatesAutoresizingMaskIntoConstraints = false
-        topOrLabel.text = "— OR —"
-        topOrLabel.textColor = UIColor.white.withAlphaComponent(0.6)
-        topOrLabel.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        topOrLabel.text = "—  OR  —"
+        topOrLabel.textColor = UIColor.white.withAlphaComponent(0.55)
+        topOrLabel.font = AppTheme.Typography.captionBold
         topOrLabel.textAlignment = .center
         contentView.addSubview(topOrLabel)
 
         // 5. Error Banner
         errorLabel.translatesAutoresizingMaskIntoConstraints = false
-        errorLabel.backgroundColor = UIColor(red: 185/255, green: 74/255, blue: 72/255, alpha: 1.0)
+        errorLabel.backgroundColor = AppTheme.errorRed
         errorLabel.textColor = .white
-        errorLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        errorLabel.font = AppTheme.Typography.captionMedium
         errorLabel.textAlignment = .center
         errorLabel.numberOfLines = 0
-        errorLabel.layer.cornerRadius = 6
+        errorLabel.layer.cornerRadius = AppTheme.CornerRadius.small
         errorLabel.layer.masksToBounds = true
         errorLabel.isHidden = true
         contentView.addSubview(errorLabel)
@@ -188,17 +189,17 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
         // 7. Bottom "OR"
         bottomOrLabel.translatesAutoresizingMaskIntoConstraints = false
-        bottomOrLabel.text = "— OR —"
-        bottomOrLabel.textColor = UIColor.white.withAlphaComponent(0.6)
-        bottomOrLabel.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        bottomOrLabel.text = "—  OR  —"
+        bottomOrLabel.textColor = UIColor.white.withAlphaComponent(0.55)
+        bottomOrLabel.font = AppTheme.Typography.captionBold
         bottomOrLabel.textAlignment = .center
         contentView.addSubview(bottomOrLabel)
 
         // 8. New User? SignUp Button
         signUpButton.translatesAutoresizingMaskIntoConstraints = false
         signUpButton.setTitle("New User? SignUp", for: .normal)
-        signUpButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        signUpButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        signUpButton.setTitleColor(AppTheme.accentSkyBlue, for: .normal)
+        signUpButton.titleLabel?.font = AppTheme.Typography.titleCard
         signUpButton.addTarget(self, action: #selector(openSignUpModal), for: .touchUpInside)
         contentView.addSubview(signUpButton)
 
@@ -212,13 +213,13 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
             appLogoImageView.topAnchor.constraint(equalTo: welcomeLabel.bottomAnchor, constant: 14),
             appLogoImageView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            appLogoImageView.widthAnchor.constraint(equalToConstant: 80),
-            appLogoImageView.heightAnchor.constraint(equalToConstant: 80),
+            appLogoImageView.widthAnchor.constraint(equalToConstant: 84),
+            appLogoImageView.heightAnchor.constraint(equalToConstant: 84),
 
             googleLoginButton.topAnchor.constraint(equalTo: appLogoImageView.bottomAnchor, constant: 18),
             googleLoginButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 36),
             googleLoginButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -36),
-            googleLoginButton.heightAnchor.constraint(equalToConstant: 46),
+            googleLoginButton.heightAnchor.constraint(equalToConstant: 48),
 
             topOrLabel.topAnchor.constraint(equalTo: googleLoginButton.bottomAnchor, constant: 14),
             topOrLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
@@ -236,7 +237,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
             signUpButton.topAnchor.constraint(equalTo: bottomOrLabel.bottomAnchor, constant: 8),
             signUpButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            signUpButton.heightAnchor.constraint(equalToConstant: 36),
+            signUpButton.heightAnchor.constraint(equalToConstant: 38),
 
             footerStack.topAnchor.constraint(equalTo: signUpButton.bottomAnchor, constant: 24),
             footerStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
@@ -249,22 +250,22 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     private func setupCentralCard() {
         cardView.translatesAutoresizingMaskIntoConstraints = false
-        cardView.backgroundColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        cardView.layer.cornerRadius = 16
-        cardView.layer.masksToBounds = true
+        cardView.backgroundColor = AppTheme.canvasBackground
+        cardView.layer.cornerRadius = AppTheme.CornerRadius.large
         cardView.layer.borderWidth = 1
-        cardView.layer.borderColor = UIColor.white.withAlphaComponent(0.1).cgColor
+        cardView.layer.borderColor = UIColor.white.withAlphaComponent(0.12).cgColor
+        AppTheme.applyCardElevation(to: cardView, cornerRadius: AppTheme.CornerRadius.large)
         contentView.addSubview(cardView)
 
         // User ID Label & Field
         userIdTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         userIdTitleLabel.text = "Enter User ID"
         userIdTitleLabel.textColor = .white
-        userIdTitleLabel.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        userIdTitleLabel.font = AppTheme.Typography.titleCard
         cardView.addSubview(userIdTitleLabel)
 
         setupInputContainer(container: emailContainer, badge: emailBadge, textField: emailTextField,
-                            badgeColor: UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0),
+                            badgeColor: AppTheme.emeraldGreen,
                             iconName: "person.fill", placeholder: "Enter your Userid")
         cardView.addSubview(emailContainer)
 
@@ -272,7 +273,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         passwordTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         passwordTitleLabel.text = "Password"
         passwordTitleLabel.textColor = .white
-        passwordTitleLabel.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        passwordTitleLabel.font = AppTheme.Typography.titleCard
         cardView.addSubview(passwordTitleLabel)
 
         setupPasswordContainer()
@@ -293,7 +294,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             emailContainer.topAnchor.constraint(equalTo: userIdTitleLabel.bottomAnchor, constant: 6),
             emailContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
             emailContainer.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            emailContainer.heightAnchor.constraint(equalToConstant: 46),
+            emailContainer.heightAnchor.constraint(equalToConstant: 48),
 
             passwordTitleLabel.topAnchor.constraint(equalTo: emailContainer.bottomAnchor, constant: 14),
             passwordTitleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 18),
@@ -301,7 +302,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             passwordContainer.topAnchor.constraint(equalTo: passwordTitleLabel.bottomAnchor, constant: 6),
             passwordContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
             passwordContainer.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            passwordContainer.heightAnchor.constraint(equalToConstant: 46),
+            passwordContainer.heightAnchor.constraint(equalToConstant: 48),
 
             actionLinksStack.topAnchor.constraint(equalTo: passwordContainer.bottomAnchor, constant: 14),
             actionLinksStack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
@@ -311,7 +312,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             cardBottomBar.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
             cardBottomBar.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
             cardBottomBar.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
-            cardBottomBar.heightAnchor.constraint(equalToConstant: 54)
+            cardBottomBar.heightAnchor.constraint(equalToConstant: 56)
         ])
     }
 
@@ -319,10 +320,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
                                      badgeColor: UIColor, iconName: String, placeholder: String) {
         container.translatesAutoresizingMaskIntoConstraints = false
         container.backgroundColor = .white
-        container.layer.cornerRadius = 6
+        container.layer.cornerRadius = AppTheme.CornerRadius.medium
         container.layer.masksToBounds = true
-        container.layer.borderWidth = 1
-        container.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
+        container.layer.borderWidth = 1.5
+        container.layer.borderColor = AppTheme.inputBorderNormal.cgColor
 
         badge.translatesAutoresizingMaskIntoConstraints = false
         badge.backgroundColor = badgeColor
@@ -332,15 +333,15 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         container.addSubview(badge)
 
         textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        textField.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        textField.textColor = AppTheme.textPrimaryDark
+        textField.font = AppTheme.Typography.bodyMedium
         textField.autocapitalizationType = .none
         textField.autocorrectionType = .no
         textField.delegate = self
         textField.returnKeyType = .next
         textField.attributedPlaceholder = NSAttributedString(
             string: placeholder,
-            attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
+            attributes: [.foregroundColor: AppTheme.textPlaceholder]
         )
         textField.addTarget(self, action: #selector(onInputTextChanged), for: .editingChanged)
         container.addSubview(textField)
@@ -361,35 +362,35 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     private func setupPasswordContainer() {
         passwordContainer.translatesAutoresizingMaskIntoConstraints = false
         passwordContainer.backgroundColor = .white
-        passwordContainer.layer.cornerRadius = 6
+        passwordContainer.layer.cornerRadius = AppTheme.CornerRadius.medium
         passwordContainer.layer.masksToBounds = true
-        passwordContainer.layer.borderWidth = 1
-        passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
+        passwordContainer.layer.borderWidth = 1.5
+        passwordContainer.layer.borderColor = AppTheme.inputBorderNormal.cgColor
 
         passwordBadge.translatesAutoresizingMaskIntoConstraints = false
-        passwordBadge.backgroundColor = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0) // Web Amber Gold #FFB848
+        passwordBadge.backgroundColor = AppTheme.actionGold
         passwordBadge.image = UIImage(systemName: "lock.fill")
         passwordBadge.tintColor = .white
         passwordBadge.contentMode = .center
         passwordContainer.addSubview(passwordBadge)
 
         passwordTextField.translatesAutoresizingMaskIntoConstraints = false
-        passwordTextField.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        passwordTextField.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        passwordTextField.textColor = AppTheme.textPrimaryDark
+        passwordTextField.font = AppTheme.Typography.bodyMedium
         passwordTextField.isSecureTextEntry = true
         passwordTextField.delegate = self
         passwordTextField.returnKeyType = .go
         passwordTextField.attributedPlaceholder = NSAttributedString(
             string: "Type Your Password",
-            attributes: [.foregroundColor: UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)]
+            attributes: [.foregroundColor: AppTheme.textPlaceholder]
         )
         passwordTextField.addTarget(self, action: #selector(onInputTextChanged), for: .editingChanged)
         passwordContainer.addSubview(passwordTextField)
 
         showPasswordTrailingButton.translatesAutoresizingMaskIntoConstraints = false
-        showPasswordTrailingButton.setTitle("Show", for: .normal)
-        showPasswordTrailingButton.setTitleColor(UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0), for: .normal)
-        showPasswordTrailingButton.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        showPasswordTrailingButton.setTitle("", for: .normal)
+        showPasswordTrailingButton.setImage(UIImage(systemName: "eye.slash.fill"), for: .normal)
+        showPasswordTrailingButton.tintColor = AppTheme.textPlaceholder
         showPasswordTrailingButton.addTarget(self, action: #selector(toggleShowPassword), for: .touchUpInside)
         passwordContainer.addSubview(showPasswordTrailingButton)
 
@@ -404,9 +405,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             passwordTextField.topAnchor.constraint(equalTo: passwordContainer.topAnchor),
             passwordTextField.bottomAnchor.constraint(equalTo: passwordContainer.bottomAnchor),
 
-            showPasswordTrailingButton.trailingAnchor.constraint(equalTo: passwordContainer.trailingAnchor, constant: -12),
+            showPasswordTrailingButton.trailingAnchor.constraint(equalTo: passwordContainer.trailingAnchor, constant: -8),
             showPasswordTrailingButton.centerYAnchor.constraint(equalTo: passwordContainer.centerYAnchor),
-            showPasswordTrailingButton.widthAnchor.constraint(equalToConstant: 48)
+            showPasswordTrailingButton.widthAnchor.constraint(equalToConstant: 44),
+            showPasswordTrailingButton.heightAnchor.constraint(equalToConstant: 44)
         ])
     }
 
@@ -422,22 +424,25 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         // Reset Password Button (Web Terracotta Orange #DA542E)
         resetPasswordButton.translatesAutoresizingMaskIntoConstraints = false
         resetPasswordButton.setImage(UIImage(systemName: "key.fill"), for: .normal)
-        resetPasswordButton.tintColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0)
+        resetPasswordButton.tintColor = AppTheme.alertRed
         resetPasswordButton.setTitle(" Reset Password", for: .normal)
-        resetPasswordButton.setTitleColor(UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0), for: .normal)
-        resetPasswordButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        resetPasswordButton.setTitleColor(AppTheme.alertRed, for: .normal)
+        resetPasswordButton.titleLabel?.font = AppTheme.Typography.bodyMedium
         resetPasswordButton.addTarget(self, action: #selector(openResetPasswordModal), for: .touchUpInside)
         actionLinksStack.addArrangedSubview(resetPasswordButton)
     }
 
     private func setupCardBottomBar() {
         cardBottomBar.translatesAutoresizingMaskIntoConstraints = false
-        cardBottomBar.backgroundColor = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
+        cardBottomBar.backgroundColor = AppTheme.cardBottomBar
+        cardBottomBar.layer.cornerRadius = AppTheme.CornerRadius.large
+        cardBottomBar.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        cardBottomBar.layer.masksToBounds = true
 
         // Info Button (i)
         infoButton.translatesAutoresizingMaskIntoConstraints = false
         infoButton.setImage(UIImage(systemName: "info.circle.fill"), for: .normal)
-        infoButton.tintColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        infoButton.tintColor = AppTheme.accentSkyBlue
         infoButton.addTarget(self, action: #selector(openInfoModal), for: .touchUpInside)
         cardBottomBar.addSubview(infoButton)
 
@@ -445,9 +450,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         loginButton.translatesAutoresizingMaskIntoConstraints = false
         loginButton.setTitle("Login  ➔", for: .normal)
         loginButton.setTitleColor(.white, for: .normal)
-        loginButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        loginButton.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        loginButton.layer.cornerRadius = 6
+        loginButton.titleLabel?.font = AppTheme.Typography.titleCard
+        loginButton.backgroundColor = AppTheme.emeraldGreen
+        loginButton.layer.cornerRadius = AppTheme.CornerRadius.medium
+        AppTheme.applyButtonElevation(to: loginButton)
         loginButton.addTarget(self, action: #selector(handleLoginTap), for: .touchUpInside)
         cardBottomBar.addSubview(loginButton)
 
@@ -459,13 +465,13 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         NSLayoutConstraint.activate([
             infoButton.leadingAnchor.constraint(equalTo: cardBottomBar.leadingAnchor, constant: 16),
             infoButton.centerYAnchor.constraint(equalTo: cardBottomBar.centerYAnchor),
-            infoButton.widthAnchor.constraint(equalToConstant: 32),
-            infoButton.heightAnchor.constraint(equalToConstant: 32),
+            infoButton.widthAnchor.constraint(equalToConstant: 36),
+            infoButton.heightAnchor.constraint(equalToConstant: 36),
 
             loginButton.trailingAnchor.constraint(equalTo: cardBottomBar.trailingAnchor, constant: -16),
             loginButton.centerYAnchor.constraint(equalTo: cardBottomBar.centerYAnchor),
-            loginButton.widthAnchor.constraint(equalToConstant: 120),
-            loginButton.heightAnchor.constraint(equalToConstant: 38),
+            loginButton.widthAnchor.constraint(equalToConstant: 124),
+            loginButton.heightAnchor.constraint(equalToConstant: 40),
 
             activityIndicator.centerYAnchor.constraint(equalTo: loginButton.centerYAnchor),
             activityIndicator.trailingAnchor.constraint(equalTo: loginButton.trailingAnchor, constant: -12)
@@ -521,7 +527,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
         helpCardContainer.translatesAutoresizingMaskIntoConstraints = false
         helpCardContainer.backgroundColor = .white
-        helpCardContainer.layer.cornerRadius = 10
+        helpCardContainer.layer.cornerRadius = AppTheme.CornerRadius.large
         helpCardContainer.layer.masksToBounds = true
         helpOverlayBackdrop.addSubview(helpCardContainer)
 
@@ -534,8 +540,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
         helpTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         helpTitleLabel.text = "Help"
-        helpTitleLabel.textColor = UIColor(red: 46/255, green: 54/255, blue: 63/255, alpha: 1.0)
-        helpTitleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        helpTitleLabel.textColor = AppTheme.textPrimaryDark
+        helpTitleLabel.font = AppTheme.Typography.titleHero
         helpHeaderView.addSubview(helpTitleLabel)
 
         helpCloseButton.translatesAutoresizingMaskIntoConstraints = false
@@ -670,6 +676,26 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     }
 
     // MARK: - UITextFieldDelegate
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        UIView.animate(withDuration: 0.2) {
+            if textField == self.emailTextField {
+                self.emailContainer.layer.borderColor = AppTheme.inputBorderActive.cgColor
+            } else if textField == self.passwordTextField {
+                self.passwordContainer.layer.borderColor = AppTheme.inputBorderActive.cgColor
+            }
+        }
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        UIView.animate(withDuration: 0.2) {
+            if textField == self.emailTextField {
+                self.emailContainer.layer.borderColor = AppTheme.inputBorderNormal.cgColor
+            } else if textField == self.passwordTextField {
+                self.passwordContainer.layer.borderColor = AppTheme.inputBorderNormal.cgColor
+            }
+        }
+    }
+
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField == emailTextField {
             passwordTextField.becomeFirstResponder()
@@ -682,9 +708,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     // MARK: - Actions
     @objc private func toggleShowPassword() {
+        AppTheme.triggerHapticFeedback(.light)
         passwordTextField.isSecureTextEntry.toggle()
-        let title = passwordTextField.isSecureTextEntry ? "Show" : "Hide"
-        showPasswordTrailingButton.setTitle(title, for: .normal)
+        let imageName = passwordTextField.isSecureTextEntry ? "eye.slash.fill" : "eye.fill"
+        showPasswordTrailingButton.setImage(UIImage(systemName: imageName), for: .normal)
     }
 
     @objc private func openTutorial() {
@@ -764,8 +791,9 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
         androidPopupCard.translatesAutoresizingMaskIntoConstraints = false
         androidPopupCard.backgroundColor = .white
-        androidPopupCard.layer.cornerRadius = 12
+        androidPopupCard.layer.cornerRadius = AppTheme.CornerRadius.large
         androidPopupCard.layer.masksToBounds = true
+        AppTheme.applyCardElevation(to: androidPopupCard, cornerRadius: AppTheme.CornerRadius.large)
         androidPopupBackdrop.addSubview(androidPopupCard)
 
         let stopTap = UITapGestureRecognizer(target: nil, action: nil)
@@ -774,37 +802,37 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         // Green Trust Emblem
         androidPopupEmblem.translatesAutoresizingMaskIntoConstraints = false
         androidPopupEmblem.image = UIImage(named: "trust_emblem") ?? UIImage(systemName: "checkmark.seal.fill")
-        androidPopupEmblem.tintColor = UIColor(red: 40/255, green: 167/255, blue: 69/255, alpha: 1.0)
+        androidPopupEmblem.tintColor = AppTheme.emeraldGreen
         androidPopupEmblem.contentMode = .scaleAspectFit
         androidPopupCard.addSubview(androidPopupEmblem)
 
         // Code Label (e.g. "247")
         androidPopupCodeLabel.translatesAutoresizingMaskIntoConstraints = false
         androidPopupCodeLabel.text = "247"
-        androidPopupCodeLabel.textColor = UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 1.0)
-        androidPopupCodeLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        androidPopupCodeLabel.textColor = AppTheme.textPrimaryDark
+        androidPopupCodeLabel.font = AppTheme.Typography.titleHeader
         androidPopupCard.addSubview(androidPopupCodeLabel)
 
         // Body Message: "Available on sign up only."
         androidPopupMsgLabel.translatesAutoresizingMaskIntoConstraints = false
         androidPopupMsgLabel.text = "Available on sign up only."
-        androidPopupMsgLabel.textColor = UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 1.0)
-        androidPopupMsgLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        androidPopupMsgLabel.textColor = AppTheme.textPrimaryDark
+        androidPopupMsgLabel.font = AppTheme.Typography.titleCard
         androidPopupMsgLabel.numberOfLines = 0
         androidPopupCard.addSubview(androidPopupMsgLabel)
 
         // Version Label ("v t 2.0.10") at bottom-left
         androidPopupVersionLabel.translatesAutoresizingMaskIntoConstraints = false
         androidPopupVersionLabel.text = AppConfig.appVersion
-        androidPopupVersionLabel.textColor = UIColor(red: 60/255, green: 60/255, blue: 60/255, alpha: 1.0)
-        androidPopupVersionLabel.font = UIFont.systemFont(ofSize: 12.5, weight: .regular)
+        androidPopupVersionLabel.textColor = AppTheme.textPlaceholder
+        androidPopupVersionLabel.font = AppTheme.Typography.captionRegular
         androidPopupCard.addSubview(androidPopupVersionLabel)
 
         // Ok Button at bottom-right
         androidPopupOkButton.translatesAutoresizingMaskIntoConstraints = false
         androidPopupOkButton.setTitle("Ok", for: .normal)
-        androidPopupOkButton.setTitleColor(UIColor(red: 30/255, green: 36/255, blue: 43/255, alpha: 1.0), for: .normal)
-        androidPopupOkButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        androidPopupOkButton.setTitleColor(AppTheme.textPrimaryDark, for: .normal)
+        androidPopupOkButton.titleLabel?.font = AppTheme.Typography.bodyBold
         androidPopupOkButton.addTarget(self, action: #selector(dismissAndroidPopup), for: .touchUpInside)
         androidPopupCard.addSubview(androidPopupOkButton)
 
@@ -1261,17 +1289,21 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
             switch result {
             case .failure(let error):
+                AppTheme.triggerNotificationFeedback(.error)
                 self.showError(message: "Network error: \(error.localizedDescription)")
+                print("[Login] Network failure: \(error.localizedDescription)")
             case .success(let json):
                 let status = json["status"] as? Bool ?? false
                 let message = json["message"] as? String ?? ""
 
                 if status, let dataObj = json["data"] as? [String: Any] {
+                    AppTheme.triggerNotificationFeedback(.success)
+                    UserDefaults.standard.set(email, forKey: "saved_user_id")
+
                     let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
                     self.openWebDashboard(userId: userId)
                 } else {
-                    self.emailContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
-                    self.passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
+                    AppTheme.triggerNotificationFeedback(.error)
                     self.showError(message: message.isEmpty ? "Invalid credentials. Please try again." : message)
                 }
             }
@@ -1279,8 +1311,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     }
 
     private func openWebDashboard(userId: Int) {
-        let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
-        let webVC = WebViewController(initialURLString: targetURL)
+        UserDefaults.standard.set(userId, forKey: "saved_user_id_int")
+        let webVC = WebViewController(userId: userId)
         let nav = UINavigationController(rootViewController: webVC)
         nav.isNavigationBarHidden = true
         nav.modalPresentationStyle = .overFullScreen
@@ -1288,15 +1320,25 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     }
 
     private func showError(message: String) {
-        UINotificationFeedbackGenerator().notificationOccurred(.error)
-        errorLabel.text = message
+        AppTheme.triggerNotificationFeedback(.error)
+        errorLabel.text = "  ⚠️  \(message)  "
+        errorLabel.alpha = 0
         errorLabel.isHidden = false
+        UIView.animate(withDuration: 0.25) {
+            self.errorLabel.alpha = 1.0
+        }
     }
 
     private func clearError() {
-        errorLabel.isHidden = true
-        emailContainer.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
-        passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0).cgColor
+        if !errorLabel.isHidden {
+            UIView.animate(withDuration: 0.2, animations: {
+                self.errorLabel.alpha = 0
+            }) { _ in
+                self.errorLabel.isHidden = true
+            }
+        }
+        emailContainer.layer.borderColor = AppTheme.inputBorderNormal.cgColor
+        passwordContainer.layer.borderColor = AppTheme.inputBorderNormal.cgColor
     }
 
     // MARK: - Offline Handling (App Store Guideline 4.2)
