@@ -1312,7 +1312,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     private func openWebDashboard(userId: Int) {
         UserDefaults.standard.set(userId, forKey: "saved_user_id_int")
-        let webVC = WebViewController(userId: userId)
+        let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
+        let webVC = WebViewController(initialURLString: targetURL)
         let nav = UINavigationController(rootViewController: webVC)
         nav.isNavigationBarHidden = true
         nav.modalPresentationStyle = .overFullScreen
