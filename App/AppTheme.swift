@@ -19,22 +19,25 @@ struct AppTheme {
 
     /// Card Bottom Action Bar Background (#262D35)
     static let cardBottomBar = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
+    static let cardBackgroundDark = cardBottomBar
 
     /// Lighter card row or section background (#353D47)
     static let cardRowBackground = UIColor(red: 53/255, green: 61/255, blue: 71/255, alpha: 1.0)
 
     /// Gold / Warm Amber action & badge accent (#FFB848)
     static let actionGold = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
+    static let amberGold = actionGold
 
     /// Pink / Magenta Trust Code badge accent (#E91E63)
     static let pinkBadgeAccent = UIColor(red: 233/255, green: 30/255, blue: 99/255, alpha: 0.85)
 
     /// Success checkmark & primary action emerald green (#28B779 / #27AE60)
     static let successGreen = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-    static let emeraldGreen = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+    static let emeraldGreen = successGreen
 
     /// Sky Blue accent (#27A9E3) - active underlines, links, focus indicators
     static let accentSkyBlue = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+    static let skyBlueAccent = accentSkyBlue
 
     /// Alert / Error banner red (#E74C3C / #DA542E)
     static let errorRed = UIColor(red: 231/255, green: 76/255, blue: 60/255, alpha: 1.0)
@@ -53,12 +56,14 @@ struct AppTheme {
     static let dividerLine = UIColor(white: 1.0, alpha: 0.15)
     static let inputBorderNormal = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0)
     static let inputBorderActive = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+    static let inputBorderInactive = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0)
 
     // MARK: - Corner Radii Tokens
     struct CornerRadius {
         static let small: CGFloat = 6.0    // Badges, small tags
         static let medium: CGFloat = 10.0  // Text fields, OTP cells, small buttons
-        static let large: CGFloat = 16.0   // Floating cards, modal sheets
+        static let large: CGFloat = 14.0   // Modal sheets, dialog containers
+        static let xlarge: CGFloat = 16.0  // Floating cards
         static let pill: CGFloat = 22.0    // Capsule action buttons
     }
 
@@ -79,7 +84,7 @@ struct AppTheme {
 
     // MARK: - Elevation & Shadow Helpers
     /// Applies a smooth, modern drop shadow to floating cards without clipping
-    static func applyCardElevation(to view: UIView, cornerRadius: CGFloat = CornerRadius.large) {
+    static func applyCardElevation(to view: UIView, cornerRadius: CGFloat = CornerRadius.xlarge) {
         view.layer.cornerRadius = cornerRadius
         view.layer.shadowColor = UIColor.black.cgColor
         view.layer.shadowOpacity = 0.18
@@ -103,6 +108,14 @@ struct AppTheme {
         let generator = UIImpactFeedbackGenerator(style: style)
         generator.prepare()
         generator.impactOccurred()
+    }
+
+    static func triggerHapticFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        triggerHapticFeedback(style)
+    }
+
+    static func triggerHapticFeedback(notificationType: UINotificationFeedbackGenerator.FeedbackType) {
+        triggerNotificationFeedback(notificationType)
     }
 
     static func triggerNotificationFeedback(_ type: UINotificationFeedbackGenerator.FeedbackType) {
