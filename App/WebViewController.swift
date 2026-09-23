@@ -121,6 +121,14 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         )
         contentController.addUserScript(detectorScript)
 
+        // 3. Modal Responsive & Screen-Fitting Engine (Document Start & End)
+        let modalScript = WKUserScript(
+            source: WebViewController.modalResponsiveEngineScript,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        )
+        contentController.addUserScript(modalScript)
+
         config.userContentController = contentController
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -403,6 +411,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
         // Trigger detection on document end
         detectAndForwardSuccessAlerts()
+
+        // Normalize any popups on initial load
+        webView.evaluateJavaScript("if (window.satApp && window.satApp.normalizeModals) { window.satApp.normalizeModals(); }", completionHandler: nil)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -912,6 +923,243 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 observer.observe(document.body, { childList: true, subtree: true });
             }
         }
+    })();
+    """
+
+    // MARK: - WKUserScript: Responsive Modal Fitting Engine (Zero Web CSS Modifications)
+    private static let modalResponsiveEngineScript = """
+    (function() {
+        if (window._satModalEngineInitialized) return;
+        window._satModalEngineInitialized = true;
+
+        var css = [
+            '/* SAT iOS Mobile Viewport & Modal Responsive Override */',
+            '.modal,',
+            '.modal.hide,',
+            '#myVoucherType,',
+            '#myVoucherTypeView,',
+            '#ViewNcModel,',
+            '#ViewBillModel,',
+            '#CloseBillModel,',
+            '#myModal,',
+            '#StateModel,',
+            '#viewGI,',
+            'div[id*="Voucher"],',
+            'div[id*="voucher"],',
+            'div[id*="NcModel"],',
+            'div[id*="BillModel"],',
+            'div[id*="Modal"],',
+            'div[id*="Model"],',
+            'div[class*="modal"] {',
+            '    position: fixed !important;',
+            '    left: 8px !important;',
+            '    right: 8px !important;',
+            '    top: 15px !important;',
+            '    bottom: auto !important;',
+            '    width: auto !important;',
+            '    min-width: 0 !important;',
+            '    max-width: calc(100vw - 16px) !important;',
+            '    margin: 0 !important;',
+            '    margin-left: 0 !important;',
+            '    margin-right: 0 !important;',
+            '    box-sizing: border-box !important;',
+            '    z-index: 10550 !important;',
+            '    max-height: calc(100vh - 30px) !important;',
+            '    display: flex !important;',
+            '    flex-direction: column !important;',
+            '    border-radius: 12px !important;',
+            '    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45) !important;',
+            '    overflow: hidden !important;',
+            '    background-color: #FFFFFF !important;',
+            '}',
+            '.modal:not(.in):not([style*="display: block"]),',
+            '.modal.hide:not(.in):not([style*="display: block"]) {',
+            '    display: none !important;',
+            '}',
+            '.modal.in,',
+            '.modal[style*="display: block"] {',
+            '    display: flex !important;',
+            '}',
+            '.modal-header {',
+            '    flex-shrink: 0 !important;',
+            '    padding: 12px 16px !important;',
+            '    border-bottom: 1px solid #E5E7EB !important;',
+            '    background: #F9FAFB !important;',
+            '    position: relative !important;',
+            '    display: flex !important;',
+            '    align-items: center !important;',
+            '    justify-content: space-between !important;',
+            '}',
+            '.modal-header h3,',
+            '.modal-header h4,',
+            '.modal-header .modal-title {',
+            '    margin: 0 !important;',
+            '    font-size: 16px !important;',
+            '    font-weight: 700 !important;',
+            '    color: #1F2937 !important;',
+            '    line-height: 1.3 !important;',
+            '    overflow: hidden !important;',
+            '    text-overflow: ellipsis !important;',
+            '    white-space: nowrap !important;',
+            '    max-width: calc(100% - 36px) !important;',
+            '}',
+            '.modal-header .close,',
+            '.modal-header button.close {',
+            '    position: absolute !important;',
+            '    right: 12px !important;',
+            '    top: 10px !important;',
+            '    font-size: 26px !important;',
+            '    font-weight: 300 !important;',
+            '    color: #4B5563 !important;',
+            '    opacity: 0.8 !important;',
+            '    cursor: pointer !important;',
+            '    background: transparent !important;',
+            '    border: none !important;',
+            '    padding: 4px 8px !important;',
+            '    line-height: 1 !important;',
+            '    z-index: 10 !important;',
+            '}',
+            '.modal-body,',
+            '#myVoucherType .modal-body,',
+            '#myVoucherType div.modal-body,',
+            '#ViewNcModel .modal-body,',
+            '#ViewBillModel .modal-body {',
+            '    flex: 1 1 auto !important;',
+            '    max-height: calc(100vh - 140px) !important;',
+            '    overflow-y: auto !important;',
+            '    overflow-x: hidden !important;',
+            '    -webkit-overflow-scrolling: touch !important;',
+            '    padding: 14px !important;',
+            '    box-sizing: border-box !important;',
+            '}',
+            '.modal-footer {',
+            '    flex-shrink: 0 !important;',
+            '    padding: 10px 14px !important;',
+            '    border-top: 1px solid #E5E7EB !important;',
+            '    background: #F9FAFB !important;',
+            '    margin: 0 !important;',
+            '    display: flex !important;',
+            '    justify-content: flex-end !important;',
+            '    gap: 8px !important;',
+            '    box-sizing: border-box !important;',
+            '}',
+            '.modal table,',
+            '#myVoucherType table,',
+            '#ViewNcModel table,',
+            '#ViewBillModel table {',
+            '    max-width: 100% !important;',
+            '    width: 100% !important;',
+            '    box-sizing: border-box !important;',
+            '}',
+            '.modal .widget-content,',
+            '.modal .table-responsive,',
+            '.modal div[style*="overflow"] {',
+            '    overflow-x: auto !important;',
+            '    -webkit-overflow-scrolling: touch !important;',
+            '    max-width: 100% !important;',
+            '    box-sizing: border-box !important;',
+            '}',
+            '.modal input,',
+            '.modal textarea,',
+            '.modal select {',
+            '    max-width: 100% !important;',
+            '    box-sizing: border-box !important;',
+            '}',
+            '.select2-drop,',
+            '.select2-drop-active {',
+            '    z-index: 10600 !important;',
+            '    max-width: calc(100vw - 32px) !important;',
+            '}',
+            '.modal-backdrop,',
+            '.modal-backdrop.fade.in {',
+            '    position: fixed !important;',
+            '    top: 0 !important;',
+            '    left: 0 !important;',
+            '    right: 0 !important;',
+            '    bottom: 0 !important;',
+            '    width: 100vw !important;',
+            '    height: 100vh !important;',
+            '    z-index: 10500 !important;',
+            '    opacity: 0.55 !important;',
+            '    background-color: #000000 !important;',
+            '}'
+        ].join('\\n');
+
+        function injectStyles() {
+            if (document.getElementById('sat-modal-responsive-engine')) return;
+            var styleEl = document.createElement('style');
+            styleEl.id = 'sat-modal-responsive-engine';
+            styleEl.type = 'text/css';
+            styleEl.appendChild(document.createTextNode(css));
+            (document.head || document.documentElement).appendChild(styleEl);
+        }
+
+        injectStyles();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', injectStyles);
+        }
+
+        function normalizeModal(modal) {
+            if (!modal || !modal.style) return;
+            modal.style.setProperty('left', '8px', 'important');
+            modal.style.setProperty('right', '8px', 'important');
+            modal.style.setProperty('top', '15px', 'important');
+            modal.style.setProperty('width', 'calc(100vw - 16px)', 'important');
+            modal.style.setProperty('max-width', 'calc(100vw - 16px)', 'important');
+            modal.style.setProperty('margin-left', '0px', 'important');
+            modal.style.setProperty('margin-right', '0px', 'important');
+            modal.style.setProperty('margin', '0px', 'important');
+            modal.style.setProperty('border-radius', '12px', 'important');
+            modal.style.setProperty('box-sizing', 'border-box', 'important');
+
+            var body = modal.querySelector('.modal-body');
+            if (body) {
+                body.style.setProperty('max-height', 'calc(100vh - 140px)', 'important');
+                body.style.setProperty('overflow-y', 'auto', 'important');
+                body.style.setProperty('-webkit-overflow-scrolling', 'touch', 'important');
+            }
+        }
+
+        function normalizeAllModals() {
+            var selectors = '.modal, [id*="Voucher"], [id*="voucher"], [id*="NcModel"], [id*="BillModel"], [id*="Modal"], [id*="Model"]';
+            var modals = document.querySelectorAll(selectors);
+            for (var i = 0; i < modals.length; i++) {
+                var m = modals[i];
+                var display = window.getComputedStyle(m).display;
+                if (m.classList.contains('in') || display === 'block' || display === 'flex') {
+                    normalizeModal(m);
+                }
+            }
+        }
+
+        window.satApp = window.satApp || {};
+        window.satApp.normalizeModals = normalizeAllModals;
+
+        function attachJQueryHooks() {
+            if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                window.jQuery(document).on('show shown shown.bs.modal', '.modal', function() {
+                    normalizeModal(this);
+                });
+            }
+        }
+
+        var observer = new MutationObserver(function(mutations) {
+            injectStyles();
+            normalizeAllModals();
+        });
+
+        if (document.documentElement) {
+            observer.observe(document.documentElement, {
+                attributes: true,
+                childList: true,
+                subtree: true,
+                attributeFilter: ['style', 'class', 'aria-hidden']
+            });
+        }
+
+        attachJQueryHooks();
+        setTimeout(attachJQueryHooks, 1000);
+        setTimeout(attachJQueryHooks, 2500);
     })();
     """
 }
