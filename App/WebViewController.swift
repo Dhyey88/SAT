@@ -923,22 +923,39 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     })();
     """
 
-    // MARK: - WKUserScript: Responsive Modal Fitting Engine (Pure CSS, Zero JS Mutation Loops)
+    // MARK: - WKUserScript: Responsive Modal Fitting Engine (Ultra-High Specificity Override)
     private static let modalResponsiveEngineScript = """
     (function() {
-        if (document.getElementById('sat-modal-responsive-engine')) return;
-
         var css = [
             '/* SAT iOS Mobile Viewport & Modal Responsive Override */',
-            '.modal,',
-            '#myVoucherType,',
-            '#myVoucherTypeView,',
-            '#ViewNcModel,',
-            '#ViewBillModel,',
-            '#CloseBillModel,',
-            '#myModal,',
-            '#StateModel,',
-            '#viewGI {',
+            'html body div#myVoucherType.modal,',
+            'html body #myVoucherType,',
+            'html body div#myVoucherType,',
+            'div#myVoucherType.modal,',
+            '#myVoucherType.modal,',
+            'body #myVoucherType,',
+            'html body div#myVoucherTypeView.modal,',
+            'html body #myVoucherTypeView,',
+            'html body div#ViewNcModel.modal,',
+            'html body #ViewNcModel,',
+            'html body div#ViewBillModel.modal,',
+            'html body #ViewBillModel,',
+            'html body div#CloseBillModel.modal,',
+            'html body #CloseBillModel,',
+            'html body div#StateModel.modal,',
+            'html body #StateModel,',
+            'html body div#ViewModel.modal,',
+            'html body #ViewModel,',
+            'html body div#ViewModelRole.modal,',
+            'html body #ViewModelRole,',
+            'html body div#myModal.modal,',
+            'html body #myModal,',
+            'html body div#viewGI.modal,',
+            'html body #viewGI,',
+            'html body div.modal,',
+            'html body .modal,',
+            'body div.modal,',
+            'div.modal {',
             '    position: fixed !important;',
             '    left: 8px !important;',
             '    right: 8px !important;',
@@ -957,22 +974,25 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45) !important;',
             '    background-color: #FFFFFF !important;',
             '}',
-            '.modal-dialog {',
+            'html body .modal-dialog {',
             '    max-width: 100% !important;',
             '    margin: 0 !important;',
             '}',
-            '.modal-content {',
+            'html body .modal-content {',
             '    border-radius: 12px !important;',
             '    border: none !important;',
             '    box-shadow: none !important;',
             '}',
-            '.modal-header {',
+            'html body .modal-header,',
+            'html body #myVoucherType .modal-header {',
             '    padding: 12px 16px !important;',
             '    border-bottom: 1px solid #E5E7EB !important;',
             '    background: #F9FAFB !important;',
+            '    position: relative !important;',
             '}',
-            '.modal-header h3,',
-            '.modal-header h4 {',
+            'html body .modal-header h3,',
+            'html body .modal-header h4,',
+            'html body #myVoucherType .modal-header h3 {',
             '    margin: 0 !important;',
             '    font-size: 16px !important;',
             '    font-weight: 700 !important;',
@@ -983,65 +1003,84 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '    white-space: nowrap !important;',
             '    max-width: calc(100% - 36px) !important;',
             '}',
-            '.modal-header .close,',
-            '.modal-header button.close {',
-            '    float: right !important;',
+            'html body .modal-header .close,',
+            'html body .modal-header button.close,',
+            'html body #myVoucherType .modal-header .close,',
+            'html body #myVoucherType .modal-header button.close {',
+            '    position: absolute !important;',
+            '    right: 12px !important;',
+            '    top: 10px !important;',
             '    font-size: 26px !important;',
             '    font-weight: 300 !important;',
             '    color: #4B5563 !important;',
-            '    opacity: 0.8 !important;',
+            '    opacity: 0.85 !important;',
             '    cursor: pointer !important;',
             '    background: transparent !important;',
             '    border: none !important;',
             '    padding: 2px 8px !important;',
             '    line-height: 1 !important;',
+            '    z-index: 25 !important;',
             '}',
-            '.modal-body,',
-            '#myVoucherType .modal-body,',
-            '#ViewNcModel .modal-body,',
-            '#ViewBillModel .modal-body {',
+            'html body div#myVoucherType .modal-body,',
+            'html body #myVoucherType .modal-body,',
+            'html body div#myVoucherType div.modal-body,',
+            'html body div#ViewNcModel .modal-body,',
+            'html body div#ViewBillModel .modal-body,',
+            'html body .modal .modal-body,',
+            'html body div.modal .modal-body {',
             '    max-height: calc(100vh - 160px) !important;',
             '    overflow-y: auto !important;',
             '    -webkit-overflow-scrolling: touch !important;',
             '    padding: 14px !important;',
             '    box-sizing: border-box !important;',
             '}',
-            '.modal-footer {',
+            'html body .modal-footer {',
             '    padding: 10px 14px !important;',
             '    border-top: 1px solid #E5E7EB !important;',
             '    background: #F9FAFB !important;',
             '    margin: 0 !important;',
             '    box-sizing: border-box !important;',
             '}',
-            '.modal table,',
-            '#myVoucherType table,',
-            '#ViewNcModel table,',
-            '#ViewBillModel table {',
+            'html body #myVoucherType table,',
+            'html body div#myVoucherType table,',
+            'html body .modal table {',
             '    max-width: 100% !important;',
             '    width: 100% !important;',
             '    box-sizing: border-box !important;',
             '}',
-            '.modal .widget-content,',
-            '.modal .table-responsive,',
-            '.modal div[style*="overflow"] {',
+            'html body #myVoucherType .widget-content,',
+            'html body #myVoucherType .tableFormatVoucher,',
+            'html body #myVoucherType div#showViewVoucherType,',
+            'html body .modal .widget-content,',
+            'html body .modal .table-responsive,',
+            'html body .modal div[style*="overflow"] {',
             '    overflow-x: auto !important;',
             '    -webkit-overflow-scrolling: touch !important;',
             '    max-width: 100% !important;',
             '    box-sizing: border-box !important;',
             '}',
-            '.modal input,',
-            '.modal textarea,',
-            '.modal select {',
+            'html body #myVoucherType input,',
+            'html body #myVoucherType textarea,',
+            'html body #myVoucherType select,',
+            'html body .modal input,',
+            'html body .modal textarea,',
+            'html body .modal select {',
             '    max-width: 100% !important;',
             '    box-sizing: border-box !important;',
             '}',
-            '.select2-drop,',
-            '.select2-drop-active {',
+            'html body #myVoucherType .control-group,',
+            'html body #myVoucherType .controls {',
+            '    max-width: 100% !important;',
+            '    margin-left: 0 !important;',
+            '    box-sizing: border-box !important;',
+            '}',
+            'html body .select2-drop,',
+            'html body .select2-drop-active {',
             '    z-index: 10600 !important;',
             '    max-width: calc(100vw - 32px) !important;',
             '}',
-            '.modal-backdrop,',
-            '.modal-backdrop.fade.in {',
+            'html body .modal-backdrop,',
+            'html body .modal-backdrop.fade.in {',
             '    position: fixed !important;',
             '    top: 0 !important;',
             '    left: 0 !important;',
@@ -1055,22 +1094,25 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '}'
         ].join('\\n');
 
-        function inject() {
-            if (document.getElementById('sat-modal-responsive-engine')) return;
-            var styleEl = document.createElement('style');
-            styleEl.id = 'sat-modal-responsive-engine';
-            styleEl.type = 'text/css';
-            styleEl.appendChild(document.createTextNode(css));
-            var target = document.head || document.documentElement;
-            if (target) {
-                target.appendChild(styleEl);
+        function injectOrReorder() {
+            var existing = document.getElementById('sat-modal-responsive-engine');
+            if (!existing) {
+                existing = document.createElement('style');
+                existing.id = 'sat-modal-responsive-engine';
+                existing.type = 'text/css';
+                existing.appendChild(document.createTextNode(css));
+            }
+            var target = document.head || document.body || document.documentElement;
+            if (target && target.lastElementChild !== existing) {
+                target.appendChild(existing);
             }
         }
 
-        inject();
+        injectOrReorder();
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', inject);
+            document.addEventListener('DOMContentLoaded', injectOrReorder);
         }
+        window.addEventListener('load', injectOrReorder);
     })();
     """
 }
