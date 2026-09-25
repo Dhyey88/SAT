@@ -85,6 +85,18 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     private let offlineOverlayView = UIView()
     private var isNetworkAvailable = true
 
+    // MARK: - Session Expiration State
+    private var initialSessionExpiredMessage: String?
+
+    init(sessionExpiredMessage: String? = nil) {
+        self.initialSessionExpiredMessage = sessionExpiredMessage
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -94,6 +106,14 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         setupHelpDialogUI()
         setupAndroidPopupUI()
         AppConfig.fetchRemoteSettings()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if let msg = initialSessionExpiredMessage {
+            showError(message: msg)
+            initialSessionExpiredMessage = nil
+        }
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -1219,7 +1239,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
                     }
 
                     let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
-                    self.openWebDashboard(userId: userId)
+                    self.openWebDashboard(userId: userId, email: email)
                 } else {
                     self.showError(message: message.isEmpty ? "Social login failed." : message)
                 }
@@ -1301,7 +1321,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
                     UserDefaults.standard.set(email, forKey: "saved_user_id")
 
                     let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
-                    self.openWebDashboard(userId: userId)
+                    self.openWebDashboard(userId: userId, email: email)
                 } else {
                     AppTheme.triggerNotificationFeedback(.error)
                     self.showError(message: message.isEmpty ? "Invalid credentials. Please try again." : message)
@@ -1310,7 +1330,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         }
     }
 
-    private func openWebDashboard(userId: Int) {
+    private func openWebDashboard(userId: Int, email: String) {
+        SessionManager.shared.saveSession(userId: userId, email: email)
         UserDefaults.standard.set(userId, forKey: "saved_user_id_int")
         let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
         let webVC = WebViewController(initialURLString: targetURL)

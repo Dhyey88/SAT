@@ -411,6 +411,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
         // Trigger detection on document end
         detectAndForwardSuccessAlerts()
+
+        // Refresh user activity timestamp in SessionManager
+        SessionManager.shared.recordUserActivity()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -435,8 +438,12 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             return
         }
 
+        // Track user interaction / navigation
+        SessionManager.shared.recordUserActivity()
+
         // Intercept logout to deactivate FCM token and return smoothly to LoginViewController
         if url.absoluteString.contains("/logout") {
+            SessionManager.shared.clearSession(reason: .userLogout)
             deactivateFcmTokenOnBackend()
             decisionHandler(.cancel)
             dismiss(animated: true)
