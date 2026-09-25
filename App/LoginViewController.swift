@@ -85,18 +85,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     private let offlineOverlayView = UIView()
     private var isNetworkAvailable = true
 
-    // MARK: - Session Expiration State
-    private var initialSessionExpiredMessage: String?
-
-    init(sessionExpiredMessage: String? = nil) {
-        self.initialSessionExpiredMessage = sessionExpiredMessage
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-    }
-
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -106,14 +94,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         setupHelpDialogUI()
         setupAndroidPopupUI()
         AppConfig.fetchRemoteSettings()
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        if let msg = initialSessionExpiredMessage {
-            showError(message: msg)
-            initialSessionExpiredMessage = nil
-        }
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
