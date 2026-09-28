@@ -9,7 +9,16 @@ final class BadgeManager {
     static let shared = BadgeManager()
 
     /// Cached state to avoid redundant SpringBoard / UNUserNotificationCenter IPC overhead.
-    private var lastKnownBadgeCount: Int = -1
+    private var lastKnownBadgeCount: Int = 0
+
+    /// Returns the current badge count.
+    var currentBadgeCount: Int {
+        if #available(iOS 17.0, *) {
+            return max(0, lastKnownBadgeCount)
+        } else {
+            return UIApplication.shared.applicationIconBadgeNumber
+        }
+    }
 
     /// Dispatch work item for coalescing rapid lifecycle sync calls.
     private var pendingSyncWorkItem: DispatchWorkItem?
@@ -35,8 +44,9 @@ final class BadgeManager {
                         print("[BadgeManager] Successfully updated badge count to \(sanitized)")
                     }
                 }
+            } else {
+                UIApplication.shared.applicationIconBadgeNumber = sanitized
             }
-            UIApplication.shared.applicationIconBadgeNumber = sanitized
         }
 
         if Thread.isMainThread {
@@ -50,7 +60,7 @@ final class BadgeManager {
     func decrementBadgeCount(by amount: Int = 1) {
         let block = { [weak self] in
             guard let self = self else { return }
-            let current = UIApplication.shared.applicationIconBadgeNumber
+            let current = self.currentBadgeCount
             let newCount = max(0, current - amount)
             self.setBadgeCount(newCount)
         }
@@ -66,7 +76,7 @@ final class BadgeManager {
     func incrementBadgeCount(by amount: Int = 1) {
         let block = { [weak self] in
             guard let self = self else { return }
-            let current = UIApplication.shared.applicationIconBadgeNumber
+            let current = self.currentBadgeCount
             self.setBadgeCount(current + amount)
         }
 

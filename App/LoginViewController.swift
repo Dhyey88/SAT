@@ -1,3 +1,5 @@
+// xcode: set sdk=iOS
+
 import UIKit
 import Network
 import SafariServices
@@ -1181,7 +1183,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             return
         }
 
-        guard let url = URL(string: AppConfig.API.socialLogin) else { return }
+        guard URL(string: AppConfig.API.socialLogin) != nil else { return }
 
         loginButton.setTitle("", for: .normal)
         activityIndicator.startAnimating()
@@ -1264,7 +1266,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             return
         }
 
-        guard let url = URL(string: AppConfig.API.login) else { return }
+        guard URL(string: AppConfig.API.login) != nil else { return }
 
         loginButton.setTitle("", for: .normal)
         activityIndicator.startAnimating()
@@ -1389,23 +1391,33 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         offlineMsg.numberOfLines = 0
         stack.addArrangedSubview(offlineMsg)
 
-        let helplineBtn = UIButton(type: .system)
-        helplineBtn.setTitle("📞  Call Helpline: \(AppConfig.helplineNumber)", for: .normal)
-        helplineBtn.setTitleColor(.white, for: .normal)
-        helplineBtn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        helplineBtn.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-        helplineBtn.layer.cornerRadius = 8
-        helplineBtn.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20)
+        var helplineConfig = UIButton.Configuration.filled()
+        helplineConfig.title = "📞  Call Helpline: \(AppConfig.helplineNumber)"
+        helplineConfig.baseForegroundColor = .white
+        helplineConfig.baseBackgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        helplineConfig.background.cornerRadius = 8
+        helplineConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20)
+        helplineConfig.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+            return outgoing
+        }
+        let helplineBtn = UIButton(configuration: helplineConfig)
         helplineBtn.addTarget(self, action: #selector(callHelpline), for: .touchUpInside)
         stack.addArrangedSubview(helplineBtn)
 
-        let retryBtn = UIButton(type: .system)
-        retryBtn.setTitle("Retry Connection", for: .normal)
-        retryBtn.setTitleColor(.white, for: .normal)
-        retryBtn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        retryBtn.backgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
-        retryBtn.layer.cornerRadius = 8
-        retryBtn.contentEdgeInsets = UIEdgeInsets(top: 10, left: 24, bottom: 10, right: 24)
+        var retryConfig = UIButton.Configuration.filled()
+        retryConfig.title = "Retry Connection"
+        retryConfig.baseForegroundColor = .white
+        retryConfig.baseBackgroundColor = UIColor(red: 40/255, green: 183/255, blue: 121/255, alpha: 1.0)
+        retryConfig.background.cornerRadius = 8
+        retryConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 24, bottom: 10, trailing: 24)
+        retryConfig.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+            return outgoing
+        }
+        let retryBtn = UIButton(configuration: retryConfig)
         retryBtn.addTarget(self, action: #selector(retryConnection), for: .touchUpInside)
         stack.addArrangedSubview(retryBtn)
 

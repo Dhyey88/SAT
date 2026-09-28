@@ -653,7 +653,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             content.title = title
             content.body = body
             content.sound = .default
-            content.badge = NSNumber(value: (UIApplication.shared.applicationIconBadgeNumber + 1))
+            content.badge = NSNumber(value: (BadgeManager.shared.currentBadgeCount + 1))
             content.userInfo = dict
 
             let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
