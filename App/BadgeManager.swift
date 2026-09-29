@@ -72,21 +72,6 @@ final class BadgeManager {
         }
     }
 
-    /// Increments the badge count by a specified amount (default: 1).
-    func incrementBadgeCount(by amount: Int = 1) {
-        let block = { [weak self] in
-            guard let self = self else { return }
-            let current = self.currentBadgeCount
-            self.setBadgeCount(current + amount)
-        }
-
-        if Thread.isMainThread {
-            block()
-        } else {
-            DispatchQueue.main.async(execute: block)
-        }
-    }
-
     /// Clears the badge count back to 0.
     func clearBadge() {
         setBadgeCount(0, force: true)

@@ -6,7 +6,6 @@ enum APIError: Error, LocalizedError {
     case networkError(Error)
     case invalidResponse
     case parsingError
-    case serverError(String)
 
     var errorDescription: String? {
         switch self {
@@ -18,8 +17,6 @@ enum APIError: Error, LocalizedError {
             return "Invalid server response received."
         case .parsingError:
             return "Failed to parse server data."
-        case .serverError(let message):
-            return message
         }
     }
 }

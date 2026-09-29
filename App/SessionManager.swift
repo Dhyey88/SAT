@@ -48,14 +48,6 @@ final class SessionManager {
         return id > 0 ? id : nil
     }
 
-    var currentUserEmail: String? {
-        return UserDefaults.standard.string(forKey: Keys.savedUserEmail)
-    }
-
-    var isLoggedIn: Bool {
-        return currentUserId != nil && isSessionActiveInMemory
-    }
-
     // MARK: - Session Lifecycle Operations
 
     /// Saves session state upon successful login
@@ -143,9 +135,9 @@ final class SessionManager {
         lastBackgroundTimestamp = nil
         lastActiveTimestamp = nil
 
-        // Clear user ID from UserDefaults
+        // Clear user credentials from UserDefaults
         UserDefaults.standard.removeObject(forKey: Keys.savedUserId)
-        UserDefaults.standard.removeObject(forKey: "saved_user_id_int")
+        UserDefaults.standard.removeObject(forKey: Keys.savedUserEmail)
 
         // Clear web session cookies
         DispatchQueue.main.async {

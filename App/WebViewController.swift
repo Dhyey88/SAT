@@ -2,6 +2,20 @@ import UIKit
 import WebKit
 import UserNotifications
 
+/// Lightweight proxy to break the WKUserContentController retain cycle.
+private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
+    private weak var delegate: WKScriptMessageHandler?
+
+    init(delegate: WKScriptMessageHandler) {
+        self.delegate = delegate
+        super.init()
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        delegate?.userContentController(userContentController, didReceive: message)
+    }
+}
+
 /// High-performance WebViewController hosting the SAT responsive web dashboard.
 /// Encapsulates native loaders, pull-to-refresh, offline recovery, push notifications,
 /// haptic feedback, and two-way JavaScript bridge communication.
@@ -103,7 +117,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         config.applicationNameForUserAgent = " SATMobileApp/\(AppConfig.appVersion) (iOS/Swift; WKWebView)"
 
         let contentController = WKUserContentController()
-        contentController.add(self, name: "satPushBridge")
+        contentController.add(WeakScriptMessageHandler(delegate: self), name: "satPushBridge")
 
         // 1. In-page Web Push and Bridge Polyfill Script (Document Start)
         let bridgeScript = WKUserScript(
@@ -321,11 +335,11 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
     @objc private func handleOfflineRetry() {
         if NetworkMonitor.shared.isConnected {
-            AppTheme.triggerHapticFeedback(notificationType: .success)
+            AppTheme.triggerNotificationFeedback(.success)
             offlineOverlayView.isHidden = true
             webView.reload()
         } else {
-            AppTheme.triggerHapticFeedback(notificationType: .warning)
+            AppTheme.triggerNotificationFeedback(.warning)
 
             let animation = CAKeyframeAnimation(keyPath: "transform.translation.x")
             animation.timingFunction = CAMediaTimingFunction(name: .linear)
@@ -336,7 +350,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     }
 
     @objc private func handleOfflineHelp() {
-        AppTheme.triggerHapticFeedback(style: .light)
+        AppTheme.triggerHapticFeedback(.light)
         let alert = UIAlertController(
             title: "Support Contact",
             message: "For technical assistance:\n\nHelpline: \(AppConfig.helplineNumber)\nEmail: \(AppConfig.supportEmail)",
@@ -355,20 +369,27 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
     // MARK: - Centralized Network Monitoring
     private func setupNetworkMonitoring() {
-        NetworkMonitor.shared.onStatusChange = { [weak self] isNowConnected in
-            guard let self = self else { return }
-            self.isConnected = isNowConnected
-            self.offlineOverlayView.isHidden = isNowConnected
-
-            if !isNowConnected {
-                self.wasOffline = true
-            } else if self.wasOffline {
-                self.wasOffline = false
-                self.webView.reload()
-            }
-        }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleNetworkStatusChanged(_:)),
+            name: .SATNetworkStatusChanged,
+            object: nil
+        )
         isConnected = NetworkMonitor.shared.isConnected
         offlineOverlayView.isHidden = isConnected
+    }
+
+    @objc private func handleNetworkStatusChanged(_ notification: Notification) {
+        let isNowConnected = (notification.userInfo?["isConnected"] as? Bool) ?? NetworkMonitor.shared.isConnected
+        isConnected = isNowConnected
+        offlineOverlayView.isHidden = isNowConnected
+
+        if !isNowConnected {
+            wasOffline = true
+        } else if wasOffline {
+            wasOffline = false
+            webView.reload()
+        }
     }
 
     private func loadInitialURL() {
@@ -378,8 +399,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     }
 
     @objc private func handleRefresh() {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
+        AppTheme.triggerHapticFeedback(.medium)
 
         if NetworkMonitor.shared.isConnected {
             offlineOverlayView.isHidden = true

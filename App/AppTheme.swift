@@ -11,18 +11,9 @@ struct AppTheme {
     /// Deep SAT Navy / Android-matched Blue (#163060)
     static let satDeepBlue = UIColor(red: 22/255, green: 48/255, blue: 96/255, alpha: 1.0)
 
-    /// Floating Card background - Dark slate variant (#39424E)
-    static let cardBackground = UIColor(red: 57/255, green: 66/255, blue: 78/255, alpha: 1.0)
-
-    /// Floating Card White (#FFFFFF)
-    static let cardWhite = UIColor.white
-
     /// Card Bottom Action Bar Background (#262D35)
     static let cardBottomBar = UIColor(red: 38/255, green: 45/255, blue: 53/255, alpha: 1.0)
     static let cardBackgroundDark = cardBottomBar
-
-    /// Lighter card row or section background (#353D47)
-    static let cardRowBackground = UIColor(red: 53/255, green: 61/255, blue: 71/255, alpha: 1.0)
 
     /// Gold / Warm Amber action & badge accent (#FFB848)
     static let actionGold = UIColor(red: 255/255, green: 184/255, blue: 72/255, alpha: 1.0)
@@ -49,14 +40,12 @@ struct AppTheme {
     /// Text Colors
     static let textPrimaryLight = UIColor.white
     static let textPrimaryDark = UIColor(red: 30/255, green: 41/255, blue: 59/255, alpha: 1.0)
-    static let textMuted = UIColor(white: 0.75, alpha: 1.0)
     static let textPlaceholder = UIColor(red: 140/255, green: 150/255, blue: 160/255, alpha: 1.0)
 
     /// Underline / Divider Gray
     static let dividerLine = UIColor(white: 1.0, alpha: 0.15)
     static let inputBorderNormal = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0)
     static let inputBorderActive = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-    static let inputBorderInactive = UIColor(red: 218/255, green: 224/255, blue: 233/255, alpha: 1.0)
 
     // MARK: - Corner Radii Tokens
     struct CornerRadius {
@@ -64,7 +53,6 @@ struct AppTheme {
         static let medium: CGFloat = 10.0  // Text fields, OTP cells, small buttons
         static let large: CGFloat = 14.0   // Modal sheets, dialog containers
         static let xlarge: CGFloat = 16.0  // Floating cards
-        static let pill: CGFloat = 22.0    // Capsule action buttons
     }
 
     // MARK: - Typography Scale
@@ -74,16 +62,15 @@ struct AppTheme {
         static let titleCard = UIFont.systemFont(ofSize: 16, weight: .semibold)
         static let bodyBold = UIFont.systemFont(ofSize: 15, weight: .bold)
         static let bodyMedium = UIFont.systemFont(ofSize: 15, weight: .medium)
-        static let bodyRegular = UIFont.systemFont(ofSize: 14, weight: .regular)
         static let captionBold = UIFont.systemFont(ofSize: 13, weight: .bold)
         static let captionMedium = UIFont.systemFont(ofSize: 13, weight: .medium)
         static let captionRegular = UIFont.systemFont(ofSize: 13, weight: .regular)
-        static let subtext = UIFont.systemFont(ofSize: 11, weight: .medium)
         static let otpDigits = UIFont.monospacedDigitSystemFont(ofSize: 22, weight: .bold)
     }
 
     // MARK: - Elevation & Shadow Helpers
     /// Applies a smooth, modern drop shadow to floating cards without clipping
+    /// Optimizes GPU rendering by enabling layer rasterization to eliminate dynamic off-screen render passes during scrolling.
     static func applyCardElevation(to view: UIView, cornerRadius: CGFloat = CornerRadius.xlarge) {
         view.layer.cornerRadius = cornerRadius
         view.layer.shadowColor = UIColor.black.cgColor
@@ -91,15 +78,25 @@ struct AppTheme {
         view.layer.shadowOffset = CGSize(width: 0, height: 6)
         view.layer.shadowRadius = 14
         view.layer.masksToBounds = false
+        view.layer.shouldRasterize = true
+        view.layer.rasterizationScale = UIScreen.main.scale
     }
 
-    /// Applies subtle button elevation
+    /// Applies subtle button elevation with GPU rasterization optimization
     static func applyButtonElevation(to button: UIButton) {
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = 0.20
         button.layer.shadowOffset = CGSize(width: 0, height: 3)
         button.layer.shadowRadius = 4
         button.layer.masksToBounds = false
+        button.layer.shouldRasterize = true
+        button.layer.rasterizationScale = UIScreen.main.scale
+    }
+
+    /// Updates shadowPath dynamically for explicit bounds to achieve zero-overhead GPU shadow rendering
+    static func updateShadowPath(for view: UIView, cornerRadius: CGFloat) {
+        guard !view.bounds.isEmpty else { return }
+        view.layer.shadowPath = UIBezierPath(roundedRect: view.bounds, cornerRadius: cornerRadius).cgPath
     }
 
     // MARK: - Haptic Feedback

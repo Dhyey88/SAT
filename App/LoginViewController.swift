@@ -1,8 +1,6 @@
 // xcode: set sdk=iOS
 
 import UIKit
-import Network
-import SafariServices
 import AuthenticationServices
 import CommonCrypto
 
@@ -39,9 +37,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     private let passwordTextField = UITextField()
     private let showPasswordTrailingButton = UIButton(type: .system)
 
-    // Tutorial & Reset Password Row
+    // Reset Password Row
     private let actionLinksStack = UIStackView()
-    private let tutorialButton = UIButton(type: .system)
     private let resetPasswordButton = UIButton(type: .system)
 
     // Card Bottom Action Bar
@@ -420,9 +417,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         actionLinksStack.distribution = .fill
         actionLinksStack.alignment = .trailing
 
-        // Tutorial Button (Hidden per user request)
-        tutorialButton.isHidden = true
-
         // Reset Password Button (Web Terracotta Orange #DA542E)
         resetPasswordButton.translatesAutoresizingMaskIntoConstraints = false
         resetPasswordButton.setImage(UIImage(systemName: "key.fill"), for: .normal)
@@ -716,12 +710,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         showPasswordTrailingButton.setImage(UIImage(systemName: imageName), for: .normal)
     }
 
-    @objc private func openTutorial() {
-        // Tutorial hidden
-    }
-
     @objc private func openResetPasswordModal() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        AppTheme.triggerHapticFeedback(.medium)
         let resetVC = ResetPasswordViewController()
         resetVC.onResetPasswordSuccess = { [weak self] resetEmail in
             self?.emailTextField.text = resetEmail
@@ -1251,7 +1241,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         let userValidation = ValidationHelper.isValidUserId(email)
         if !userValidation.isValid {
             emailContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            AppTheme.triggerNotificationFeedback(.error)
             showError(message: userValidation.message ?? "Please enter a valid User ID.")
             emailTextField.becomeFirstResponder()
             return
@@ -1260,7 +1250,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         let passwordValidation = ValidationHelper.isValidPassword(password, minLength: 1)
         if !passwordValidation.isValid {
             passwordContainer.layer.borderColor = UIColor(red: 218/255, green: 84/255, blue: 46/255, alpha: 1.0).cgColor
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            AppTheme.triggerNotificationFeedback(.error)
             showError(message: passwordValidation.message ?? "Please enter your password.")
             passwordTextField.becomeFirstResponder()
             return
@@ -1314,7 +1304,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     private func openWebDashboard(userId: Int, email: String) {
         SessionManager.shared.saveSession(userId: userId, email: email)
-        UserDefaults.standard.set(userId, forKey: "saved_user_id_int")
         let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
         let webVC = WebViewController(initialURLString: targetURL)
         let nav = UINavigationController(rootViewController: webVC)
@@ -1347,13 +1336,20 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     // MARK: - Offline Handling (App Store Guideline 4.2)
     private func setupNetworkMonitoring() {
-        NetworkMonitor.shared.onStatusChange = { [weak self] isConnected in
-            guard let self = self else { return }
-            self.isNetworkAvailable = isConnected
-            self.offlineOverlayView.isHidden = isConnected
-        }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleNetworkStatusChanged(_:)),
+            name: .SATNetworkStatusChanged,
+            object: nil
+        )
         isNetworkAvailable = NetworkMonitor.shared.isConnected
         offlineOverlayView.isHidden = isNetworkAvailable
+    }
+
+    @objc private func handleNetworkStatusChanged(_ notification: Notification) {
+        let isConnected = (notification.userInfo?["isConnected"] as? Bool) ?? NetworkMonitor.shared.isConnected
+        isNetworkAvailable = isConnected
+        offlineOverlayView.isHidden = isConnected
     }
 
     private func setupOfflineView() {
@@ -1437,19 +1433,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     @objc private func callHelpline() {
         guard let url = URL(string: "tel://\(AppConfig.helplineNumber)") else { return }
         UIApplication.shared.open(url)
-    }
-
-    @objc private func showOfflineHelp() {
-        let alert = UIAlertController(
-            title: "Helpline & Support",
-            message: "Helpline: \(AppConfig.helplineNumber)\nSupport Email: \(AppConfig.supportEmail)",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "Call", style: .default, handler: { [weak self] _ in
-            self?.callHelpline()
-        }))
-        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
-        present(alert, animated: true)
     }
 
     @objc private func retryConnection() {

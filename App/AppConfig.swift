@@ -43,39 +43,41 @@ struct AppConfig {
         return mobileDeviceId
     }
 
+    private static var cachedMobileDeviceId: String?
     static var mobileDeviceId: String {
+        if let cached = cachedMobileDeviceId {
+            return cached
+        }
         let savedUUID = UserDefaults.standard.string(forKey: "sat_mobile_uuid")
         if let uuid = savedUUID, !uuid.isEmpty {
+            cachedMobileDeviceId = uuid
             return uuid
         }
         let newUUID = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
         UserDefaults.standard.set(newUUID, forKey: "sat_mobile_uuid")
+        cachedMobileDeviceId = newUUID
         return newUUID
     }
 
-    static var deviceName: String {
-        return UIDevice.current.name
-    }
-
-    static var osVersion: String {
-        return "iOS \(UIDevice.current.systemVersion)"
-    }
+    static let deviceName: String = UIDevice.current.name
+    static let osVersion: String = "iOS \(UIDevice.current.systemVersion)"
 
     // MARK: - Google OAuth Configuration
-    static let googleIosClientId = "898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com"
-    static let googleReversedClientId = "com.googleusercontent.apps.898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1"
-    static var googleClientId = "898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com"
-    static var googleClientLoginId = "898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com"
+    static var googleIosClientId = "898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com"
+    static var googleReversedClientId: String {
+        let parts = googleIosClientId.components(separatedBy: ".")
+        return parts.reversed().joined(separator: ".")
+    }
 
     // MARK: - Contact & Support Information (Dynamic with Live Defaults)
     static var supportEmail = "info@enin.io"
     static var helplineNumber = "9977833922"
 
     // MARK: - Dynamic App Version (Derived from iOS Application Bundle)
-    static var appVersion: String {
+    static let appVersion: String = {
         let ver = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         return "v \(ver)"
-    }
+    }()
 
     // MARK: - REST API Endpoints
     struct API {
@@ -119,10 +121,8 @@ struct AppConfig {
                 guard !trimmed.isEmpty else { continue }
 
                 switch slug {
-                case "google_client_id":
-                    googleClientId = trimmed
-                case "google_client_login_id":
-                    googleClientLoginId = trimmed
+                case "google_client_id", "google_client_login_id":
+                    googleIosClientId = trimmed
                 case "default_help_contact":
                     helplineNumber = trimmed
                 case "from_email":

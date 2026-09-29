@@ -547,19 +547,11 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         s1Spinner.startAnimating()
         clearErrorBanner()
 
-        guard let url = URL(string: AppConfig.API.forgotPassword) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params: [String: String] = [
             "email": email,
             "device_type": AppConfig.deviceType,
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
         APIClient.post(endpoint: AppConfig.API.forgotPassword, parameters: params) { [weak self] result in
             guard let self = self else { return }
@@ -576,8 +568,8 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
                 if status {
                     self.userEmail = email
-                    self.s1Underline.backgroundColor = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    self.s1Underline.backgroundColor = AppTheme.accentSkyBlue
+                    AppTheme.triggerHapticFeedback(.medium)
 
                     // Update bottom constraint to step2Card
                     self.contentBottomConstraint?.isActive = false
@@ -613,20 +605,12 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         s2Spinner.startAnimating()
         clearErrorBanner()
 
-        guard let url = URL(string: AppConfig.API.otpVerification) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params: [String: String] = [
             "email": userEmail,
             "forgot_otp": otp,
             "device_type": AppConfig.deviceType,
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
         APIClient.post(endpoint: AppConfig.API.otpVerification, parameters: params) { [weak self] result in
             guard let self = self else { return }
@@ -642,7 +626,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
 
                 if status {
                     self.verifiedOTP = otp
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    AppTheme.triggerHapticFeedback(.medium)
 
                     // Update bottom constraint to step3Card
                     self.contentBottomConstraint?.isActive = false
@@ -687,12 +671,6 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         s3Spinner.startAnimating()
         clearErrorBanner()
 
-        guard let url = URL(string: AppConfig.API.resetPassword) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(AppConfig.apiAccessToken, forHTTPHeaderField: "access-token")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
         let params: [String: String] = [
             "email": userEmail,
             "forgot_otp": verifiedOTP,
@@ -700,8 +678,6 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
             "device_type": AppConfig.deviceType,
             "mobile_device_id": AppConfig.mobileDeviceId
         ]
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }.joined(separator: "&")
-        request.httpBody = body.data(using: .utf8)
 
         APIClient.post(endpoint: AppConfig.API.resetPassword, parameters: params) { [weak self] result in
             guard let self = self else { return }
@@ -716,7 +692,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
                 let apiMessage = self.extractMessage(from: json, fallback: "Failed to reset password.")
 
                 if status {
-                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                    AppTheme.triggerHapticFeedback(.heavy)
                     let alert = UIAlertController(
                         title: "Password Changed!",
                         message: "Your password has been successfully updated.\nYou can now log in with your new credentials.",
