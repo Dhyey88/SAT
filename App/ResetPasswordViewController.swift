@@ -838,7 +838,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     // MARK: - Helpers
     private func showError(_ msg: String) {
         AppTheme.triggerNotificationFeedback(.error)
-        errorLabel.text = "  ⚠️  \(msg)  "
+        errorLabel.text = msg
         errorBanner.alpha = 0
         errorBanner.isHidden = false
         UIView.animate(withDuration: 0.25) {

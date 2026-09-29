@@ -226,6 +226,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             errorLabel.topAnchor.constraint(equalTo: topOrLabel.bottomAnchor, constant: 10),
             errorLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             errorLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+            errorLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 32),
 
             cardView.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 12),
             cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
@@ -1314,7 +1315,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     private func showError(message: String) {
         AppTheme.triggerNotificationFeedback(.error)
-        errorLabel.text = "  ⚠️  \(message)  "
+        errorLabel.text = message
         errorLabel.alpha = 0
         errorLabel.isHidden = false
         UIView.animate(withDuration: 0.25) {

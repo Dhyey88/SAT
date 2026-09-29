@@ -63,11 +63,10 @@ struct AppConfig {
     static let osVersion: String = "iOS \(UIDevice.current.systemVersion)"
 
     // MARK: - Google OAuth Configuration
-    static var googleIosClientId = "898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com"
-    static var googleReversedClientId: String {
-        let parts = googleIosClientId.components(separatedBy: ".")
-        return parts.reversed().joined(separator: ".")
-    }
+    static let googleIosClientId = "898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com"
+    static let googleReversedClientId = "com.googleusercontent.apps.898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1"
+    static var googleClientId = "898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com"
+    static var googleClientLoginId = "898063967168-cruek96o8pj8tdq5ppkp77fcu70tmbv1.apps.googleusercontent.com"
 
     // MARK: - Contact & Support Information (Dynamic with Live Defaults)
     static var supportEmail = "info@enin.io"
@@ -121,8 +120,10 @@ struct AppConfig {
                 guard !trimmed.isEmpty else { continue }
 
                 switch slug {
-                case "google_client_id", "google_client_login_id":
-                    googleIosClientId = trimmed
+                case "google_client_id":
+                    googleClientId = trimmed
+                case "google_client_login_id":
+                    googleClientLoginId = trimmed
                 case "default_help_contact":
                     helplineNumber = trimmed
                 case "from_email":
