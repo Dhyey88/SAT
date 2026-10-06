@@ -915,7 +915,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
         guard isNetworkAvailable else {
-            offlineOverlayView.isHidden = false
+            showOfflineOverlay()
             return
         }
 
@@ -1170,7 +1170,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     private func performSocialLoginRequest(email: String) {
         guard isNetworkAvailable else {
-            offlineOverlayView.isHidden = false
+            showOfflineOverlay()
             return
         }
 
@@ -1231,7 +1231,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     @objc private func handleLoginTap() {
         view.endEditing(true)
         guard isNetworkAvailable else {
-            offlineOverlayView.isHidden = false
+            showOfflineOverlay()
             return
         }
 
@@ -1344,13 +1344,15 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             object: nil
         )
         isNetworkAvailable = NetworkMonitor.shared.isConnected
-        offlineOverlayView.isHidden = isNetworkAvailable
+        offlineOverlayView.isHidden = true
     }
 
     @objc private func handleNetworkStatusChanged(_ notification: Notification) {
         let isConnected = (notification.userInfo?["isConnected"] as? Bool) ?? NetworkMonitor.shared.isConnected
         isNetworkAvailable = isConnected
-        offlineOverlayView.isHidden = isConnected
+        if isConnected && !offlineOverlayView.isHidden {
+            hideOfflineOverlay()
+        }
     }
 
     private func setupOfflineView() {
@@ -1431,6 +1433,29 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         ])
     }
 
+    private func showOfflineOverlay() {
+        view.endEditing(true)
+        view.bringSubviewToFront(offlineOverlayView)
+        AppTheme.triggerNotificationFeedback(.warning)
+
+        if offlineOverlayView.isHidden {
+            offlineOverlayView.alpha = 0
+            offlineOverlayView.isHidden = false
+            UIView.animate(withDuration: 0.25) {
+                self.offlineOverlayView.alpha = 1.0
+            }
+        }
+    }
+
+    private func hideOfflineOverlay() {
+        UIView.animate(withDuration: 0.25, animations: {
+            self.offlineOverlayView.alpha = 0
+        }) { _ in
+            self.offlineOverlayView.isHidden = true
+            self.offlineOverlayView.alpha = 1.0
+        }
+    }
+
     @objc private func callHelpline() {
         guard let url = URL(string: "tel://\(AppConfig.helplineNumber)") else { return }
         UIApplication.shared.open(url)
@@ -1438,9 +1463,15 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     @objc private func retryConnection() {
         if NetworkMonitor.shared.isConnected {
-            offlineOverlayView.isHidden = true
+            AppTheme.triggerNotificationFeedback(.success)
+            hideOfflineOverlay()
         } else {
-            showError(message: "Still offline. Please check your connection.")
+            AppTheme.triggerNotificationFeedback(.error)
+            let animation = CAKeyframeAnimation(keyPath: "transform.translation.x")
+            animation.timingFunction = CAMediaTimingFunction(name: .linear)
+            animation.duration = 0.5
+            animation.values = [-12.0, 12.0, -8.0, 8.0, -4.0, 4.0, 0.0]
+            offlineOverlayView.layer.add(animation, forKey: "shake")
         }
     }
 }
