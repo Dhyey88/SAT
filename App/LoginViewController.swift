@@ -56,6 +56,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     private let privacyPolicyButton = UIButton(type: .system)
     private let footerDividerLabel = UILabel()
     private let contactButton = UIButton(type: .system)
+    private let footerDividerLabel2 = UILabel()
+    private let deleteAccountButton = UIButton(type: .system)
     private let versionLabel = UILabel()
 
     // Error Alert
@@ -503,6 +505,17 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         contactButton.addTarget(self, action: #selector(openContactSheet), for: .touchUpInside)
         leftLinks.addArrangedSubview(contactButton)
 
+        footerDividerLabel2.text = "|"
+        footerDividerLabel2.textColor = UIColor.white.withAlphaComponent(0.4)
+        footerDividerLabel2.font = UIFont.systemFont(ofSize: 13)
+        leftLinks.addArrangedSubview(footerDividerLabel2)
+
+        deleteAccountButton.setTitle("Delete account", for: .normal)
+        deleteAccountButton.setTitleColor(UIColor.white.withAlphaComponent(0.65), for: .normal)
+        deleteAccountButton.titleLabel?.font = UIFont.systemFont(ofSize: 13)
+        deleteAccountButton.addTarget(self, action: #selector(openDeleteAccountModal), for: .touchUpInside)
+        leftLinks.addArrangedSubview(deleteAccountButton)
+
         footerStack.addArrangedSubview(leftLinks)
 
         // Version Label (Pure dynamic from bundle)
@@ -769,7 +782,33 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     }
 
     @objc private func openContactSheet() {
-        presentAndroidStylePopup(code: "247", message: "Available on sign up only.")
+        AppTheme.triggerHapticFeedback(.light)
+        let alert = UIAlertController(title: "Support & Account", message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "Contact Info", style: .default) { [weak self] _ in
+            self?.presentAndroidStylePopup(code: "247", message: "Available on sign up only.")
+        })
+        alert.addAction(UIAlertAction(title: "Request Account Deletion", style: .destructive) { [weak self] _ in
+            self?.openDeleteAccountModal()
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = contactButton
+            popover.sourceRect = contactButton.bounds
+        }
+        present(alert, animated: true)
+    }
+
+    // MARK: - Account Deletion Flow (Apple Guideline 5.1.1(v) Compliant)
+    @objc private func openDeleteAccountModal() {
+        AppTheme.triggerHapticFeedback(.medium)
+        guard let url = URL(string: AppConfig.deleteAccountURL) else { return }
+        let safariVC = SFSafariViewController(url: url)
+        safariVC.preferredBarTintColor = AppTheme.satDeepBlue
+        safariVC.preferredControlTintColor = .white
+        safariVC.dismissButtonStyle = .done
+        safariVC.modalPresentationStyle = .pageSheet
+        present(safariVC, animated: true)
     }
 
     // MARK: - Android Style Modal Dialog (247 / Available on sign up only.)
