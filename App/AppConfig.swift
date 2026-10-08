@@ -78,9 +78,6 @@ struct AppConfig {
         return "v \(ver)"
     }()
 
-    // MARK: - Account Management & Apple Guideline 5.1.1(v) Compliance
-    static let deleteAccountURL = "\(baseURL)/delete-request"
-
     // MARK: - REST API Endpoints
     struct API {
         static let login = "\(baseURL)/api/login"
@@ -100,7 +97,7 @@ struct AppConfig {
         static let getHelpReg = "\(baseURL)/api/get-help-reg"
         static let getSettings = "\(baseURL)/api/get-settings"
         static let getDocument = "\(baseURL)/api/get-document"
-        static let deleteAccount = "\(baseURL)/delete-request"
+        static let editUserProfile = "\(baseURL)/api/edit-userprofile"
 
         /// Web Dashboard target URL for authenticated supplier agent sessions
         static func supplierAgentURL(userId: Int) -> String {

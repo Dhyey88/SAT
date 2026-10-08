@@ -1,7 +1,6 @@
 import UIKit
 import WebKit
 import UserNotifications
-import SafariServices
 
 /// Lightweight proxy to break the WKUserContentController retain cycle.
 private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
@@ -32,6 +31,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         case decrementBadge
         case showLocalNotification
         case notify
+        case requestAccountDeletion
         case deleteAccount
     }
 
@@ -365,23 +365,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 }
             }))
         }
-        alert.addAction(UIAlertAction(title: "Request Account Deletion", style: .destructive, handler: { [weak self] _ in
-            self?.openDeleteAccountModal()
-        }))
         alert.addAction(UIAlertAction(title: "Close", style: .cancel))
         present(alert, animated: true)
-    }
-
-    // MARK: - Account Deletion Flow (Apple Guideline 5.1.1(v) Compliant)
-    @objc private func openDeleteAccountModal() {
-        AppTheme.triggerHapticFeedback(.medium)
-        guard let url = URL(string: AppConfig.deleteAccountURL) else { return }
-        let safariVC = SFSafariViewController(url: url)
-        safariVC.preferredBarTintColor = AppTheme.satDeepBlue
-        safariVC.preferredControlTintColor = .white
-        safariVC.dismissButtonStyle = .done
-        safariVC.modalPresentationStyle = .pageSheet
-        present(safariVC, animated: true)
     }
 
     // MARK: - Centralized Network Monitoring
@@ -487,10 +472,10 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             return
         }
 
-        // Intercept delete-request to present in native SFSafariViewController
-        if url.absoluteString.contains("/delete-request") {
+        // Intercept delete-request navigation to present native DeleteAccountViewController (Apple Guideline 5.1.1(v))
+        if url.absoluteString.contains("/delete-request") || url.absoluteString.contains("/delete-account") {
             decisionHandler(.cancel)
-            openDeleteAccountModal()
+            openNativeDeleteAccountModal()
             return
         }
 
@@ -679,9 +664,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             let amount = (dict["amount"] as? Int) ?? 1
             BadgeManager.shared.decrementBadgeCount(by: amount)
 
-        case .deleteAccount:
-            openDeleteAccountModal()
-
         case .showLocalNotification, .notify:
             let title = (dict["title"] as? String) ?? "BRE"
             let body = (dict["body"] as? String) ?? (dict["message"] as? String) ?? ""
@@ -717,7 +699,22 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 self.notificationFeedback.notificationOccurred(.success)
                 self.notificationFeedback.prepare()
             }
+
+        case .requestAccountDeletion, .deleteAccount:
+            openNativeDeleteAccountModal()
         }
+    }
+
+    @objc private func openNativeDeleteAccountModal() {
+        AppTheme.triggerHapticFeedback(.medium)
+        let currentUserEmail = SessionManager.shared.currentUserEmail ?? ""
+        let deleteVC = DeleteAccountViewController(mode: .authenticated, prefilledEmail: currentUserEmail)
+        deleteVC.onAccountDeletionSuccess = { [weak self] _ in
+            self?.dismiss(animated: true)
+        }
+        deleteVC.modalPresentationStyle = .overFullScreen
+        deleteVC.modalTransitionStyle = .crossDissolve
+        present(deleteVC, animated: true)
     }
 
     // MARK: - Smart Web Notification Message Detector
@@ -748,6 +745,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             },
             decrementBadge: function() {
                 this.postMessage({ action: 'decrementBadge' });
+            },
+            requestAccountDeletion: function() {
+                this.postMessage({ action: 'requestAccountDeletion' });
             },
             deleteAccount: function() {
                 this.postMessage({ action: 'deleteAccount' });

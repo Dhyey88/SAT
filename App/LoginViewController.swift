@@ -510,8 +510,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         footerDividerLabel2.font = UIFont.systemFont(ofSize: 13)
         leftLinks.addArrangedSubview(footerDividerLabel2)
 
-        deleteAccountButton.setTitle("Delete account", for: .normal)
-        deleteAccountButton.setTitleColor(UIColor.white.withAlphaComponent(0.65), for: .normal)
+        deleteAccountButton.setTitle("Delete Account", for: .normal)
+        deleteAccountButton.setTitleColor(AppTheme.alertRed.withAlphaComponent(0.9), for: .normal)
         deleteAccountButton.titleLabel?.font = UIFont.systemFont(ofSize: 13)
         deleteAccountButton.addTarget(self, action: #selector(openDeleteAccountModal), for: .touchUpInside)
         leftLinks.addArrangedSubview(deleteAccountButton)
@@ -746,6 +746,17 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         present(signUpVC, animated: true)
     }
 
+    @objc private func openDeleteAccountModal() {
+        AppTheme.triggerHapticFeedback(.medium)
+        let deleteVC = DeleteAccountViewController(mode: .unauthenticated)
+        deleteVC.onAccountDeletionSuccess = { [weak self] successMessage in
+            self?.showSuccessBanner(message: successMessage)
+        }
+        deleteVC.modalPresentationStyle = .overFullScreen
+        deleteVC.modalTransitionStyle = .crossDissolve
+        present(deleteVC, animated: true)
+    }
+
     // Login screen info (i) button - opens live dynamic Help modal
     @objc private func openInfoModal() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -782,33 +793,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     }
 
     @objc private func openContactSheet() {
-        AppTheme.triggerHapticFeedback(.light)
-        let alert = UIAlertController(title: "Support & Account", message: nil, preferredStyle: .actionSheet)
-        alert.addAction(UIAlertAction(title: "Contact Info", style: .default) { [weak self] _ in
-            self?.presentAndroidStylePopup(code: "247", message: "Available on sign up only.")
-        })
-        alert.addAction(UIAlertAction(title: "Request Account Deletion", style: .destructive) { [weak self] _ in
-            self?.openDeleteAccountModal()
-        })
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-
-        if let popover = alert.popoverPresentationController {
-            popover.sourceView = contactButton
-            popover.sourceRect = contactButton.bounds
-        }
-        present(alert, animated: true)
-    }
-
-    // MARK: - Account Deletion Flow (Apple Guideline 5.1.1(v) Compliant)
-    @objc private func openDeleteAccountModal() {
-        AppTheme.triggerHapticFeedback(.medium)
-        guard let url = URL(string: AppConfig.deleteAccountURL) else { return }
-        let safariVC = SFSafariViewController(url: url)
-        safariVC.preferredBarTintColor = AppTheme.satDeepBlue
-        safariVC.preferredControlTintColor = .white
-        safariVC.dismissButtonStyle = .done
-        safariVC.modalPresentationStyle = .pageSheet
-        present(safariVC, animated: true)
+        presentAndroidStylePopup(code: "247", message: "Available on sign up only.")
     }
 
     // MARK: - Android Style Modal Dialog (247 / Available on sign up only.)
@@ -1251,7 +1236,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
                     }
 
                     let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
-                    self.openWebDashboard(userId: userId, email: email)
+                    let userToken = json["access-token"] as? String
+                    self.openWebDashboard(userId: userId, email: email, token: userToken)
                 } else {
                     self.showError(message: message.isEmpty ? "Social login failed." : message)
                 }
@@ -1333,7 +1319,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
                     UserDefaults.standard.set(email, forKey: "saved_user_id")
 
                     let userId = (dataObj["userId"] as? Int) ?? Int("\(dataObj["userId"] ?? 0)") ?? 0
-                    self.openWebDashboard(userId: userId, email: email)
+                    let userToken = json["access-token"] as? String
+                    self.openWebDashboard(userId: userId, email: email, token: userToken)
                 } else {
                     AppTheme.triggerNotificationFeedback(.error)
                     self.showError(message: message.isEmpty ? "Invalid credentials. Please try again." : message)
@@ -1342,8 +1329,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         }
     }
 
-    private func openWebDashboard(userId: Int, email: String) {
-        SessionManager.shared.saveSession(userId: userId, email: email)
+    private func openWebDashboard(userId: Int, email: String, token: String? = nil) {
+        SessionManager.shared.saveSession(userId: userId, email: email, token: token)
         let targetURL = AppConfig.API.supplierAgentURL(userId: userId)
         let webVC = WebViewController(initialURLString: targetURL)
         let nav = UINavigationController(rootViewController: webVC)
@@ -1352,8 +1339,20 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         present(nav, animated: true)
     }
 
+    private func showSuccessBanner(message: String) {
+        AppTheme.triggerNotificationFeedback(.success)
+        errorLabel.backgroundColor = AppTheme.successGreen
+        errorLabel.text = message
+        errorLabel.alpha = 0
+        errorLabel.isHidden = false
+        UIView.animate(withDuration: 0.25) {
+            self.errorLabel.alpha = 1.0
+        }
+    }
+
     private func showError(message: String) {
         AppTheme.triggerNotificationFeedback(.error)
+        errorLabel.backgroundColor = AppTheme.errorRed
         errorLabel.text = message
         errorLabel.alpha = 0
         errorLabel.isHidden = false
@@ -1368,6 +1367,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
                 self.errorLabel.alpha = 0
             }) { _ in
                 self.errorLabel.isHidden = true
+                self.errorLabel.backgroundColor = AppTheme.errorRed
             }
         }
         emailContainer.layer.borderColor = AppTheme.inputBorderNormal.cgColor

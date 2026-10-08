@@ -26,6 +26,7 @@ final class SessionManager {
     private enum Keys {
         static let savedUserId = "sat_saved_user_id_int"
         static let savedUserEmail = "sat_saved_user_email"
+        static let savedUserToken = "sat_saved_user_token"
     }
 
     // MARK: - In-Memory State (Process-Bound)
@@ -48,12 +49,26 @@ final class SessionManager {
         return id > 0 ? id : nil
     }
 
+    var currentUserEmail: String? {
+        guard isSessionActiveInMemory else { return nil }
+        return UserDefaults.standard.string(forKey: Keys.savedUserEmail)
+    }
+
+    var currentUserToken: String? {
+        guard isSessionActiveInMemory else { return nil }
+        let token = UserDefaults.standard.string(forKey: Keys.savedUserToken)
+        return (token != nil && !token!.isEmpty) ? token : nil
+    }
+
     // MARK: - Session Lifecycle Operations
 
     /// Saves session state upon successful login
-    func saveSession(userId: Int, email: String) {
+    func saveSession(userId: Int, email: String, token: String? = nil) {
         UserDefaults.standard.set(userId, forKey: Keys.savedUserId)
         UserDefaults.standard.set(email, forKey: Keys.savedUserEmail)
+        if let token = token, !token.isEmpty {
+            UserDefaults.standard.set(token, forKey: Keys.savedUserToken)
+        }
         
         isSessionActiveInMemory = true
         lastActiveTimestamp = Date()
@@ -138,6 +153,7 @@ final class SessionManager {
         // Clear user credentials from UserDefaults
         UserDefaults.standard.removeObject(forKey: Keys.savedUserId)
         UserDefaults.standard.removeObject(forKey: Keys.savedUserEmail)
+        UserDefaults.standard.removeObject(forKey: Keys.savedUserToken)
 
         // Clear web session cookies
         DispatchQueue.main.async {
