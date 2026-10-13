@@ -68,6 +68,89 @@ struct AppTheme {
         static let otpDigits = UIFont.monospacedDigitSystemFont(ofSize: 22, weight: .bold)
     }
 
+    // MARK: - Popup & Modal Tokens
+    struct PopupTheme {
+        static let backdropBlurStyle: UIBlurEffect.Style = .systemUltraThinMaterialDark
+        static let cardCornerRadius: CGFloat = 20.0
+        static let cardBorderColor: UIColor = UIColor.white.withAlphaComponent(0.12)
+        static let cardBorderWidth: CGFloat = 1.0
+        static let cardBackgroundDark: UIColor = UIColor(red: 32/255, green: 38/255, blue: 46/255, alpha: 0.97)
+        static let shadowRadius: CGFloat = 22.0
+        static let shadowOpacity: Float = 0.35
+    }
+
+    /// Applies premium elevated shadow and rounded corners for floating popups and dialog cards
+    static func applyPopupCardElevation(to view: UIView, cornerRadius: CGFloat = PopupTheme.cardCornerRadius) {
+        view.layer.cornerRadius = cornerRadius
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOpacity = PopupTheme.shadowOpacity
+        view.layer.shadowOffset = CGSize(width: 0, height: 8)
+        view.layer.shadowRadius = PopupTheme.shadowRadius
+        view.layer.masksToBounds = false
+        view.layer.shouldRasterize = true
+        view.layer.rasterizationScale = UIScreen.main.scale
+    }
+
+    /// Creates a modern frosted glass blur backdrop view for popups and dialogs
+    static func createBlurBackdrop(style: UIBlurEffect.Style = .dark) -> UIVisualEffectView {
+        let blur = UIBlurEffect(style: style)
+        let effectView = UIVisualEffectView(effect: blur)
+        effectView.translatesAutoresizingMaskIntoConstraints = false
+        let dimmingOverlay = UIView()
+        dimmingOverlay.translatesAutoresizingMaskIntoConstraints = false
+        dimmingOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+        effectView.contentView.addSubview(dimmingOverlay)
+        NSLayoutConstraint.activate([
+            dimmingOverlay.topAnchor.constraint(equalTo: effectView.topAnchor),
+            dimmingOverlay.leadingAnchor.constraint(equalTo: effectView.leadingAnchor),
+            dimmingOverlay.trailingAnchor.constraint(equalTo: effectView.trailingAnchor),
+            dimmingOverlay.bottomAnchor.constraint(equalTo: effectView.bottomAnchor)
+        ])
+        return effectView
+    }
+
+    /// Fluid Apple-standard spring presentation for modal popups and dialogs
+    static func presentSpringPopup(backdrop: UIView, card: UIView, completion: (() -> Void)? = nil) {
+        backdrop.alpha = 0
+        backdrop.isHidden = false
+        card.alpha = 0
+        card.transform = CGAffineTransform(scaleX: 0.88, y: 0.88)
+        triggerHapticFeedback(.light)
+
+        UIView.animate(
+            withDuration: 0.35,
+            delay: 0,
+            usingSpringWithDamping: 0.82,
+            initialSpringVelocity: 0.6,
+            options: [.curveEaseOut],
+            animations: {
+                backdrop.alpha = 1.0
+                card.alpha = 1.0
+                card.transform = .identity
+            },
+            completion: { _ in completion?() }
+        )
+    }
+
+    /// Smooth spring scale-down dismissal for modal popups and dialogs
+    static func dismissSpringPopup(backdrop: UIView, card: UIView, completion: (() -> Void)? = nil) {
+        UIView.animate(
+            withDuration: 0.22,
+            delay: 0,
+            options: [.curveEaseIn],
+            animations: {
+                backdrop.alpha = 0
+                card.alpha = 0
+                card.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
+            },
+            completion: { _ in
+                backdrop.isHidden = true
+                card.transform = .identity
+                completion?()
+            }
+        )
+    }
+
     // MARK: - Elevation & Shadow Helpers
     /// Applies a smooth, modern drop shadow to floating cards without clipping
     /// Optimizes GPU rendering by enabling layer rasterization to eliminate dynamic off-screen render passes during scrolling.
@@ -121,3 +204,4 @@ struct AppTheme {
         generator.notificationOccurred(type)
     }
 }
+

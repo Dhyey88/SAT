@@ -240,6 +240,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
     // MARK: - Floating OTP Modal Dialog (Screenshot 3)
     private let otpOverlayBackdrop = UIView()
+    private let otpBlurView = AppTheme.createBlurBackdrop()
     private let otpCardContainer = UIView()
     private let otpTitleLabel = UILabel()
     private let otpInputField = UITextField()
@@ -253,8 +254,10 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
     // MARK: - Help Modal Dialog (Screenshot 4)
     private let helpOverlayBackdrop = UIView()
+    private let helpBlurView = AppTheme.createBlurBackdrop()
     private let helpCardContainer = UIView()
     private let helpHeaderView = UIView()
+    private let helpHeaderIcon = UIImageView()
     private let helpTitleLabel = UILabel()
     private let helpCloseButton = UIButton(type: .system)
     private let helpHeaderDivider = UIView()
@@ -1456,15 +1459,16 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     // MARK: - Floating OTP Modal Dialog (Screenshot 3)
     private func setupOTPDialogUI() {
         otpOverlayBackdrop.translatesAutoresizingMaskIntoConstraints = false
-        otpOverlayBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.65)
         otpOverlayBackdrop.isHidden = true
         view.addSubview(otpOverlayBackdrop)
 
+        otpOverlayBackdrop.addSubview(otpBlurView)
+
         otpCardContainer.translatesAutoresizingMaskIntoConstraints = false
-        otpCardContainer.backgroundColor = AppTheme.cardBackgroundDark
-        AppTheme.applyCardElevation(to: otpCardContainer, cornerRadius: AppTheme.CornerRadius.large)
-        otpCardContainer.layer.borderWidth = 1.0
-        otpCardContainer.layer.borderColor = UIColor.white.withAlphaComponent(0.1).cgColor
+        otpCardContainer.backgroundColor = AppTheme.PopupTheme.cardBackgroundDark
+        otpCardContainer.layer.borderWidth = AppTheme.PopupTheme.cardBorderWidth
+        otpCardContainer.layer.borderColor = AppTheme.PopupTheme.cardBorderColor.cgColor
+        AppTheme.applyPopupCardElevation(to: otpCardContainer, cornerRadius: AppTheme.PopupTheme.cardCornerRadius)
         otpOverlayBackdrop.addSubview(otpCardContainer)
 
         otpTitleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -1476,13 +1480,13 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         otpInputField.translatesAutoresizingMaskIntoConstraints = false
         otpInputField.attributedPlaceholder = NSAttributedString(
-            string: "Enter OTP",
-            attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.6)]
+            string: "• • • • • •",
+            attributes: [.foregroundColor: UIColor.white.withAlphaComponent(0.4), .font: AppTheme.Typography.otpDigits]
         )
         otpInputField.textColor = .white
-        otpInputField.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        otpInputField.font = AppTheme.Typography.otpDigits
         otpInputField.keyboardType = .numberPad
-        otpInputField.textAlignment = .left
+        otpInputField.textAlignment = .center
         otpInputField.delegate = self
         otpCardContainer.addSubview(otpInputField)
 
@@ -1499,7 +1503,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
         otpTimerLabel.translatesAutoresizingMaskIntoConstraints = false
         otpTimerLabel.text = "00 : 30"
-        otpTimerLabel.textColor = .white
+        otpTimerLabel.textColor = AppTheme.actionGold
         otpTimerLabel.font = UIFont.systemFont(ofSize: 17, weight: .bold)
         otpCardContainer.addSubview(otpTimerLabel)
 
@@ -1516,7 +1520,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         otpCancelButton.setTitleColor(.white, for: .normal)
         otpCancelButton.backgroundColor = UIColor(red: 60/255, green: 70/255, blue: 80/255, alpha: 1.0)
         otpCancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-        otpCancelButton.layer.cornerRadius = AppTheme.CornerRadius.small
+        otpCancelButton.layer.cornerRadius = 12
         otpCancelButton.addTarget(self, action: #selector(handleCancelOTP), for: .touchUpInside)
         otpCardContainer.addSubview(otpCancelButton)
 
@@ -1525,7 +1529,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         otpVerifyButton.setTitleColor(.white, for: .normal)
         otpVerifyButton.backgroundColor = AppTheme.emeraldGreen
         otpVerifyButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
-        otpVerifyButton.layer.cornerRadius = AppTheme.CornerRadius.small
+        otpVerifyButton.layer.cornerRadius = 12
         AppTheme.applyButtonElevation(to: otpVerifyButton)
         otpVerifyButton.addTarget(self, action: #selector(handleVerifyOTP), for: .touchUpInside)
         otpCardContainer.addSubview(otpVerifyButton)
@@ -1541,24 +1545,29 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             otpOverlayBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             otpOverlayBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
+            otpBlurView.topAnchor.constraint(equalTo: otpOverlayBackdrop.topAnchor),
+            otpBlurView.leadingAnchor.constraint(equalTo: otpOverlayBackdrop.leadingAnchor),
+            otpBlurView.trailingAnchor.constraint(equalTo: otpOverlayBackdrop.trailingAnchor),
+            otpBlurView.bottomAnchor.constraint(equalTo: otpOverlayBackdrop.bottomAnchor),
+
             otpCardContainer.centerYAnchor.constraint(equalTo: otpOverlayBackdrop.centerYAnchor, constant: -30),
             otpCardContainer.leadingAnchor.constraint(equalTo: otpOverlayBackdrop.leadingAnchor, constant: 24),
             otpCardContainer.trailingAnchor.constraint(equalTo: otpOverlayBackdrop.trailingAnchor, constant: -24),
 
-            otpTitleLabel.topAnchor.constraint(equalTo: otpCardContainer.topAnchor, constant: 20),
+            otpTitleLabel.topAnchor.constraint(equalTo: otpCardContainer.topAnchor, constant: 22),
             otpTitleLabel.centerXAnchor.constraint(equalTo: otpCardContainer.centerXAnchor),
 
             otpInputField.topAnchor.constraint(equalTo: otpTitleLabel.bottomAnchor, constant: 22),
             otpInputField.leadingAnchor.constraint(equalTo: otpCardContainer.leadingAnchor, constant: 20),
             otpInputField.trailingAnchor.constraint(equalTo: otpCardContainer.trailingAnchor, constant: -20),
-            otpInputField.heightAnchor.constraint(equalToConstant: 32),
+            otpInputField.heightAnchor.constraint(equalToConstant: 36),
 
             otpUnderline.topAnchor.constraint(equalTo: otpInputField.bottomAnchor, constant: 4),
             otpUnderline.leadingAnchor.constraint(equalTo: otpInputField.leadingAnchor),
             otpUnderline.trailingAnchor.constraint(equalTo: otpInputField.trailingAnchor),
             otpUnderline.heightAnchor.constraint(equalToConstant: 1.5),
 
-            otpErrorLabel.topAnchor.constraint(equalTo: otpUnderline.bottomAnchor, constant: 4),
+            otpErrorLabel.topAnchor.constraint(equalTo: otpUnderline.bottomAnchor, constant: 6),
             otpErrorLabel.leadingAnchor.constraint(equalTo: otpCardContainer.leadingAnchor, constant: 16),
             otpErrorLabel.trailingAnchor.constraint(equalTo: otpCardContainer.trailingAnchor, constant: -16),
 
@@ -1568,16 +1577,16 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             otpResendButton.centerYAnchor.constraint(equalTo: otpTimerLabel.centerYAnchor),
             otpResendButton.trailingAnchor.constraint(equalTo: otpCardContainer.trailingAnchor, constant: -20),
 
-            otpCancelButton.topAnchor.constraint(equalTo: otpTimerLabel.bottomAnchor, constant: 20),
+            otpCancelButton.topAnchor.constraint(equalTo: otpTimerLabel.bottomAnchor, constant: 22),
             otpCancelButton.leadingAnchor.constraint(equalTo: otpCardContainer.leadingAnchor, constant: 16),
-            otpCancelButton.widthAnchor.constraint(equalToConstant: 90),
-            otpCancelButton.heightAnchor.constraint(equalToConstant: 38),
-            otpCancelButton.bottomAnchor.constraint(equalTo: otpCardContainer.bottomAnchor, constant: -18),
+            otpCancelButton.widthAnchor.constraint(equalToConstant: 96),
+            otpCancelButton.heightAnchor.constraint(equalToConstant: 42),
+            otpCancelButton.bottomAnchor.constraint(equalTo: otpCardContainer.bottomAnchor, constant: -20),
 
-            otpVerifyButton.topAnchor.constraint(equalTo: otpTimerLabel.bottomAnchor, constant: 20),
+            otpVerifyButton.topAnchor.constraint(equalTo: otpTimerLabel.bottomAnchor, constant: 22),
             otpVerifyButton.trailingAnchor.constraint(equalTo: otpCardContainer.trailingAnchor, constant: -16),
-            otpVerifyButton.widthAnchor.constraint(equalToConstant: 110),
-            otpVerifyButton.heightAnchor.constraint(equalToConstant: 38),
+            otpVerifyButton.widthAnchor.constraint(equalToConstant: 120),
+            otpVerifyButton.heightAnchor.constraint(equalToConstant: 42),
 
             otpSpinner.centerYAnchor.constraint(equalTo: otpVerifyButton.centerYAnchor),
             otpSpinner.centerXAnchor.constraint(equalTo: otpVerifyButton.centerXAnchor)
@@ -1587,16 +1596,19 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     // MARK: - Help Modal Dialog (Screenshot 4)
     private func setupHelpDialogUI() {
         helpOverlayBackdrop.translatesAutoresizingMaskIntoConstraints = false
-        helpOverlayBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.65)
         helpOverlayBackdrop.isHidden = true
         view.addSubview(helpOverlayBackdrop)
+
+        helpOverlayBackdrop.addSubview(helpBlurView)
 
         let dismissTap = UITapGestureRecognizer(target: self, action: #selector(handleCloseHelpDialog))
         helpOverlayBackdrop.addGestureRecognizer(dismissTap)
 
         helpCardContainer.translatesAutoresizingMaskIntoConstraints = false
-        helpCardContainer.backgroundColor = .white
-        AppTheme.applyCardElevation(to: helpCardContainer, cornerRadius: AppTheme.CornerRadius.large)
+        helpCardContainer.backgroundColor = AppTheme.PopupTheme.cardBackgroundDark
+        helpCardContainer.layer.borderWidth = AppTheme.PopupTheme.cardBorderWidth
+        helpCardContainer.layer.borderColor = AppTheme.PopupTheme.cardBorderColor.cgColor
+        AppTheme.applyPopupCardElevation(to: helpCardContainer, cornerRadius: AppTheme.PopupTheme.cardCornerRadius)
         helpOverlayBackdrop.addSubview(helpCardContainer)
 
         let stopTap = UITapGestureRecognizer(target: nil, action: nil)
@@ -1606,20 +1618,26 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         helpHeaderView.translatesAutoresizingMaskIntoConstraints = false
         helpCardContainer.addSubview(helpHeaderView)
 
+        helpHeaderIcon.translatesAutoresizingMaskIntoConstraints = false
+        helpHeaderIcon.image = UIImage(systemName: "info.circle.fill")
+        helpHeaderIcon.tintColor = AppTheme.accentSkyBlue
+        helpHeaderIcon.contentMode = .scaleAspectFit
+        helpHeaderView.addSubview(helpHeaderIcon)
+
         helpTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         helpTitleLabel.text = "Help"
-        helpTitleLabel.textColor = AppTheme.canvasBackground
-        helpTitleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        helpTitleLabel.textColor = AppTheme.textPrimaryLight
+        helpTitleLabel.font = AppTheme.Typography.titleHeader
         helpHeaderView.addSubview(helpTitleLabel)
 
         helpCloseButton.translatesAutoresizingMaskIntoConstraints = false
         helpCloseButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
-        helpCloseButton.tintColor = UIColor(red: 160/255, green: 170/255, blue: 180/255, alpha: 1.0)
+        helpCloseButton.tintColor = UIColor.white.withAlphaComponent(0.65)
         helpCloseButton.addTarget(self, action: #selector(handleCloseHelpDialog), for: .touchUpInside)
         helpHeaderView.addSubview(helpCloseButton)
 
         helpHeaderDivider.translatesAutoresizingMaskIntoConstraints = false
-        helpHeaderDivider.backgroundColor = UIColor(red: 235/255, green: 235/255, blue: 235/255, alpha: 1.0)
+        helpHeaderDivider.backgroundColor = UIColor.white.withAlphaComponent(0.12)
         helpCardContainer.addSubview(helpHeaderDivider)
 
         // Content Text View
@@ -1627,14 +1645,14 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         helpTextView.isEditable = false
         helpTextView.isSelectable = false
         helpTextView.backgroundColor = .clear
-        helpTextView.textColor = UIColor(red: 60/255, green: 60/255, blue: 60/255, alpha: 1.0)
+        helpTextView.textColor = UIColor.white.withAlphaComponent(0.9)
         helpTextView.font = UIFont.systemFont(ofSize: 14.5, weight: .regular)
         helpTextView.showsVerticalScrollIndicator = true
         helpCardContainer.addSubview(helpTextView)
 
         helpSpinner.translatesAutoresizingMaskIntoConstraints = false
         helpSpinner.hidesWhenStopped = true
-        helpSpinner.color = AppTheme.skyBlueAccent
+        helpSpinner.color = AppTheme.accentSkyBlue
         helpCardContainer.addSubview(helpSpinner)
 
         NSLayoutConstraint.activate([
@@ -1643,24 +1661,34 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
             helpOverlayBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             helpOverlayBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
+            helpBlurView.topAnchor.constraint(equalTo: helpOverlayBackdrop.topAnchor),
+            helpBlurView.leadingAnchor.constraint(equalTo: helpOverlayBackdrop.leadingAnchor),
+            helpBlurView.trailingAnchor.constraint(equalTo: helpOverlayBackdrop.trailingAnchor),
+            helpBlurView.bottomAnchor.constraint(equalTo: helpOverlayBackdrop.bottomAnchor),
+
             helpCardContainer.centerXAnchor.constraint(equalTo: helpOverlayBackdrop.centerXAnchor),
             helpCardContainer.centerYAnchor.constraint(equalTo: helpOverlayBackdrop.centerYAnchor),
             helpCardContainer.leadingAnchor.constraint(equalTo: helpOverlayBackdrop.leadingAnchor, constant: 20),
             helpCardContainer.trailingAnchor.constraint(equalTo: helpOverlayBackdrop.trailingAnchor, constant: -20),
-            helpCardContainer.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height * 0.65),
+            helpCardContainer.heightAnchor.constraint(equalToConstant: min(UIScreen.main.bounds.height * 0.70, 560)),
 
             helpHeaderView.topAnchor.constraint(equalTo: helpCardContainer.topAnchor, constant: 14),
             helpHeaderView.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor, constant: 18),
             helpHeaderView.trailingAnchor.constraint(equalTo: helpCardContainer.trailingAnchor, constant: -18),
             helpHeaderView.heightAnchor.constraint(equalToConstant: 32),
 
-            helpTitleLabel.leadingAnchor.constraint(equalTo: helpHeaderView.leadingAnchor),
+            helpHeaderIcon.leadingAnchor.constraint(equalTo: helpHeaderView.leadingAnchor),
+            helpHeaderIcon.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
+            helpHeaderIcon.widthAnchor.constraint(equalToConstant: 24),
+            helpHeaderIcon.heightAnchor.constraint(equalToConstant: 24),
+
+            helpTitleLabel.leadingAnchor.constraint(equalTo: helpHeaderIcon.trailingAnchor, constant: 8),
             helpTitleLabel.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
 
             helpCloseButton.trailingAnchor.constraint(equalTo: helpHeaderView.trailingAnchor),
             helpCloseButton.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
-            helpCloseButton.widthAnchor.constraint(equalToConstant: 30),
-            helpCloseButton.heightAnchor.constraint(equalToConstant: 30),
+            helpCloseButton.widthAnchor.constraint(equalToConstant: 32),
+            helpCloseButton.heightAnchor.constraint(equalToConstant: 32),
 
             helpHeaderDivider.topAnchor.constraint(equalTo: helpHeaderView.bottomAnchor, constant: 10),
             helpHeaderDivider.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor),
@@ -1683,11 +1711,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         helpTextView.text = defaultText
         helpTextView.setContentOffset(.zero, animated: false)
 
-        helpOverlayBackdrop.alpha = 0
-        helpOverlayBackdrop.isHidden = false
-        UIView.animate(withDuration: 0.25) {
-            self.helpOverlayBackdrop.alpha = 1.0
-        }
+        AppTheme.presentSpringPopup(backdrop: helpOverlayBackdrop, card: helpCardContainer)
 
         guard let endpoint = apiEndpoint else { return }
 
@@ -1705,11 +1729,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     }
 
     @objc private func handleCloseHelpDialog() {
-        UIView.animate(withDuration: 0.2, animations: {
-            self.helpOverlayBackdrop.alpha = 0
-        }) { _ in
-            self.helpOverlayBackdrop.isHidden = true
-        }
+        AppTheme.dismissSpringPopup(backdrop: helpOverlayBackdrop, card: helpCardContainer)
     }
 
     // MARK: - Actions & Network Calls
@@ -1901,12 +1921,8 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
         otpTimerLabel.text = "00 : 30"
         otpResendButton.isHidden = true
         otpErrorLabel.isHidden = true
-        otpOverlayBackdrop.alpha = 0
-        otpOverlayBackdrop.isHidden = false
 
-        UIView.animate(withDuration: 0.25) {
-            self.otpOverlayBackdrop.alpha = 1.0
-        }
+        AppTheme.presentSpringPopup(backdrop: otpOverlayBackdrop, card: otpCardContainer)
         otpInputField.becomeFirstResponder()
         startOTPTimer()
     }
@@ -1928,11 +1944,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
     @objc private func handleCancelOTP() {
         otpTimer?.invalidate()
         view.endEditing(true)
-        UIView.animate(withDuration: 0.2, animations: {
-            self.otpOverlayBackdrop.alpha = 0
-        }) { _ in
-            self.otpOverlayBackdrop.isHidden = true
-        }
+        AppTheme.dismissSpringPopup(backdrop: otpOverlayBackdrop, card: otpCardContainer)
     }
 
     @objc private func handleResendOTP() {
@@ -1986,11 +1998,7 @@ class SignUpViewController: UIViewController, UITextFieldDelegate, UIImagePicker
 
                     UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-                    UIView.animate(withDuration: 0.2, animations: {
-                        self.otpOverlayBackdrop.alpha = 0
-                    }) { _ in
-                        self.otpOverlayBackdrop.isHidden = true
-                    }
+                    AppTheme.dismissSpringPopup(backdrop: self.otpOverlayBackdrop, card: self.otpCardContainer)
 
                     // Reveal Parent Code Row on Mid Card
                     self.midMobileToBottomConstraint?.isActive = false

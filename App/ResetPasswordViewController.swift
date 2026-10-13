@@ -840,10 +840,12 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
         AppTheme.triggerNotificationFeedback(.error)
         errorLabel.text = msg
         errorBanner.alpha = 0
+        errorBanner.transform = CGAffineTransform(translationX: 0, y: -8)
         errorBanner.isHidden = false
-        UIView.animate(withDuration: 0.25) {
+        UIView.animate(withDuration: 0.32, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: .curveEaseOut, animations: {
             self.errorBanner.alpha = 1.0
-        }
+            self.errorBanner.transform = .identity
+        })
     }
 
     @objc private func clearErrorBanner() {

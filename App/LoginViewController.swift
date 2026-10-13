@@ -65,8 +65,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     // MARK: - Help Modal Dialog
     private let helpOverlayBackdrop = UIView()
+    private let helpBlurView = AppTheme.createBlurBackdrop()
     private let helpCardContainer = UIView()
     private let helpHeaderView = UIView()
+    private let helpHeaderIcon = UIImageView()
     private let helpTitleLabel = UILabel()
     private let helpCloseButton = UIButton(type: .system)
     private let helpHeaderDivider = UIView()
@@ -75,10 +77,13 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
 
     // MARK: - Android-Style Message Popup (247 / Available on sign up only)
     private let androidPopupBackdrop = UIView()
+    private let androidPopupBlurView = AppTheme.createBlurBackdrop()
     private let androidPopupCard = UIView()
+    private let androidPopupEmblemContainer = UIView()
     private let androidPopupEmblem = UIImageView()
     private let androidPopupCodeLabel = UILabel()
     private let androidPopupMsgLabel = UILabel()
+    private let androidPopupVersionBadge = UIView()
     private let androidPopupVersionLabel = UILabel()
     private let androidPopupOkButton = UIButton(type: .system)
 
@@ -528,17 +533,19 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     // MARK: - Help Modal Dialog (API-driven)
     private func setupHelpDialogUI() {
         helpOverlayBackdrop.translatesAutoresizingMaskIntoConstraints = false
-        helpOverlayBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.65)
         helpOverlayBackdrop.isHidden = true
         view.addSubview(helpOverlayBackdrop)
+
+        helpOverlayBackdrop.addSubview(helpBlurView)
 
         let dismissTap = UITapGestureRecognizer(target: self, action: #selector(handleCloseHelpDialog))
         helpOverlayBackdrop.addGestureRecognizer(dismissTap)
 
         helpCardContainer.translatesAutoresizingMaskIntoConstraints = false
-        helpCardContainer.backgroundColor = .white
-        helpCardContainer.layer.cornerRadius = AppTheme.CornerRadius.large
-        helpCardContainer.layer.masksToBounds = true
+        helpCardContainer.backgroundColor = AppTheme.PopupTheme.cardBackgroundDark
+        helpCardContainer.layer.borderWidth = AppTheme.PopupTheme.cardBorderWidth
+        helpCardContainer.layer.borderColor = AppTheme.PopupTheme.cardBorderColor.cgColor
+        AppTheme.applyPopupCardElevation(to: helpCardContainer, cornerRadius: AppTheme.PopupTheme.cardCornerRadius)
         helpOverlayBackdrop.addSubview(helpCardContainer)
 
         let stopTap = UITapGestureRecognizer(target: nil, action: nil)
@@ -548,21 +555,26 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         helpHeaderView.translatesAutoresizingMaskIntoConstraints = false
         helpCardContainer.addSubview(helpHeaderView)
 
+        helpHeaderIcon.translatesAutoresizingMaskIntoConstraints = false
+        helpHeaderIcon.image = UIImage(systemName: "info.circle.fill")
+        helpHeaderIcon.tintColor = AppTheme.accentSkyBlue
+        helpHeaderIcon.contentMode = .scaleAspectFit
+        helpHeaderView.addSubview(helpHeaderIcon)
+
         helpTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         helpTitleLabel.text = "Help"
-        helpTitleLabel.textColor = AppTheme.textPrimaryDark
-        helpTitleLabel.font = AppTheme.Typography.titleHero
+        helpTitleLabel.textColor = AppTheme.textPrimaryLight
+        helpTitleLabel.font = AppTheme.Typography.titleHeader
         helpHeaderView.addSubview(helpTitleLabel)
 
         helpCloseButton.translatesAutoresizingMaskIntoConstraints = false
-        helpCloseButton.setTitle("✕", for: .normal)
-        helpCloseButton.setTitleColor(UIColor(red: 150/255, green: 150/255, blue: 150/255, alpha: 1.0), for: .normal)
-        helpCloseButton.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+        helpCloseButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+        helpCloseButton.tintColor = UIColor.white.withAlphaComponent(0.65)
         helpCloseButton.addTarget(self, action: #selector(handleCloseHelpDialog), for: .touchUpInside)
         helpHeaderView.addSubview(helpCloseButton)
 
         helpHeaderDivider.translatesAutoresizingMaskIntoConstraints = false
-        helpHeaderDivider.backgroundColor = UIColor(red: 235/255, green: 235/255, blue: 235/255, alpha: 1.0)
+        helpHeaderDivider.backgroundColor = UIColor.white.withAlphaComponent(0.12)
         helpCardContainer.addSubview(helpHeaderDivider)
 
         // Content Text View
@@ -570,14 +582,14 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         helpTextView.isEditable = false
         helpTextView.isSelectable = false
         helpTextView.backgroundColor = .clear
-        helpTextView.textColor = UIColor(red: 60/255, green: 60/255, blue: 60/255, alpha: 1.0)
+        helpTextView.textColor = UIColor.white.withAlphaComponent(0.9)
         helpTextView.font = UIFont.systemFont(ofSize: 14.5, weight: .regular)
         helpTextView.showsVerticalScrollIndicator = true
         helpCardContainer.addSubview(helpTextView)
 
         helpSpinner.translatesAutoresizingMaskIntoConstraints = false
         helpSpinner.hidesWhenStopped = true
-        helpSpinner.color = UIColor(red: 39/255, green: 169/255, blue: 227/255, alpha: 1.0)
+        helpSpinner.color = AppTheme.accentSkyBlue
         helpCardContainer.addSubview(helpSpinner)
 
         NSLayoutConstraint.activate([
@@ -586,24 +598,34 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             helpOverlayBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             helpOverlayBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
+            helpBlurView.topAnchor.constraint(equalTo: helpOverlayBackdrop.topAnchor),
+            helpBlurView.leadingAnchor.constraint(equalTo: helpOverlayBackdrop.leadingAnchor),
+            helpBlurView.trailingAnchor.constraint(equalTo: helpOverlayBackdrop.trailingAnchor),
+            helpBlurView.bottomAnchor.constraint(equalTo: helpOverlayBackdrop.bottomAnchor),
+
             helpCardContainer.centerXAnchor.constraint(equalTo: helpOverlayBackdrop.centerXAnchor),
             helpCardContainer.centerYAnchor.constraint(equalTo: helpOverlayBackdrop.centerYAnchor),
             helpCardContainer.leadingAnchor.constraint(equalTo: helpOverlayBackdrop.leadingAnchor, constant: 20),
             helpCardContainer.trailingAnchor.constraint(equalTo: helpOverlayBackdrop.trailingAnchor, constant: -20),
-            helpCardContainer.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height * 0.65),
+            helpCardContainer.heightAnchor.constraint(equalToConstant: min(UIScreen.main.bounds.height * 0.70, 560)),
 
             helpHeaderView.topAnchor.constraint(equalTo: helpCardContainer.topAnchor, constant: 14),
             helpHeaderView.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor, constant: 18),
             helpHeaderView.trailingAnchor.constraint(equalTo: helpCardContainer.trailingAnchor, constant: -18),
             helpHeaderView.heightAnchor.constraint(equalToConstant: 32),
 
-            helpTitleLabel.leadingAnchor.constraint(equalTo: helpHeaderView.leadingAnchor),
+            helpHeaderIcon.leadingAnchor.constraint(equalTo: helpHeaderView.leadingAnchor),
+            helpHeaderIcon.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
+            helpHeaderIcon.widthAnchor.constraint(equalToConstant: 24),
+            helpHeaderIcon.heightAnchor.constraint(equalToConstant: 24),
+
+            helpTitleLabel.leadingAnchor.constraint(equalTo: helpHeaderIcon.trailingAnchor, constant: 8),
             helpTitleLabel.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
 
             helpCloseButton.trailingAnchor.constraint(equalTo: helpHeaderView.trailingAnchor),
             helpCloseButton.centerYAnchor.constraint(equalTo: helpHeaderView.centerYAnchor),
-            helpCloseButton.widthAnchor.constraint(equalToConstant: 30),
-            helpCloseButton.heightAnchor.constraint(equalToConstant: 30),
+            helpCloseButton.widthAnchor.constraint(equalToConstant: 32),
+            helpCloseButton.heightAnchor.constraint(equalToConstant: 32),
 
             helpHeaderDivider.topAnchor.constraint(equalTo: helpHeaderView.bottomAnchor, constant: 10),
             helpHeaderDivider.leadingAnchor.constraint(equalTo: helpCardContainer.leadingAnchor),
@@ -626,11 +648,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         helpTextView.text = defaultText
         helpTextView.setContentOffset(.zero, animated: false)
 
-        helpOverlayBackdrop.alpha = 0
-        helpOverlayBackdrop.isHidden = false
-        UIView.animate(withDuration: 0.25) {
-            self.helpOverlayBackdrop.alpha = 1.0
-        }
+        AppTheme.presentSpringPopup(backdrop: helpOverlayBackdrop, card: helpCardContainer)
 
         guard let endpoint = apiEndpoint else { return }
 
@@ -648,11 +666,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     }
 
     @objc private func handleCloseHelpDialog() {
-        UIView.animate(withDuration: 0.2, animations: {
-            self.helpOverlayBackdrop.alpha = 0
-        }) { _ in
-            self.helpOverlayBackdrop.isHidden = true
-        }
+        AppTheme.dismissSpringPopup(backdrop: helpOverlayBackdrop, card: helpCardContainer)
     }
 
     // MARK: - Keyboard Handling
@@ -799,57 +813,76 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     // MARK: - Android Style Modal Dialog (247 / Available on sign up only.)
     private func setupAndroidPopupUI() {
         androidPopupBackdrop.translatesAutoresizingMaskIntoConstraints = false
-        androidPopupBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.6)
         androidPopupBackdrop.isHidden = true
         view.addSubview(androidPopupBackdrop)
+
+        androidPopupBackdrop.addSubview(androidPopupBlurView)
 
         let dismissTap = UITapGestureRecognizer(target: self, action: #selector(dismissAndroidPopup))
         androidPopupBackdrop.addGestureRecognizer(dismissTap)
 
         androidPopupCard.translatesAutoresizingMaskIntoConstraints = false
-        androidPopupCard.backgroundColor = .white
-        androidPopupCard.layer.cornerRadius = AppTheme.CornerRadius.large
-        androidPopupCard.layer.masksToBounds = true
-        AppTheme.applyCardElevation(to: androidPopupCard, cornerRadius: AppTheme.CornerRadius.large)
+        androidPopupCard.backgroundColor = AppTheme.PopupTheme.cardBackgroundDark
+        androidPopupCard.layer.borderWidth = AppTheme.PopupTheme.cardBorderWidth
+        androidPopupCard.layer.borderColor = AppTheme.PopupTheme.cardBorderColor.cgColor
+        AppTheme.applyPopupCardElevation(to: androidPopupCard, cornerRadius: AppTheme.PopupTheme.cardCornerRadius)
         androidPopupBackdrop.addSubview(androidPopupCard)
 
         let stopTap = UITapGestureRecognizer(target: nil, action: nil)
         androidPopupCard.addGestureRecognizer(stopTap)
+
+        // Circular Emblem Container with Emerald Tint
+        androidPopupEmblemContainer.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupEmblemContainer.backgroundColor = AppTheme.emeraldGreen.withAlphaComponent(0.15)
+        androidPopupEmblemContainer.layer.cornerRadius = 28
+        androidPopupEmblemContainer.layer.borderWidth = 1.5
+        androidPopupEmblemContainer.layer.borderColor = AppTheme.emeraldGreen.withAlphaComponent(0.35).cgColor
+        androidPopupCard.addSubview(androidPopupEmblemContainer)
 
         // Green Trust Emblem
         androidPopupEmblem.translatesAutoresizingMaskIntoConstraints = false
         androidPopupEmblem.image = UIImage(named: "trust_emblem") ?? UIImage(systemName: "checkmark.seal.fill")
         androidPopupEmblem.tintColor = AppTheme.emeraldGreen
         androidPopupEmblem.contentMode = .scaleAspectFit
-        androidPopupCard.addSubview(androidPopupEmblem)
+        androidPopupEmblemContainer.addSubview(androidPopupEmblem)
 
-        // Code Label (e.g. "247")
+        // Code Label (e.g. "Notice: 247")
         androidPopupCodeLabel.translatesAutoresizingMaskIntoConstraints = false
-        androidPopupCodeLabel.text = "247"
-        androidPopupCodeLabel.textColor = AppTheme.textPrimaryDark
+        androidPopupCodeLabel.text = "Notice: 247"
+        androidPopupCodeLabel.textColor = .white
         androidPopupCodeLabel.font = AppTheme.Typography.titleHeader
+        androidPopupCodeLabel.textAlignment = .center
         androidPopupCard.addSubview(androidPopupCodeLabel)
 
         // Body Message: "Available on sign up only."
         androidPopupMsgLabel.translatesAutoresizingMaskIntoConstraints = false
         androidPopupMsgLabel.text = "Available on sign up only."
-        androidPopupMsgLabel.textColor = AppTheme.textPrimaryDark
-        androidPopupMsgLabel.font = AppTheme.Typography.titleCard
+        androidPopupMsgLabel.textColor = UIColor.white.withAlphaComponent(0.85)
+        androidPopupMsgLabel.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        androidPopupMsgLabel.textAlignment = .center
         androidPopupMsgLabel.numberOfLines = 0
         androidPopupCard.addSubview(androidPopupMsgLabel)
 
-        // Version Label ("v t 2.0.10") at bottom-left
+        // Version Pill Badge at bottom-left
+        androidPopupVersionBadge.translatesAutoresizingMaskIntoConstraints = false
+        androidPopupVersionBadge.backgroundColor = UIColor.white.withAlphaComponent(0.08)
+        androidPopupVersionBadge.layer.cornerRadius = 11
+        androidPopupCard.addSubview(androidPopupVersionBadge)
+
         androidPopupVersionLabel.translatesAutoresizingMaskIntoConstraints = false
         androidPopupVersionLabel.text = AppConfig.appVersion
-        androidPopupVersionLabel.textColor = AppTheme.textPlaceholder
-        androidPopupVersionLabel.font = AppTheme.Typography.captionRegular
-        androidPopupCard.addSubview(androidPopupVersionLabel)
+        androidPopupVersionLabel.textColor = UIColor.white.withAlphaComponent(0.65)
+        androidPopupVersionLabel.font = UIFont.systemFont(ofSize: 11, weight: .medium)
+        androidPopupVersionBadge.addSubview(androidPopupVersionLabel)
 
-        // Ok Button at bottom-right
+        // Modern Pill OK Button
         androidPopupOkButton.translatesAutoresizingMaskIntoConstraints = false
-        androidPopupOkButton.setTitle("Ok", for: .normal)
-        androidPopupOkButton.setTitleColor(AppTheme.textPrimaryDark, for: .normal)
+        androidPopupOkButton.setTitle("OK, Got It", for: .normal)
+        androidPopupOkButton.setTitleColor(.white, for: .normal)
         androidPopupOkButton.titleLabel?.font = AppTheme.Typography.bodyBold
+        androidPopupOkButton.backgroundColor = AppTheme.emeraldGreen
+        androidPopupOkButton.layer.cornerRadius = 12
+        AppTheme.applyButtonElevation(to: androidPopupOkButton)
         androidPopupOkButton.addTarget(self, action: #selector(dismissAndroidPopup), for: .touchUpInside)
         androidPopupCard.addSubview(androidPopupOkButton)
 
@@ -859,52 +892,60 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
             androidPopupBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             androidPopupBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
+            androidPopupBlurView.topAnchor.constraint(equalTo: androidPopupBackdrop.topAnchor),
+            androidPopupBlurView.leadingAnchor.constraint(equalTo: androidPopupBackdrop.leadingAnchor),
+            androidPopupBlurView.trailingAnchor.constraint(equalTo: androidPopupBackdrop.trailingAnchor),
+            androidPopupBlurView.bottomAnchor.constraint(equalTo: androidPopupBackdrop.bottomAnchor),
+
             androidPopupCard.centerXAnchor.constraint(equalTo: androidPopupBackdrop.centerXAnchor),
             androidPopupCard.centerYAnchor.constraint(equalTo: androidPopupBackdrop.centerYAnchor),
             androidPopupCard.leadingAnchor.constraint(equalTo: androidPopupBackdrop.leadingAnchor, constant: 28),
             androidPopupCard.trailingAnchor.constraint(equalTo: androidPopupBackdrop.trailingAnchor, constant: -28),
 
-            androidPopupEmblem.topAnchor.constraint(equalTo: androidPopupCard.topAnchor, constant: 22),
-            androidPopupEmblem.leadingAnchor.constraint(equalTo: androidPopupCard.leadingAnchor, constant: 20),
-            androidPopupEmblem.widthAnchor.constraint(equalToConstant: 32),
-            androidPopupEmblem.heightAnchor.constraint(equalToConstant: 32),
+            androidPopupEmblemContainer.topAnchor.constraint(equalTo: androidPopupCard.topAnchor, constant: 24),
+            androidPopupEmblemContainer.centerXAnchor.constraint(equalTo: androidPopupCard.centerXAnchor),
+            androidPopupEmblemContainer.widthAnchor.constraint(equalToConstant: 56),
+            androidPopupEmblemContainer.heightAnchor.constraint(equalToConstant: 56),
 
-            androidPopupCodeLabel.leadingAnchor.constraint(equalTo: androidPopupEmblem.trailingAnchor, constant: 10),
-            androidPopupCodeLabel.centerYAnchor.constraint(equalTo: androidPopupEmblem.centerYAnchor),
+            androidPopupEmblem.centerXAnchor.constraint(equalTo: androidPopupEmblemContainer.centerXAnchor),
+            androidPopupEmblem.centerYAnchor.constraint(equalTo: androidPopupEmblemContainer.centerYAnchor),
+            androidPopupEmblem.widthAnchor.constraint(equalToConstant: 30),
+            androidPopupEmblem.heightAnchor.constraint(equalToConstant: 30),
 
-            androidPopupMsgLabel.topAnchor.constraint(equalTo: androidPopupEmblem.bottomAnchor, constant: 18),
-            androidPopupMsgLabel.leadingAnchor.constraint(equalTo: androidPopupCard.leadingAnchor, constant: 20),
-            androidPopupMsgLabel.trailingAnchor.constraint(equalTo: androidPopupCard.trailingAnchor, constant: -20),
+            androidPopupCodeLabel.topAnchor.constraint(equalTo: androidPopupEmblemContainer.bottomAnchor, constant: 14),
+            androidPopupCodeLabel.centerXAnchor.constraint(equalTo: androidPopupCard.centerXAnchor),
 
-            androidPopupVersionLabel.leadingAnchor.constraint(equalTo: androidPopupCard.leadingAnchor, constant: 20),
-            androidPopupVersionLabel.bottomAnchor.constraint(equalTo: androidPopupCard.bottomAnchor, constant: -18),
+            androidPopupMsgLabel.topAnchor.constraint(equalTo: androidPopupCodeLabel.bottomAnchor, constant: 10),
+            androidPopupMsgLabel.leadingAnchor.constraint(equalTo: androidPopupCard.leadingAnchor, constant: 24),
+            androidPopupMsgLabel.trailingAnchor.constraint(equalTo: androidPopupCard.trailingAnchor, constant: -24),
 
+            androidPopupVersionBadge.topAnchor.constraint(equalTo: androidPopupMsgLabel.bottomAnchor, constant: 16),
+            androidPopupVersionBadge.centerXAnchor.constraint(equalTo: androidPopupCard.centerXAnchor),
+            androidPopupVersionBadge.heightAnchor.constraint(equalToConstant: 22),
+
+            androidPopupVersionLabel.leadingAnchor.constraint(equalTo: androidPopupVersionBadge.leadingAnchor, constant: 10),
+            androidPopupVersionLabel.trailingAnchor.constraint(equalTo: androidPopupVersionBadge.trailingAnchor, constant: -10),
+            androidPopupVersionLabel.centerYAnchor.constraint(equalTo: androidPopupVersionBadge.centerYAnchor),
+
+            androidPopupOkButton.topAnchor.constraint(equalTo: androidPopupVersionBadge.bottomAnchor, constant: 20),
+            androidPopupOkButton.leadingAnchor.constraint(equalTo: androidPopupCard.leadingAnchor, constant: 24),
             androidPopupOkButton.trailingAnchor.constraint(equalTo: androidPopupCard.trailingAnchor, constant: -24),
-            androidPopupOkButton.bottomAnchor.constraint(equalTo: androidPopupCard.bottomAnchor, constant: -14),
-            androidPopupOkButton.topAnchor.constraint(equalTo: androidPopupMsgLabel.bottomAnchor, constant: 36)
+            androidPopupOkButton.heightAnchor.constraint(equalToConstant: 44),
+            androidPopupOkButton.bottomAnchor.constraint(equalTo: androidPopupCard.bottomAnchor, constant: -22)
         ])
     }
 
     private func presentAndroidStylePopup(code: String = "247", message: String = "Available on sign up only.") {
         view.endEditing(true)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        androidPopupCodeLabel.text = code
+        androidPopupCodeLabel.text = code.isEmpty ? "Notice" : "Notice: \(code)"
         androidPopupMsgLabel.text = message
         androidPopupVersionLabel.text = AppConfig.appVersion
 
-        androidPopupBackdrop.alpha = 0
-        androidPopupBackdrop.isHidden = false
-        UIView.animate(withDuration: 0.25) {
-            self.androidPopupBackdrop.alpha = 1.0
-        }
+        AppTheme.presentSpringPopup(backdrop: androidPopupBackdrop, card: androidPopupCard)
     }
 
     @objc private func dismissAndroidPopup() {
-        UIView.animate(withDuration: 0.2, animations: {
-            self.androidPopupBackdrop.alpha = 0
-        }) { _ in
-            self.androidPopupBackdrop.isHidden = true
-        }
+        AppTheme.dismissSpringPopup(backdrop: androidPopupBackdrop, card: androidPopupCard)
     }
 
     // MARK: - ASWebAuthenticationPresentationContextProviding
@@ -1344,10 +1385,12 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         errorLabel.backgroundColor = AppTheme.successGreen
         errorLabel.text = message
         errorLabel.alpha = 0
+        errorLabel.transform = CGAffineTransform(translationX: 0, y: -8)
         errorLabel.isHidden = false
-        UIView.animate(withDuration: 0.25) {
+        UIView.animate(withDuration: 0.32, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: .curveEaseOut, animations: {
             self.errorLabel.alpha = 1.0
-        }
+            self.errorLabel.transform = .identity
+        })
     }
 
     private func showError(message: String) {
@@ -1355,10 +1398,12 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
         errorLabel.backgroundColor = AppTheme.errorRed
         errorLabel.text = message
         errorLabel.alpha = 0
+        errorLabel.transform = CGAffineTransform(translationX: 0, y: -8)
         errorLabel.isHidden = false
-        UIView.animate(withDuration: 0.25) {
+        UIView.animate(withDuration: 0.32, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: .curveEaseOut, animations: {
             self.errorLabel.alpha = 1.0
-        }
+            self.errorLabel.transform = .identity
+        })
     }
 
     private func clearError() {

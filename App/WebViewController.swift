@@ -173,16 +173,16 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     // MARK: - Native Round Circular Loader (App-Like Spinner)
     private func setupLoaderHUD() {
         loaderHUD.translatesAutoresizingMaskIntoConstraints = false
-        loaderHUD.backgroundColor = AppTheme.satDeepBlue.withAlphaComponent(0.92)
-        AppTheme.applyCardElevation(to: loaderHUD, cornerRadius: AppTheme.CornerRadius.xlarge)
-        loaderHUD.layer.borderWidth = 1.0
-        loaderHUD.layer.borderColor = UIColor.white.withAlphaComponent(0.15).cgColor
+        loaderHUD.backgroundColor = AppTheme.PopupTheme.cardBackgroundDark
+        AppTheme.applyPopupCardElevation(to: loaderHUD, cornerRadius: AppTheme.PopupTheme.cardCornerRadius)
+        loaderHUD.layer.borderWidth = AppTheme.PopupTheme.cardBorderWidth
+        loaderHUD.layer.borderColor = AppTheme.PopupTheme.cardBorderColor.cgColor
         loaderHUD.alpha = 0
         loaderHUD.isHidden = true
         view.addSubview(loaderHUD)
 
         activitySpinner.translatesAutoresizingMaskIntoConstraints = false
-        activitySpinner.color = .white
+        activitySpinner.color = AppTheme.accentSkyBlue
         activitySpinner.hidesWhenStopped = true
         loaderHUD.addSubview(activitySpinner)
 
@@ -237,14 +237,16 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     // MARK: - App Store Compliant Offline Overlay (Guideline 4.2)
     private func setupOfflineOverlay() {
         offlineOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        offlineOverlayView.backgroundColor = UIColor(red: 245/255, green: 247/255, blue: 252/255, alpha: 1.0)
+        offlineOverlayView.backgroundColor = AppTheme.canvasBackground
         offlineOverlayView.isHidden = true
         view.addSubview(offlineOverlayView)
 
         let card = UIView()
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = .white
-        AppTheme.applyCardElevation(to: card, cornerRadius: AppTheme.CornerRadius.xlarge)
+        card.backgroundColor = AppTheme.PopupTheme.cardBackgroundDark
+        card.layer.borderWidth = AppTheme.PopupTheme.cardBorderWidth
+        card.layer.borderColor = AppTheme.PopupTheme.cardBorderColor.cgColor
+        AppTheme.applyPopupCardElevation(to: card, cornerRadius: AppTheme.PopupTheme.cardCornerRadius)
         offlineOverlayView.addSubview(card)
 
         let container = UIStackView()
@@ -256,7 +258,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
         let badgeView = UIView()
         badgeView.translatesAutoresizingMaskIntoConstraints = false
-        badgeView.backgroundColor = AppTheme.errorRed.withAlphaComponent(0.12)
+        badgeView.backgroundColor = AppTheme.alertRed.withAlphaComponent(0.16)
         badgeView.layer.cornerRadius = 36
         badgeView.layer.masksToBounds = true
         container.addArrangedSubview(badgeView)
@@ -264,7 +266,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let icon = UIImageView()
         icon.translatesAutoresizingMaskIntoConstraints = false
         icon.image = UIImage(systemName: "wifi.slash")
-        icon.tintColor = AppTheme.errorRed
+        icon.tintColor = AppTheme.alertRed
         icon.contentMode = .scaleAspectFit
         badgeView.addSubview(icon)
 
@@ -272,7 +274,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "No Internet Connection"
         titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        titleLabel.textColor = AppTheme.canvasBackground
+        titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         container.addArrangedSubview(titleLabel)
 
@@ -280,7 +282,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         subLabel.translatesAutoresizingMaskIntoConstraints = false
         subLabel.text = "Please check your network settings and try again."
         subLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
-        subLabel.textColor = UIColor(red: 100/255, green: 110/255, blue: 125/255, alpha: 1.0)
+        subLabel.textColor = UIColor.white.withAlphaComponent(0.8)
         subLabel.textAlignment = .center
         subLabel.numberOfLines = 0
         container.addArrangedSubview(subLabel)
@@ -290,8 +292,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         retryButton.setTitle("Retry Connection  ↻", for: .normal)
         retryButton.setTitleColor(.white, for: .normal)
         retryButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        retryButton.backgroundColor = AppTheme.satDeepBlue
-        retryButton.layer.cornerRadius = AppTheme.CornerRadius.medium
+        retryButton.backgroundColor = AppTheme.emeraldGreen
+        retryButton.layer.cornerRadius = 12
         AppTheme.applyButtonElevation(to: retryButton)
         retryButton.addTarget(self, action: #selector(handleOfflineRetry), for: .touchUpInside)
         container.addArrangedSubview(retryButton)
@@ -299,9 +301,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let helpButton = UIButton(type: .system)
         helpButton.translatesAutoresizingMaskIntoConstraints = false
         helpButton.setTitle(" Helpline Support", for: .normal)
-        helpButton.setTitleColor(AppTheme.skyBlueAccent, for: .normal)
+        helpButton.setTitleColor(AppTheme.accentSkyBlue, for: .normal)
         helpButton.setImage(UIImage(systemName: "phone.circle.fill"), for: .normal)
-        helpButton.tintColor = AppTheme.skyBlueAccent
+        helpButton.tintColor = AppTheme.accentSkyBlue
         helpButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         helpButton.addTarget(self, action: #selector(handleOfflineHelp), for: .touchUpInside)
         container.addArrangedSubview(helpButton)

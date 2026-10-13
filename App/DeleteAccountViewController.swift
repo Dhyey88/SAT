@@ -468,10 +468,12 @@ class DeleteAccountViewController: UIViewController, UITextFieldDelegate {
         statusBanner.backgroundColor = isError ? AppTheme.errorRed : AppTheme.successGreen
         statusLabel.text = message
         statusBanner.alpha = 0
+        statusBanner.transform = CGAffineTransform(translationX: 0, y: -8)
         statusBanner.isHidden = false
-        UIView.animate(withDuration: 0.25) {
+        UIView.animate(withDuration: 0.32, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: .curveEaseOut, animations: {
             self.statusBanner.alpha = 1.0
-        }
+            self.statusBanner.transform = .identity
+        })
     }
 
     private func setLoading(_ loading: Bool) {
