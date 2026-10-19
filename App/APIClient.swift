@@ -6,6 +6,8 @@ enum APIError: Error, LocalizedError {
     case networkError(Error)
     case invalidResponse
     case parsingError
+    case unauthorized
+    case serverError(statusCode: Int, message: String?)
 
     var errorDescription: String? {
         switch self {
@@ -17,6 +19,10 @@ enum APIError: Error, LocalizedError {
             return "Invalid server response received."
         case .parsingError:
             return "Failed to parse server data."
+        case .unauthorized:
+            return "Session expired or unauthorized. Please log in again."
+        case .serverError(let statusCode, let message):
+            return message ?? "Server error (\(statusCode)). Please try again later."
         }
     }
 }
@@ -83,6 +89,26 @@ final class APIClient {
                 return
             }
 
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode == 401 {
+                    DispatchQueue.main.async {
+                        SessionManager.shared.clearSession(reason: .timeout)
+                        completion(.failure(.unauthorized))
+                    }
+                    return
+                }
+                if httpResponse.statusCode >= 400 {
+                    if let data = data,
+                       let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                       let msg = (json["message"] as? String) ?? (json["msg"] as? String) {
+                        DispatchQueue.main.async { completion(.failure(.serverError(statusCode: httpResponse.statusCode, message: msg))) }
+                        return
+                    }
+                    DispatchQueue.main.async { completion(.failure(.serverError(statusCode: httpResponse.statusCode, message: nil))) }
+                    return
+                }
+            }
+
             guard let data = data else {
                 DispatchQueue.main.async { completion(.failure(.invalidResponse)) }
                 return
@@ -116,6 +142,26 @@ final class APIClient {
             if let error = error {
                 DispatchQueue.main.async { completion(.failure(.networkError(error))) }
                 return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode == 401 {
+                    DispatchQueue.main.async {
+                        SessionManager.shared.clearSession(reason: .timeout)
+                        completion(.failure(.unauthorized))
+                    }
+                    return
+                }
+                if httpResponse.statusCode >= 400 {
+                    if let data = data,
+                       let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                       let msg = (json["message"] as? String) ?? (json["msg"] as? String) {
+                        DispatchQueue.main.async { completion(.failure(.serverError(statusCode: httpResponse.statusCode, message: msg))) }
+                        return
+                    }
+                    DispatchQueue.main.async { completion(.failure(.serverError(statusCode: httpResponse.statusCode, message: nil))) }
+                    return
+                }
             }
 
             guard let data = data else {

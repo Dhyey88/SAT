@@ -38,6 +38,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="trust_emblem" width="1024" height="1024"/>
+        <image name="trust_emblem" width="96" height="96"/>
     </resources>
 </document>

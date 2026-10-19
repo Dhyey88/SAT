@@ -6,10 +6,12 @@
       "scale" : "1x"
     },
     {
+      "filename" : "trust_emblem@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "trust_emblem@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

@@ -28,7 +28,7 @@ class DeleteAccountViewController: UIViewController, UITextFieldDelegate {
     private let statusLabel = UILabel()
 
     // Central Card
-    private let cardView = UIView()
+    private let cardView = SATCardView()
 
     // Warning / Disclosure Box
     private let warningContainer = UIView()

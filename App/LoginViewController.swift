@@ -19,11 +19,11 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     private let appLogoImageView = UIImageView()
 
     // Social Login
-    private let googleLoginButton = UIButton(type: .custom)
+    private let googleLoginButton = SATButton(type: .custom)
     private let topOrLabel = UILabel()
 
     // Central Card
-    private let cardView = UIView()
+    private let cardView = SATCardView()
     
     // User ID & Password
     private let userIdTitleLabel = UILabel()
@@ -44,7 +44,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate, ASWebAuthentic
     // Card Bottom Action Bar
     private let cardBottomBar = UIView()
     private let infoButton = UIButton(type: .system)
-    private let loginButton = UIButton(type: .custom)
+    private let loginButton = SATButton(type: .custom)
     private let activityIndicator = UIActivityIndicatorView(style: .medium)
 
     // Bottom Links

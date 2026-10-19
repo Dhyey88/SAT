@@ -55,17 +55,35 @@ struct AppTheme {
         static let xlarge: CGFloat = 16.0  // Floating cards
     }
 
-    // MARK: - Typography Scale
+    // MARK: - Typography Scale (Accessible Dynamic Type Scaling)
     struct Typography {
-        static let titleHero = UIFont.systemFont(ofSize: 26, weight: .bold)
-        static let titleHeader = UIFont.systemFont(ofSize: 20, weight: .bold)
-        static let titleCard = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        static let bodyBold = UIFont.systemFont(ofSize: 15, weight: .bold)
-        static let bodyMedium = UIFont.systemFont(ofSize: 15, weight: .medium)
-        static let captionBold = UIFont.systemFont(ofSize: 13, weight: .bold)
-        static let captionMedium = UIFont.systemFont(ofSize: 13, weight: .medium)
-        static let captionRegular = UIFont.systemFont(ofSize: 13, weight: .regular)
-        static let otpDigits = UIFont.monospacedDigitSystemFont(ofSize: 22, weight: .bold)
+        static var titleHero: UIFont {
+            return UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: UIFont.systemFont(ofSize: 26, weight: .bold))
+        }
+        static var titleHeader: UIFont {
+            return UIFontMetrics(forTextStyle: .title2).scaledFont(for: UIFont.systemFont(ofSize: 20, weight: .bold))
+        }
+        static var titleCard: UIFont {
+            return UIFontMetrics(forTextStyle: .headline).scaledFont(for: UIFont.systemFont(ofSize: 16, weight: .semibold))
+        }
+        static var bodyBold: UIFont {
+            return UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont.systemFont(ofSize: 15, weight: .bold))
+        }
+        static var bodyMedium: UIFont {
+            return UIFontMetrics(forTextStyle: .body).scaledFont(for: UIFont.systemFont(ofSize: 15, weight: .medium))
+        }
+        static var captionBold: UIFont {
+            return UIFontMetrics(forTextStyle: .caption1).scaledFont(for: UIFont.systemFont(ofSize: 13, weight: .bold))
+        }
+        static var captionMedium: UIFont {
+            return UIFontMetrics(forTextStyle: .caption1).scaledFont(for: UIFont.systemFont(ofSize: 13, weight: .medium))
+        }
+        static var captionRegular: UIFont {
+            return UIFontMetrics(forTextStyle: .caption2).scaledFont(for: UIFont.systemFont(ofSize: 13, weight: .regular))
+        }
+        static var otpDigits: UIFont {
+            return UIFontMetrics(forTextStyle: .title1).scaledFont(for: UIFont.monospacedDigitSystemFont(ofSize: 22, weight: .bold))
+        }
     }
 
     // MARK: - Popup & Modal Tokens
@@ -177,17 +195,63 @@ struct AppTheme {
     }
 
     /// Updates shadowPath dynamically for explicit bounds to achieve zero-overhead GPU shadow rendering
-    static func updateShadowPath(for view: UIView, cornerRadius: CGFloat) {
-        guard !view.bounds.isEmpty else { return }
-        view.layer.shadowPath = UIBezierPath(roundedRect: view.bounds, cornerRadius: cornerRadius).cgPath
+    static func updateShadowPath(for layer: CALayer, bounds: CGRect, cornerRadius: CGFloat) {
+        guard !bounds.isEmpty else { return }
+        layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: cornerRadius).cgPath
     }
 
-    // MARK: - Haptic Feedback
+    static func updateShadowPath(for view: UIView, cornerRadius: CGFloat) {
+        updateShadowPath(for: view.layer, bounds: view.bounds, cornerRadius: cornerRadius)
+    }
+
+    // MARK: - Pre-warmed Static Haptic Feedback Generators (Zero Allocation Churn)
+    private static let lightImpactFeedback: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        return generator
+    }()
+
+    private static let mediumImpactFeedback: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.prepare()
+        return generator
+    }()
+
+    private static let heavyImpactFeedback: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.prepare()
+        return generator
+    }()
+
+    private static let notificationFeedback: UINotificationFeedbackGenerator = {
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        return generator
+    }()
+
     /// Triggers native tactile haptic feedback for user interactions
     static func triggerHapticFeedback(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .light) {
-        let generator = UIImpactFeedbackGenerator(style: style)
-        generator.prepare()
-        generator.impactOccurred()
+        let applyBlock = {
+            let generator: UIImpactFeedbackGenerator
+            switch style {
+            case .light:
+                generator = lightImpactFeedback
+            case .medium:
+                generator = mediumImpactFeedback
+            case .heavy:
+                generator = heavyImpactFeedback
+            @unknown default:
+                generator = lightImpactFeedback
+            }
+            generator.prepare()
+            generator.impactOccurred()
+        }
+
+        if Thread.isMainThread {
+            applyBlock()
+        } else {
+            DispatchQueue.main.async(execute: applyBlock)
+        }
     }
 
     static func triggerHapticFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle) {
@@ -199,9 +263,87 @@ struct AppTheme {
     }
 
     static func triggerNotificationFeedback(_ type: UINotificationFeedbackGenerator.FeedbackType) {
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        generator.notificationOccurred(type)
+        let applyBlock = {
+            notificationFeedback.prepare()
+            notificationFeedback.notificationOccurred(type)
+        }
+
+        if Thread.isMainThread {
+            applyBlock()
+        } else {
+            DispatchQueue.main.async(execute: applyBlock)
+        }
+    }
+}
+
+// MARK: - SATCardView (Zero-Overhead GPU Shadow Path Management)
+open class SATCardView: UIView {
+    public var cardCornerRadius: CGFloat = AppTheme.CornerRadius.xlarge {
+        didSet {
+            layer.cornerRadius = cardCornerRadius
+            setNeedsLayout()
+        }
+    }
+
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        commonInit()
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        commonInit()
+    }
+
+    private func commonInit() {
+        AppTheme.applyCardElevation(to: self, cornerRadius: cardCornerRadius)
+    }
+
+    open override func layoutSubviews() {
+        super.layoutSubviews()
+        AppTheme.updateShadowPath(for: self, cornerRadius: cardCornerRadius)
+    }
+}
+
+// MARK: - SATButton (Spring Press Micro-Interactions & GPU Shadow Path)
+open class SATButton: UIButton {
+    public var enableMicroInteraction: Bool = true
+
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupInteractions()
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupInteractions()
+    }
+
+    private func setupInteractions() {
+        addTarget(self, action: #selector(handleTouchDown), for: [.touchDown, .touchDragEnter])
+        addTarget(self, action: #selector(handleTouchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
+    }
+
+    @objc private func handleTouchDown() {
+        guard enableMicroInteraction else { return }
+        AppTheme.triggerHapticFeedback(.light)
+        UIView.animate(withDuration: 0.12, delay: 0, options: [.curveEaseOut, .allowUserInteraction]) {
+            self.transform = CGAffineTransform(scaleX: 0.96, y: 0.96)
+        }
+    }
+
+    @objc private func handleTouchUp() {
+        guard enableMicroInteraction else { return }
+        UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [.allowUserInteraction]) {
+            self.transform = .identity
+        }
+    }
+
+    open override func layoutSubviews() {
+        super.layoutSubviews()
+        if layer.shadowOpacity > 0 {
+            AppTheme.updateShadowPath(for: self, cornerRadius: layer.cornerRadius)
+        }
     }
 }
 

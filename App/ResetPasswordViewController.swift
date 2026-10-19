@@ -20,7 +20,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     private var contentBottomConstraint: NSLayoutConstraint?
 
     // MARK: - Step 1 Card: Email Entry (Screenshot 1)
-    private let step1Card = UIView()
+    private let step1Card = SATCardView()
     private let s1AvatarIcon = UIImageView()
     private let s1TitleLabel = UILabel()
     private let s1EmailField = UITextField()
@@ -31,7 +31,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     private let s1Spinner = UIActivityIndicatorView(style: .medium)
 
     // MARK: - Step 2 Card: 6-Box OTP (Screenshot 2)
-    private let step2Card = UIView()
+    private let step2Card = SATCardView()
     private let s2LockIcon = UIImageView()
     private var s2OtpBoxes: [UITextField] = []
     private let s2OtpStack = UIStackView()
@@ -41,7 +41,7 @@ class ResetPasswordViewController: UIViewController, UITextFieldDelegate {
     private let s2Spinner = UIActivityIndicatorView(style: .medium)
 
     // MARK: - Step 3 Card: Password Entry (Screenshot 3)
-    private let step3Card = UIView()
+    private let step3Card = SATCardView()
 
     // Password Row
     private let s3LockIcon1 = UIImageView()

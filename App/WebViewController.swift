@@ -125,7 +125,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let bridgeScript = WKUserScript(
             source: WebViewController.webBridgePolyfillScript,
             injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
+            forMainFrameOnly: true
         )
         contentController.addUserScript(bridgeScript)
 
@@ -133,7 +133,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let detectorScript = WKUserScript(
             source: WebViewController.successAlertDetectorScript,
             injectionTime: .atDocumentEnd,
-            forMainFrameOnly: false
+            forMainFrameOnly: true
         )
         contentController.addUserScript(detectorScript)
 
@@ -141,7 +141,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let modalScript = WKUserScript(
             source: WebViewController.modalResponsiveEngineScript,
             injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
+            forMainFrameOnly: true
         )
         contentController.addUserScript(modalScript)
 
