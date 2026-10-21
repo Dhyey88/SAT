@@ -240,6 +240,10 @@ struct AppTheme {
                 generator = mediumImpactFeedback
             case .heavy:
                 generator = heavyImpactFeedback
+            case .soft:
+                generator = lightImpactFeedback
+            case .rigid:
+                generator = heavyImpactFeedback
             @unknown default:
                 generator = lightImpactFeedback
             }

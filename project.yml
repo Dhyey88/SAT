@@ -21,5 +21,6 @@ targets:
         SWIFT_VERSION: "5.0"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGNING_ALLOWED: "YES"
+        DEVELOPMENT_TEAM: K2GK9C2237
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_BITCODE: "NO"
