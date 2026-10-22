@@ -1048,7 +1048,16 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 }
             }, { passive: false });
 
-            // 7. Patch Bootstrap Modal to eliminate .fade transition deadlock and notify bridge
+            // 7. Hoist #cropModal to document.body so it is never trapped inside #myVoucherType or scrollable containers
+            function hoistCropModal(modalEl) {
+                var el = modalEl || document.getElementById('cropModal');
+                if (el && el.parentElement && el.parentElement !== document.body) {
+                    document.body.appendChild(el);
+                }
+                return el;
+            }
+
+            // Patch Bootstrap Modal to eliminate .fade transition deadlock and notify bridge
             function patchBootstrapModal() {
                 if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.modal) return;
                 if (window.jQuery.fn.modal._satPatched) return;
@@ -1058,6 +1067,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                     var $this = this;
                     var isCrop = $this.is('#cropModal') || $this.find('#preview, .img-container').length > 0;
                     if (isCrop) {
+                        if ($this[0]) hoistCropModal($this[0]);
                         $this.removeClass('fade');
                         if (option === 'show' || !option) {
                             $this.css('display', 'block');
@@ -1154,6 +1164,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             function attachModalWatchdog(modalEl) {
                 if (!modalEl || modalEl._satCropWatchdogAttached) return;
                 modalEl._satCropWatchdogAttached = true;
+                hoistCropModal(modalEl);
                 modalEl.style.touchAction = 'none';
 
                 var observer = new MutationObserver(function(mutations) {
@@ -1161,6 +1172,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                         var m = mutations[i];
                         if (m.attributeName === 'class' || m.attributeName === 'style') {
                             if (modalEl.classList.contains('in') || modalEl.style.display === 'block') {
+                                hoistCropModal(modalEl);
                                 modalEl.classList.remove('fade');
                                 checkAndAutoInitCropper();
                                 break;
@@ -1175,12 +1187,18 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
             function initModalBridge() {
                 var cropModal = document.getElementById('cropModal');
-                if (cropModal) attachModalWatchdog(cropModal);
+                if (cropModal) {
+                    hoistCropModal(cropModal);
+                    attachModalWatchdog(cropModal);
+                }
 
                 if (document.body) {
                     var bodyObs = new MutationObserver(function() {
                         var el = document.getElementById('cropModal');
-                        if (el) attachModalWatchdog(el);
+                        if (el) {
+                            hoistCropModal(el);
+                            attachModalWatchdog(el);
+                        }
                     });
                     bodyObs.observe(document.body, { childList: true, subtree: true });
                 }
@@ -1188,6 +1206,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 if (window.jQuery) {
                     window.jQuery(document).on('show show.bs.modal', '#cropModal', function() {
                         var el = this;
+                        hoistCropModal(el);
                         window.jQuery(el).removeClass('fade');
                         setTimeout(function() { checkAndAutoInitCropper(); }, 60);
                     });
@@ -1495,12 +1514,17 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '    margin-left: 0 !important;',
             '    margin-top: 0 !important;',
             '    box-sizing: border-box !important;',
-            '    z-index: 10550 !important;',
+            '    z-index: 10800 !important;',
             '    max-height: calc(100vh - 20px) !important;',
             '    border-radius: 14px !important;',
-            '    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6) !important;',
+            '    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7) !important;',
             '    background-color: #FFFFFF !important;',
             '    overflow: hidden !important;',
+            '}',
+            '/* Elevated backdrop when #cropModal is active on top of Daily Entry #myVoucherType */',
+            'html body .modal-backdrop ~ .modal-backdrop,',
+            'html body .modal-backdrop:last-of-type {',
+            '    z-index: 10750 !important;',
             '}',
             'html body #cropModal .modal-dialog,',
             'html body #cropModal .modal-content,',
@@ -1520,10 +1544,13 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '    border-bottom: 1px solid #E5E7EB !important;',
             '}',
             'html body #cropModal .modal-body,',
+            'html body div#cropModal .modal-body,',
             'html body .modal-body:has(.cropper-container),',
             'html body .modal-body:has(.img-container) {',
             '    max-height: calc(100vh - 130px) !important;',
             '    overflow: hidden !important;',
+            '    overflow-y: hidden !important;',
+            '    overflow-x: hidden !important;',
             '    -webkit-overflow-scrolling: auto !important;',
             '    padding: 0 !important;',
             '    margin: 0 !important;',
