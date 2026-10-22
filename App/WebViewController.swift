@@ -33,9 +33,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         case notify
         case requestAccountDeletion
         case deleteAccount
-        case convertHeicToJpeg
-        case cropperOpened
-        case cropperClosed
     }
 
     private let initialURLString: String
@@ -128,7 +125,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let bridgeScript = WKUserScript(
             source: WebViewController.webBridgePolyfillScript,
             injectionTime: .atDocumentStart,
-            forMainFrameOnly: true
+            forMainFrameOnly: false
         )
         contentController.addUserScript(bridgeScript)
 
@@ -136,7 +133,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let detectorScript = WKUserScript(
             source: WebViewController.successAlertDetectorScript,
             injectionTime: .atDocumentEnd,
-            forMainFrameOnly: true
+            forMainFrameOnly: false
         )
         contentController.addUserScript(detectorScript)
 
@@ -144,7 +141,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let modalScript = WKUserScript(
             source: WebViewController.modalResponsiveEngineScript,
             injectionTime: .atDocumentStart,
-            forMainFrameOnly: true
+            forMainFrameOnly: false
         )
         contentController.addUserScript(modalScript)
 
@@ -176,16 +173,16 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     // MARK: - Native Round Circular Loader (App-Like Spinner)
     private func setupLoaderHUD() {
         loaderHUD.translatesAutoresizingMaskIntoConstraints = false
-        loaderHUD.backgroundColor = AppTheme.PopupTheme.cardBackgroundDark
-        AppTheme.applyPopupCardElevation(to: loaderHUD, cornerRadius: AppTheme.PopupTheme.cardCornerRadius)
-        loaderHUD.layer.borderWidth = AppTheme.PopupTheme.cardBorderWidth
-        loaderHUD.layer.borderColor = AppTheme.PopupTheme.cardBorderColor.cgColor
+        loaderHUD.backgroundColor = AppTheme.satDeepBlue.withAlphaComponent(0.92)
+        AppTheme.applyCardElevation(to: loaderHUD, cornerRadius: AppTheme.CornerRadius.xlarge)
+        loaderHUD.layer.borderWidth = 1.0
+        loaderHUD.layer.borderColor = UIColor.white.withAlphaComponent(0.15).cgColor
         loaderHUD.alpha = 0
         loaderHUD.isHidden = true
         view.addSubview(loaderHUD)
 
         activitySpinner.translatesAutoresizingMaskIntoConstraints = false
-        activitySpinner.color = AppTheme.accentSkyBlue
+        activitySpinner.color = .white
         activitySpinner.hidesWhenStopped = true
         loaderHUD.addSubview(activitySpinner)
 
@@ -240,16 +237,14 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
     // MARK: - App Store Compliant Offline Overlay (Guideline 4.2)
     private func setupOfflineOverlay() {
         offlineOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        offlineOverlayView.backgroundColor = AppTheme.canvasBackground
+        offlineOverlayView.backgroundColor = UIColor(red: 245/255, green: 247/255, blue: 252/255, alpha: 1.0)
         offlineOverlayView.isHidden = true
         view.addSubview(offlineOverlayView)
 
         let card = UIView()
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = AppTheme.PopupTheme.cardBackgroundDark
-        card.layer.borderWidth = AppTheme.PopupTheme.cardBorderWidth
-        card.layer.borderColor = AppTheme.PopupTheme.cardBorderColor.cgColor
-        AppTheme.applyPopupCardElevation(to: card, cornerRadius: AppTheme.PopupTheme.cardCornerRadius)
+        card.backgroundColor = .white
+        AppTheme.applyCardElevation(to: card, cornerRadius: AppTheme.CornerRadius.xlarge)
         offlineOverlayView.addSubview(card)
 
         let container = UIStackView()
@@ -261,7 +256,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
         let badgeView = UIView()
         badgeView.translatesAutoresizingMaskIntoConstraints = false
-        badgeView.backgroundColor = AppTheme.alertRed.withAlphaComponent(0.16)
+        badgeView.backgroundColor = AppTheme.errorRed.withAlphaComponent(0.12)
         badgeView.layer.cornerRadius = 36
         badgeView.layer.masksToBounds = true
         container.addArrangedSubview(badgeView)
@@ -269,7 +264,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let icon = UIImageView()
         icon.translatesAutoresizingMaskIntoConstraints = false
         icon.image = UIImage(systemName: "wifi.slash")
-        icon.tintColor = AppTheme.alertRed
+        icon.tintColor = AppTheme.errorRed
         icon.contentMode = .scaleAspectFit
         badgeView.addSubview(icon)
 
@@ -277,7 +272,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "No Internet Connection"
         titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        titleLabel.textColor = .white
+        titleLabel.textColor = AppTheme.canvasBackground
         titleLabel.textAlignment = .center
         container.addArrangedSubview(titleLabel)
 
@@ -285,7 +280,7 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         subLabel.translatesAutoresizingMaskIntoConstraints = false
         subLabel.text = "Please check your network settings and try again."
         subLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
-        subLabel.textColor = UIColor.white.withAlphaComponent(0.8)
+        subLabel.textColor = UIColor(red: 100/255, green: 110/255, blue: 125/255, alpha: 1.0)
         subLabel.textAlignment = .center
         subLabel.numberOfLines = 0
         container.addArrangedSubview(subLabel)
@@ -295,8 +290,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         retryButton.setTitle("Retry Connection  ↻", for: .normal)
         retryButton.setTitleColor(.white, for: .normal)
         retryButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        retryButton.backgroundColor = AppTheme.emeraldGreen
-        retryButton.layer.cornerRadius = 12
+        retryButton.backgroundColor = AppTheme.satDeepBlue
+        retryButton.layer.cornerRadius = AppTheme.CornerRadius.medium
         AppTheme.applyButtonElevation(to: retryButton)
         retryButton.addTarget(self, action: #selector(handleOfflineRetry), for: .touchUpInside)
         container.addArrangedSubview(retryButton)
@@ -304,9 +299,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         let helpButton = UIButton(type: .system)
         helpButton.translatesAutoresizingMaskIntoConstraints = false
         helpButton.setTitle(" Helpline Support", for: .normal)
-        helpButton.setTitleColor(AppTheme.accentSkyBlue, for: .normal)
+        helpButton.setTitleColor(AppTheme.skyBlueAccent, for: .normal)
         helpButton.setImage(UIImage(systemName: "phone.circle.fill"), for: .normal)
-        helpButton.tintColor = AppTheme.accentSkyBlue
+        helpButton.tintColor = AppTheme.skyBlueAccent
         helpButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         helpButton.addTarget(self, action: #selector(handleOfflineHelp), for: .touchUpInside)
         container.addArrangedSubview(helpButton)
@@ -707,58 +702,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
         case .requestAccountDeletion, .deleteAccount:
             openNativeDeleteAccountModal()
-
-        case .convertHeicToJpeg:
-            guard let callbackId = dict["callbackId"] as? String else { return }
-            let rawData = dict["data"] as? String ?? ""
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                let pureBase64 = rawData.components(separatedBy: ",").last ?? rawData
-                guard let data = Data(base64Encoded: pureBase64),
-                      let uiImage = UIImage(data: data) else {
-                    DispatchQueue.main.async {
-                        self?.webView.evaluateJavaScript("if (window._satResolveHeic) { window._satResolveHeic('\(callbackId)', null); }", completionHandler: nil)
-                    }
-                    return
-                }
-
-                // Downscale very large camera photos to max 2048px to preserve WKWebView memory stability
-                let maxDim: CGFloat = 2048.0
-                var finalImage = uiImage
-                if uiImage.size.width > maxDim || uiImage.size.height > maxDim {
-                    let ratio = min(maxDim / uiImage.size.width, maxDim / uiImage.size.height)
-                    let newSize = CGSize(width: round(uiImage.size.width * ratio), height: round(uiImage.size.height * ratio))
-                    let format = UIGraphicsImageRendererFormat()
-                    format.scale = 1.0
-                    let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
-                    finalImage = renderer.image { _ in
-                        uiImage.draw(in: CGRect(origin: .zero, size: newSize))
-                    }
-                }
-
-                guard let jpegData = finalImage.jpegData(compressionQuality: 0.88) else {
-                    DispatchQueue.main.async {
-                        self?.webView.evaluateJavaScript("if (window._satResolveHeic) { window._satResolveHeic('\(callbackId)', null); }", completionHandler: nil)
-                    }
-                    return
-                }
-
-                let jpegBase64 = "data:image/jpeg;base64," + jpegData.base64EncodedString()
-                DispatchQueue.main.async {
-                    self?.webView.evaluateJavaScript("if (window._satResolveHeic) { window._satResolveHeic('\(callbackId)', '\(jpegBase64)'); }", completionHandler: nil)
-                }
-            }
-
-        case .cropperOpened:
-            DispatchQueue.main.async {
-                self.refreshControl.isEnabled = false
-                self.webView.scrollView.bounces = false
-            }
-
-        case .cropperClosed:
-            DispatchQueue.main.async {
-                self.refreshControl.isEnabled = true
-                self.webView.scrollView.bounces = true
-            }
         }
     }
 
@@ -844,384 +787,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 ready: Promise.resolve(mockRegistration)
             };
         }
-
-        // Universal iOS Cropper, HEIC Auto-Converter & cropModal Touch Bridge Helper
-        (function setupCropModalBridge() {
-            // 1. Native HEIC to JPEG Bridge Resolver
-            window._satHeicCallbacks = window._satHeicCallbacks || {};
-            window._satResolveHeic = function(id, jpegResult) {
-                var cb = window._satHeicCallbacks[id];
-                if (cb) {
-                    delete window._satHeicCallbacks[id];
-                    cb(jpegResult);
-                }
-            };
-
-            function requestNativeJpegConversion(base64Data, callback) {
-                var id = 'heic_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                window._satHeicCallbacks[id] = callback;
-                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
-                    window.webkit.messageHandlers.satPushBridge.postMessage({
-                        action: 'convertHeicToJpeg',
-                        callbackId: id,
-                        data: base64Data
-                    });
-                } else {
-                    callback(null);
-                }
-            }
-
-            // 2. Polyfill DataTransfer for older WebKit if undefined
-            if (typeof window.DataTransfer === 'undefined') {
-                try {
-                    window.DataTransfer = function() {
-                        var _files = [];
-                        this.items = {
-                            add: function(file) { _files.push(file); }
-                        };
-                        Object.defineProperty(this, 'files', {
-                            get: function() { return _files; }
-                        });
-                    };
-                } catch (e) {}
-            }
-
-            // 3. Guarantee that any selected photo on iOS has a valid image MIME type
-            // Intercepts file inputs during CAPTURE phase so jQuery handlers receive valid file.type
-            document.addEventListener('change', function(e) {
-                var input = e.target;
-                if (input && input.tagName === 'INPUT' && input.type === 'file' && input.files && input.files.length > 0) {
-                    for (var i = 0; i < input.files.length; i++) {
-                        var file = input.files[i];
-                        if (!file) continue;
-                        var t = (file.type || '').toLowerCase();
-                        if (!t || !t.match(/^image\\//)) {
-                            var name = (file.name || '').toLowerCase();
-                            var isImg = name.match(/\\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/i);
-                            var isAcceptImg = input.accept && input.accept.indexOf('image') !== -1;
-                            var isCropInput = input.id === 'invoice_file' || input.classList.contains('my_file');
-                            if (isImg || isAcceptImg || isCropInput || !t) {
-                                try {
-                                    Object.defineProperty(file, 'type', {
-                                        value: 'image/jpeg',
-                                        configurable: true
-                                    });
-                                } catch (err) {}
-                            }
-                        }
-                    }
-                }
-            }, true);
-
-            // 4. Intercept FileReader.readAsDataURL to automatically decode/convert HEIC or Apple camera images
-            var _origReadAsDataURL = FileReader.prototype.readAsDataURL;
-            FileReader.prototype.readAsDataURL = function(file) {
-                var self = this;
-                var isHeicOrApple = false;
-                if (file) {
-                    var n = (file.name || '').toLowerCase();
-                    var t = (file.type || '').toLowerCase();
-                    if (n.endsWith('.heic') || n.endsWith('.heif') || t.indexOf('heic') !== -1 || t.indexOf('heif') !== -1) {
-                        isHeicOrApple = true;
-                    }
-                }
-
-                var _customOnload = null;
-                var _hasDelivered = false;
-
-                function deliver(resultDataUrl) {
-                    if (_hasDelivered) return;
-                    _hasDelivered = true;
-
-                    try {
-                        Object.defineProperty(self, 'result', {
-                            value: resultDataUrl,
-                            configurable: true,
-                            writable: true
-                        });
-                    } catch (err) {
-                        self.result = resultDataUrl;
-                    }
-
-                    var evt = {
-                        target: { result: resultDataUrl },
-                        currentTarget: { result: resultDataUrl },
-                        type: 'load'
-                    };
-
-                    if (typeof _customOnload === 'function') {
-                        _customOnload.call(self, evt);
-                    } else if (typeof self.onload === 'function') {
-                        self.onload.call(self, evt);
-                    }
-                    if (typeof self.onloadend === 'function') {
-                        self.onloadend.call(self, evt);
-                    }
-                }
-
-                var _origUserOnload = self.onload;
-                _customOnload = _origUserOnload;
-                Object.defineProperty(self, 'onload', {
-                    get: function() { return _customOnload; },
-                    set: function(fn) { _customOnload = fn; },
-                    configurable: true
-                });
-
-                self.addEventListener('load', function(e) {
-                    var rawResult = self.result;
-                    if (!rawResult || typeof rawResult !== 'string') return;
-
-                    var isHeicMime = rawResult.indexOf('data:image/heic') === 0 || rawResult.indexOf('data:image/heif') === 0;
-                    if (isHeicOrApple || isHeicMime) {
-                        requestNativeJpegConversion(rawResult, function(converted) {
-                            deliver(converted || rawResult);
-                        });
-                    } else {
-                        var testImg = new Image();
-                        var timer = setTimeout(function() {
-                            requestNativeJpegConversion(rawResult, function(converted) {
-                                deliver(converted || rawResult);
-                            });
-                        }, 200);
-
-                        testImg.onload = function() {
-                            clearTimeout(timer);
-                            deliver(rawResult);
-                        };
-                        testImg.onerror = function() {
-                            clearTimeout(timer);
-                            requestNativeJpegConversion(rawResult, function(converted) {
-                                deliver(converted || rawResult);
-                            });
-                        };
-                        testImg.src = rawResult;
-                    }
-                }, { once: true });
-
-                return _origReadAsDataURL.apply(self, arguments);
-            };
-
-            // 5. Intercept window.Cropper so mobile views get touch-friendly options
-            var _rawCropper = window.Cropper;
-            function wrapCropper(Original) {
-                if (!Original || typeof Original !== 'function' || Original._satPatched) return Original;
-                function SatCropper(element, options) {
-                    options = options || {};
-                    if (!options.dragMode || options.dragMode === 'none') {
-                        options.dragMode = 'move';
-                    }
-                    options.cropBoxMovable = true;
-                    options.cropBoxResizable = true;
-                    options.toggleDragModeOnDblclick = false;
-                    options.touchDragZoom = true;
-                    return new Original(element, options);
-                }
-                SatCropper.prototype = Original.prototype;
-                for (var prop in Original) {
-                    if (Object.prototype.hasOwnProperty.call(Original, prop)) {
-                        SatCropper[prop] = Original[prop];
-                    }
-                }
-                SatCropper._satPatched = true;
-                return SatCropper;
-            }
-
-            if (_rawCropper) {
-                window.Cropper = wrapCropper(_rawCropper);
-            } else {
-                try {
-                    Object.defineProperty(window, 'Cropper', {
-                        configurable: true,
-                        enumerable: true,
-                        get: function() { return _rawCropper; },
-                        set: function(val) { _rawCropper = wrapCropper(val); }
-                    });
-                } catch (e) {
-                    console.warn('[SAT iOS] Cropper intercept error:', e);
-                }
-            }
-
-            // 6. Prevent background scrolling while touching inside cropper elements
-            document.addEventListener('touchmove', function(e) {
-                if (e.target.closest('.cropper-container, .img-container, #cropModal .modal-body, .cropper-view-box, .cropper-face, .cropper-point, .cropper-line')) {
-                    e.stopPropagation();
-                }
-            }, { passive: false });
-
-            // 7. Hoist #cropModal to document.body so it is never trapped inside #myVoucherType or scrollable containers
-            function hoistCropModal(modalEl) {
-                var el = modalEl || document.getElementById('cropModal');
-                if (el && el.parentElement && el.parentElement !== document.body) {
-                    document.body.appendChild(el);
-                }
-                return el;
-            }
-
-            // Patch Bootstrap Modal to eliminate .fade transition deadlock and notify bridge
-            function patchBootstrapModal() {
-                if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.modal) return;
-                if (window.jQuery.fn.modal._satPatched) return;
-
-                var origModal = window.jQuery.fn.modal;
-                var satModal = function(option) {
-                    var $this = this;
-                    var isCrop = $this.is('#cropModal') || $this.find('#preview, .img-container').length > 0;
-                    if (isCrop) {
-                        if ($this[0]) hoistCropModal($this[0]);
-                        $this.removeClass('fade');
-                        if (option === 'show' || !option) {
-                            $this.css('display', 'block');
-                            window.satApp.postMessage({ action: 'cropperOpened' });
-                        } else if (option === 'hide') {
-                            window.satApp.postMessage({ action: 'cropperClosed' });
-                        }
-                    }
-                    var res = origModal.apply($this, arguments);
-                    if (isCrop && (option === 'show' || !option)) {
-                        setTimeout(function() {
-                            $this.trigger('shown').trigger('shown.bs.modal');
-                        }, 30);
-                        setTimeout(function() {
-                            $this.trigger('shown').trigger('shown.bs.modal');
-                        }, 120);
-                    }
-                    return res;
-                };
-
-                for (var k in origModal) {
-                    if (Object.prototype.hasOwnProperty.call(origModal, k)) {
-                        satModal[k] = origModal[k];
-                    }
-                }
-                satModal._satPatched = true;
-                window.jQuery.fn.modal = satModal;
-            }
-
-            // Hook jQuery as soon as it's defined
-            (function hookJQuery() {
-                var _jq = window.jQuery;
-                if (_jq) {
-                    patchBootstrapModal();
-                } else {
-                    var _jqVal = undefined;
-                    try {
-                        Object.defineProperty(window, 'jQuery', {
-                            configurable: true,
-                            enumerable: true,
-                            get: function() { return _jqVal; },
-                            set: function(val) {
-                                _jqVal = val;
-                                if (val && val.fn) {
-                                    setTimeout(patchBootstrapModal, 0);
-                                }
-                            }
-                        });
-                    } catch (e) {}
-                }
-                document.addEventListener('DOMContentLoaded', patchBootstrapModal);
-                window.addEventListener('load', patchBootstrapModal);
-            })();
-
-            // 8. Watchdog for #cropModal Auto-Initialization & State Sync
-            function checkAndAutoInitCropper() {
-                var modal = document.getElementById('cropModal');
-                if (!modal) return;
-                var isVisible = modal.classList.contains('in') || modal.style.display === 'block';
-                if (!isVisible) return;
-
-                var previewImg = document.getElementById('preview');
-                if (!previewImg || !previewImg.src || previewImg.src.length < 20) return;
-
-                if (window.jQuery) {
-                    window.jQuery(modal).trigger('shown').trigger('shown.bs.modal');
-                }
-
-                setTimeout(function() {
-                    var container = modal.querySelector('.cropper-container');
-                    if (!container && window.Cropper && previewImg) {
-                        try {
-                            if (window.cropper && typeof window.cropper.destroy === 'function') {
-                                window.cropper.destroy();
-                            }
-                            window.cropper = new window.Cropper(previewImg, {
-                                aspectRatio: NaN,
-                                viewMode: 1,
-                                dragMode: 'move',
-                                autoCropArea: 0.98,
-                                responsive: true,
-                                restore: true,
-                                cropBoxMovable: true,
-                                cropBoxResizable: true,
-                                touchDragZoom: true
-                            });
-                        } catch (err) {
-                            console.warn('[SAT iOS] Fallback cropper init error:', err);
-                        }
-                    }
-                }, 150);
-            }
-
-            function attachModalWatchdog(modalEl) {
-                if (!modalEl || modalEl._satCropWatchdogAttached) return;
-                modalEl._satCropWatchdogAttached = true;
-                hoistCropModal(modalEl);
-                modalEl.style.touchAction = 'none';
-
-                var observer = new MutationObserver(function(mutations) {
-                    for (var i = 0; i < mutations.length; i++) {
-                        var m = mutations[i];
-                        if (m.attributeName === 'class' || m.attributeName === 'style') {
-                            if (modalEl.classList.contains('in') || modalEl.style.display === 'block') {
-                                hoistCropModal(modalEl);
-                                modalEl.classList.remove('fade');
-                                checkAndAutoInitCropper();
-                                break;
-                            } else if (modalEl.style.display === 'none' || !modalEl.classList.contains('in')) {
-                                window.satApp.postMessage({ action: 'cropperClosed' });
-                            }
-                        }
-                    }
-                });
-                observer.observe(modalEl, { attributes: true });
-            }
-
-            function initModalBridge() {
-                var cropModal = document.getElementById('cropModal');
-                if (cropModal) {
-                    hoistCropModal(cropModal);
-                    attachModalWatchdog(cropModal);
-                }
-
-                if (document.body) {
-                    var bodyObs = new MutationObserver(function() {
-                        var el = document.getElementById('cropModal');
-                        if (el) {
-                            hoistCropModal(el);
-                            attachModalWatchdog(el);
-                        }
-                    });
-                    bodyObs.observe(document.body, { childList: true, subtree: true });
-                }
-
-                if (window.jQuery) {
-                    window.jQuery(document).on('show show.bs.modal', '#cropModal', function() {
-                        var el = this;
-                        hoistCropModal(el);
-                        window.jQuery(el).removeClass('fade');
-                        setTimeout(function() { checkAndAutoInitCropper(); }, 60);
-                    });
-                    window.jQuery(document).on('hide hide.bs.modal', '#cropModal', function() {
-                        window.satApp.postMessage({ action: 'cropperClosed' });
-                    });
-                }
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initModalBridge);
-            } else {
-                initModalBridge();
-            }
-        })();
     })();
     """
 
@@ -1448,14 +1013,14 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             'html body #ViewModel:not(.ags-modal-responsive),',
             'html body div#ViewModelRole.modal,',
             'html body #ViewModelRole,',
-            'html body div#myModal.modal:not(:has(.img-container)):not(:has(.cropper-container)),',
-            'html body #myModal:not(:has(.img-container)):not(:has(.cropper-container)),',
+            'html body div#myModal.modal,',
+            'html body #myModal,',
             'html body div#viewGI.modal,',
             'html body #viewGI,',
-            'html body div.modal:not(.ags-modal-responsive):not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)),',
-            'html body .modal:not(.ags-modal-responsive):not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)),',
-            'body div.modal:not(.ags-modal-responsive):not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)),',
-            'div.modal:not(.ags-modal-responsive):not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)) {',
+            'html body div.modal:not(.ags-modal-responsive),',
+            'html body .modal:not(.ags-modal-responsive),',
+            'body div.modal:not(.ags-modal-responsive),',
+            'div.modal:not(.ags-modal-responsive) {',
             '    position: fixed !important;',
             '    left: 8px !important;',
             '    right: 8px !important;',
@@ -1475,150 +1040,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '    border-radius: 12px !important;',
             '    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45) !important;',
             '    background-color: #FFFFFF !important;',
-            '}',
-
-            '/* 3. Image Cropping Modal (#cropModal) Specific iOS Mobile Optimization */',
-            '/* Crop Modal Explicit Visibility Controls for iOS */',
-            'html body #cropModal.hide,',
-            'html body div#cropModal.modal.hide,',
-            'html body #cropModal[style*="display: none"],',
-            'html body #cropModal[aria-hidden="true"]:not(.in) {',
-            '    display: none !important;',
-            '    visibility: hidden !important;',
-            '}',
-            'html body #cropModal.in,',
-            'html body div#cropModal.modal.in,',
-            'html body #cropModal[style*="display: block"]:not(.hide),',
-            'html body #cropModal[aria-hidden="false"] {',
-            '    display: block !important;',
-            '    visibility: visible !important;',
-            '    opacity: 1 !important;',
-            '}',
-            'html body div#cropModal.modal,',
-            'html body #cropModal,',
-            'div#cropModal.modal,',
-            '#cropModal,',
-            'html body div#myModal:has(.img-container),',
-            'html body div.modal:has(.cropper-container),',
-            'html body div.modal:has(.img-container) {',
-            '    position: fixed !important;',
-            '    top: 50% !important;',
-            '    left: 50% !important;',
-            '    right: auto !important;',
-            '    bottom: auto !important;',
-            '    transform: translate(-50%, -50%) !important;',
-            '    -webkit-transform: translate(-50%, -50%) !important;',
-            '    width: calc(100vw - 16px) !important;',
-            '    max-width: 650px !important;',
-            '    margin: 0 !important;',
-            '    margin-left: 0 !important;',
-            '    margin-top: 0 !important;',
-            '    box-sizing: border-box !important;',
-            '    z-index: 10800 !important;',
-            '    max-height: calc(100vh - 20px) !important;',
-            '    border-radius: 14px !important;',
-            '    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7) !important;',
-            '    background-color: #FFFFFF !important;',
-            '    overflow: hidden !important;',
-            '}',
-            '/* Elevated backdrop when #cropModal is active on top of Daily Entry #myVoucherType */',
-            'html body .modal-backdrop ~ .modal-backdrop,',
-            'html body .modal-backdrop:last-of-type {',
-            '    z-index: 10750 !important;',
-            '}',
-            'html body #cropModal .modal-dialog,',
-            'html body #cropModal .modal-content,',
-            'html body div.modal:has(.img-container) .modal-dialog,',
-            'html body div.modal:has(.img-container) .modal-content {',
-            '    margin: 0 !important;',
-            '    width: 100% !important;',
-            '    max-width: 100% !important;',
-            '    border: none !important;',
-            '    box-shadow: none !important;',
-            '    background: transparent !important;',
-            '}',
-            'html body #cropModal .modal-header,',
-            'html body div.modal:has(.img-container) .modal-header {',
-            '    padding: 10px 16px !important;',
-            '    background: #F9FAFB !important;',
-            '    border-bottom: 1px solid #E5E7EB !important;',
-            '}',
-            'html body #cropModal .modal-body,',
-            'html body div#cropModal .modal-body,',
-            'html body .modal-body:has(.cropper-container),',
-            'html body .modal-body:has(.img-container) {',
-            '    max-height: calc(100vh - 130px) !important;',
-            '    overflow: hidden !important;',
-            '    overflow-y: hidden !important;',
-            '    overflow-x: hidden !important;',
-            '    -webkit-overflow-scrolling: auto !important;',
-            '    padding: 0 !important;',
-            '    margin: 0 !important;',
-            '    box-sizing: border-box !important;',
-            '    display: flex !important;',
-            '    justify-content: center !important;',
-            '    align-items: center !important;',
-            '    background-color: #1F2937 !important;',
-            '    touch-action: none !important;',
-            '}',
-            'html body #cropModal .img-container,',
-            'html body .img-container:has(.cropper-container) {',
-            '    max-width: 100% !important;',
-            '    max-height: calc(100vh - 140px) !important;',
-            '    overflow: hidden !important;',
-            '    margin: 0 auto !important;',
-            '    background-color: #1F2937 !important;',
-            '}',
-            'html body #cropModal .cropper-container,',
-            'html body .cropper-container {',
-            '    touch-action: none !important;',
-            '    -webkit-touch-callout: none !important;',
-            '    -webkit-user-select: none !important;',
-            '    user-select: none !important;',
-            '    max-width: 100% !important;',
-            '}',
-            'html body #cropModal .cropper-point,',
-            'html body .cropper-point {',
-            '    width: 24px !important;',
-            '    height: 24px !important;',
-            '    opacity: 0.85 !important;',
-            '    background-color: #27A9E3 !important;',
-            '    border: 2px solid #FFFFFF !important;',
-            '    border-radius: 50% !important;',
-            '    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) !important;',
-            '}',
-            'html body #cropModal .cropper-point.point-nw, html body .cropper-point.point-nw { top: -12px !important; left: -12px !important; }',
-            'html body #cropModal .cropper-point.point-ne, html body .cropper-point.point-ne { top: -12px !important; right: -12px !important; }',
-            'html body #cropModal .cropper-point.point-se, html body .cropper-point.point-se { bottom: -12px !important; right: -12px !important; }',
-            'html body #cropModal .cropper-point.point-sw, html body .cropper-point.point-sw { bottom: -12px !important; left: -12px !important; }',
-            'html body #cropModal .cropper-point.point-n,  html body .cropper-point.point-n  { top: -12px !important; margin-left: -12px !important; }',
-            'html body #cropModal .cropper-point.point-e,  html body .cropper-point.point-e  { right: -12px !important; margin-top: -12px !important; }',
-            'html body #cropModal .cropper-point.point-s,  html body .cropper-point.point-s  { bottom: -12px !important; margin-left: -12px !important; }',
-            'html body #cropModal .cropper-point.point-w,  html body .cropper-point.point-w  { left: -12px !important; margin-top: -12px !important; }',
-            'html body #cropModal .cropper-line, html body .cropper-line {',
-            '    background-color: #27A9E3 !important;',
-            '    opacity: 0.75 !important;',
-            '}',
-            'html body #cropModal .cropper-view-box, html body .cropper-view-box {',
-            '    outline: 2px solid #27A9E3 !important;',
-            '    outline-color: rgba(39, 169, 227, 0.95) !important;',
-            '}',
-            'html body #cropModal .modal-footer {',
-            '    padding: 10px 16px !important;',
-            '    background: #F9FAFB !important;',
-            '    border-top: 1px solid #E5E7EB !important;',
-            '    display: flex !important;',
-            '    justify-content: flex-end !important;',
-            '    align-items: center !important;',
-            '    gap: 12px !important;',
-            '    margin: 0 !important;',
-            '}',
-            'html body #cropModal .modal-footer .btn {',
-            '    min-height: 40px !important;',
-            '    padding: 8px 18px !important;',
-            '    font-size: 14px !important;',
-            '    font-weight: 700 !important;',
-            '    border-radius: 8px !important;',
             '}',
 
             '/* 2. Daily Entry Modals (.ags-modal-responsive) Perfectly Centered */',
@@ -1698,8 +1119,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '}',
 
             '/* Scrollable Body */',
-            'html body .modal:not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)) .modal-body,',
-            'html body div.modal:not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)) .modal-body,',
+            'html body .modal-body,',
+            'html body div.modal .modal-body,',
             'html body .ags-modal-body,',
             'html body div#myVoucherType .modal-body,',
             'html body div#myVoucherType .ags-modal-body {',
