@@ -33,6 +33,9 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
         case notify
         case requestAccountDeletion
         case deleteAccount
+        case convertHeicToJpeg
+        case cropperOpened
+        case cropperClosed
     }
 
     private let initialURLString: String
@@ -704,6 +707,58 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
 
         case .requestAccountDeletion, .deleteAccount:
             openNativeDeleteAccountModal()
+
+        case .convertHeicToJpeg:
+            guard let callbackId = dict["callbackId"] as? String else { return }
+            let rawData = dict["data"] as? String ?? ""
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                let pureBase64 = rawData.components(separatedBy: ",").last ?? rawData
+                guard let data = Data(base64Encoded: pureBase64),
+                      let uiImage = UIImage(data: data) else {
+                    DispatchQueue.main.async {
+                        self?.webView.evaluateJavaScript("if (window._satResolveHeic) { window._satResolveHeic('\(callbackId)', null); }", completionHandler: nil)
+                    }
+                    return
+                }
+
+                // Downscale very large camera photos to max 2048px to preserve WKWebView memory stability
+                let maxDim: CGFloat = 2048.0
+                var finalImage = uiImage
+                if uiImage.size.width > maxDim || uiImage.size.height > maxDim {
+                    let ratio = min(maxDim / uiImage.size.width, maxDim / uiImage.size.height)
+                    let newSize = CGSize(width: round(uiImage.size.width * ratio), height: round(uiImage.size.height * ratio))
+                    let format = UIGraphicsImageRendererFormat()
+                    format.scale = 1.0
+                    let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
+                    finalImage = renderer.image { _ in
+                        uiImage.draw(in: CGRect(origin: .zero, size: newSize))
+                    }
+                }
+
+                guard let jpegData = finalImage.jpegData(compressionQuality: 0.88) else {
+                    DispatchQueue.main.async {
+                        self?.webView.evaluateJavaScript("if (window._satResolveHeic) { window._satResolveHeic('\(callbackId)', null); }", completionHandler: nil)
+                    }
+                    return
+                }
+
+                let jpegBase64 = "data:image/jpeg;base64," + jpegData.base64EncodedString()
+                DispatchQueue.main.async {
+                    self?.webView.evaluateJavaScript("if (window._satResolveHeic) { window._satResolveHeic('\(callbackId)', '\(jpegBase64)'); }", completionHandler: nil)
+                }
+            }
+
+        case .cropperOpened:
+            DispatchQueue.main.async {
+                self.refreshControl.isEnabled = false
+                self.webView.scrollView.bounces = false
+            }
+
+        case .cropperClosed:
+            DispatchQueue.main.async {
+                self.refreshControl.isEnabled = true
+                self.webView.scrollView.bounces = true
+            }
         }
     }
 
@@ -790,15 +845,168 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             };
         }
 
-        // Universal iOS Cropper & cropModal Touch Bridge Helper
+        // Universal iOS Cropper, HEIC Auto-Converter & cropModal Touch Bridge Helper
         (function setupCropModalBridge() {
-            // 1. Intercept window.Cropper so PHP views automatically get touch-friendly dragMode and movable crop box on iOS
+            // 1. Native HEIC to JPEG Bridge Resolver
+            window._satHeicCallbacks = window._satHeicCallbacks || {};
+            window._satResolveHeic = function(id, jpegResult) {
+                var cb = window._satHeicCallbacks[id];
+                if (cb) {
+                    delete window._satHeicCallbacks[id];
+                    cb(jpegResult);
+                }
+            };
+
+            function requestNativeJpegConversion(base64Data, callback) {
+                var id = 'heic_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                window._satHeicCallbacks[id] = callback;
+                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.satPushBridge) {
+                    window.webkit.messageHandlers.satPushBridge.postMessage({
+                        action: 'convertHeicToJpeg',
+                        callbackId: id,
+                        data: base64Data
+                    });
+                } else {
+                    callback(null);
+                }
+            }
+
+            // 2. Polyfill DataTransfer for older WebKit if undefined
+            if (typeof window.DataTransfer === 'undefined') {
+                try {
+                    window.DataTransfer = function() {
+                        var _files = [];
+                        this.items = {
+                            add: function(file) { _files.push(file); }
+                        };
+                        Object.defineProperty(this, 'files', {
+                            get: function() { return _files; }
+                        });
+                    };
+                } catch (e) {}
+            }
+
+            // 3. Guarantee that any selected photo on iOS has a valid image MIME type
+            // Intercepts file inputs during CAPTURE phase so jQuery handlers receive valid file.type
+            document.addEventListener('change', function(e) {
+                var input = e.target;
+                if (input && input.tagName === 'INPUT' && input.type === 'file' && input.files && input.files.length > 0) {
+                    for (var i = 0; i < input.files.length; i++) {
+                        var file = input.files[i];
+                        if (!file) continue;
+                        var t = (file.type || '').toLowerCase();
+                        if (!t || !t.match(/^image\\//)) {
+                            var name = (file.name || '').toLowerCase();
+                            var isImg = name.match(/\\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/i);
+                            var isAcceptImg = input.accept && input.accept.indexOf('image') !== -1;
+                            var isCropInput = input.id === 'invoice_file' || input.classList.contains('my_file');
+                            if (isImg || isAcceptImg || isCropInput || !t) {
+                                try {
+                                    Object.defineProperty(file, 'type', {
+                                        value: 'image/jpeg',
+                                        configurable: true
+                                    });
+                                } catch (err) {}
+                            }
+                        }
+                    }
+                }
+            }, true);
+
+            // 4. Intercept FileReader.readAsDataURL to automatically decode/convert HEIC or Apple camera images
+            var _origReadAsDataURL = FileReader.prototype.readAsDataURL;
+            FileReader.prototype.readAsDataURL = function(file) {
+                var self = this;
+                var isHeicOrApple = false;
+                if (file) {
+                    var n = (file.name || '').toLowerCase();
+                    var t = (file.type || '').toLowerCase();
+                    if (n.endsWith('.heic') || n.endsWith('.heif') || t.indexOf('heic') !== -1 || t.indexOf('heif') !== -1) {
+                        isHeicOrApple = true;
+                    }
+                }
+
+                var _customOnload = null;
+                var _hasDelivered = false;
+
+                function deliver(resultDataUrl) {
+                    if (_hasDelivered) return;
+                    _hasDelivered = true;
+
+                    try {
+                        Object.defineProperty(self, 'result', {
+                            value: resultDataUrl,
+                            configurable: true,
+                            writable: true
+                        });
+                    } catch (err) {
+                        self.result = resultDataUrl;
+                    }
+
+                    var evt = {
+                        target: { result: resultDataUrl },
+                        currentTarget: { result: resultDataUrl },
+                        type: 'load'
+                    };
+
+                    if (typeof _customOnload === 'function') {
+                        _customOnload.call(self, evt);
+                    } else if (typeof self.onload === 'function') {
+                        self.onload.call(self, evt);
+                    }
+                    if (typeof self.onloadend === 'function') {
+                        self.onloadend.call(self, evt);
+                    }
+                }
+
+                var _origUserOnload = self.onload;
+                _customOnload = _origUserOnload;
+                Object.defineProperty(self, 'onload', {
+                    get: function() { return _customOnload; },
+                    set: function(fn) { _customOnload = fn; },
+                    configurable: true
+                });
+
+                self.addEventListener('load', function(e) {
+                    var rawResult = self.result;
+                    if (!rawResult || typeof rawResult !== 'string') return;
+
+                    var isHeicMime = rawResult.indexOf('data:image/heic') === 0 || rawResult.indexOf('data:image/heif') === 0;
+                    if (isHeicOrApple || isHeicMime) {
+                        requestNativeJpegConversion(rawResult, function(converted) {
+                            deliver(converted || rawResult);
+                        });
+                    } else {
+                        var testImg = new Image();
+                        var timer = setTimeout(function() {
+                            requestNativeJpegConversion(rawResult, function(converted) {
+                                deliver(converted || rawResult);
+                            });
+                        }, 200);
+
+                        testImg.onload = function() {
+                            clearTimeout(timer);
+                            deliver(rawResult);
+                        };
+                        testImg.onerror = function() {
+                            clearTimeout(timer);
+                            requestNativeJpegConversion(rawResult, function(converted) {
+                                deliver(converted || rawResult);
+                            });
+                        };
+                        testImg.src = rawResult;
+                    }
+                }, { once: true });
+
+                return _origReadAsDataURL.apply(self, arguments);
+            };
+
+            // 5. Intercept window.Cropper so mobile views get touch-friendly options
             var _rawCropper = window.Cropper;
             function wrapCropper(Original) {
                 if (!Original || typeof Original !== 'function' || Original._satPatched) return Original;
                 function SatCropper(element, options) {
                     options = options || {};
-                    // Force touch-friendly options for iOS mobile touchscreens
                     if (!options.dragMode || options.dragMode === 'none') {
                         options.dragMode = 'move';
                     }
@@ -825,36 +1033,122 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                     Object.defineProperty(window, 'Cropper', {
                         configurable: true,
                         enumerable: true,
-                        get: function() {
-                            return _rawCropper;
-                        },
-                        set: function(val) {
-                            _rawCropper = wrapCropper(val);
-                        }
+                        get: function() { return _rawCropper; },
+                        set: function(val) { _rawCropper = wrapCropper(val); }
                     });
                 } catch (e) {
                     console.warn('[SAT iOS] Cropper intercept error:', e);
                 }
             }
 
-            // 2. Prevent background scrolling while touching inside any cropper element
+            // 6. Prevent background scrolling while touching inside cropper elements
             document.addEventListener('touchmove', function(e) {
                 if (e.target.closest('.cropper-container, .img-container, #cropModal .modal-body, .cropper-view-box, .cropper-face, .cropper-point, .cropper-line')) {
                     e.stopPropagation();
                 }
             }, { passive: false });
 
-            // 3. Fallback trigger for Bootstrap 2 'shown' and 'shown.bs.modal' events
-            function dispatchShown(modalEl) {
-                if (!modalEl) return;
-                if (window.jQuery) {
-                    var $modal = window.jQuery(modalEl);
-                    $modal.trigger('shown').trigger('shown.bs.modal');
-                } else {
-                    try {
-                        modalEl.dispatchEvent(new Event('shown', { bubbles: true, cancelable: true }));
-                    } catch (err) {}
+            // 7. Patch Bootstrap Modal to eliminate .fade transition deadlock and notify bridge
+            function patchBootstrapModal() {
+                if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.modal) return;
+                if (window.jQuery.fn.modal._satPatched) return;
+
+                var origModal = window.jQuery.fn.modal;
+                var satModal = function(option) {
+                    var $this = this;
+                    var isCrop = $this.is('#cropModal') || $this.find('#preview, .img-container').length > 0;
+                    if (isCrop) {
+                        $this.removeClass('fade');
+                        if (option === 'show' || !option) {
+                            $this.css('display', 'block');
+                            window.satApp.postMessage({ action: 'cropperOpened' });
+                        } else if (option === 'hide') {
+                            window.satApp.postMessage({ action: 'cropperClosed' });
+                        }
+                    }
+                    var res = origModal.apply($this, arguments);
+                    if (isCrop && (option === 'show' || !option)) {
+                        setTimeout(function() {
+                            $this.trigger('shown').trigger('shown.bs.modal');
+                        }, 30);
+                        setTimeout(function() {
+                            $this.trigger('shown').trigger('shown.bs.modal');
+                        }, 120);
+                    }
+                    return res;
+                };
+
+                for (var k in origModal) {
+                    if (Object.prototype.hasOwnProperty.call(origModal, k)) {
+                        satModal[k] = origModal[k];
+                    }
                 }
+                satModal._satPatched = true;
+                window.jQuery.fn.modal = satModal;
+            }
+
+            // Hook jQuery as soon as it's defined
+            (function hookJQuery() {
+                var _jq = window.jQuery;
+                if (_jq) {
+                    patchBootstrapModal();
+                } else {
+                    var _jqVal = undefined;
+                    try {
+                        Object.defineProperty(window, 'jQuery', {
+                            configurable: true,
+                            enumerable: true,
+                            get: function() { return _jqVal; },
+                            set: function(val) {
+                                _jqVal = val;
+                                if (val && val.fn) {
+                                    setTimeout(patchBootstrapModal, 0);
+                                }
+                            }
+                        });
+                    } catch (e) {}
+                }
+                document.addEventListener('DOMContentLoaded', patchBootstrapModal);
+                window.addEventListener('load', patchBootstrapModal);
+            })();
+
+            // 8. Watchdog for #cropModal Auto-Initialization & State Sync
+            function checkAndAutoInitCropper() {
+                var modal = document.getElementById('cropModal');
+                if (!modal) return;
+                var isVisible = modal.classList.contains('in') || modal.style.display === 'block';
+                if (!isVisible) return;
+
+                var previewImg = document.getElementById('preview');
+                if (!previewImg || !previewImg.src || previewImg.src.length < 20) return;
+
+                if (window.jQuery) {
+                    window.jQuery(modal).trigger('shown').trigger('shown.bs.modal');
+                }
+
+                setTimeout(function() {
+                    var container = modal.querySelector('.cropper-container');
+                    if (!container && window.Cropper && previewImg) {
+                        try {
+                            if (window.cropper && typeof window.cropper.destroy === 'function') {
+                                window.cropper.destroy();
+                            }
+                            window.cropper = new window.Cropper(previewImg, {
+                                aspectRatio: NaN,
+                                viewMode: 1,
+                                dragMode: 'move',
+                                autoCropArea: 0.98,
+                                responsive: true,
+                                restore: true,
+                                cropBoxMovable: true,
+                                cropBoxResizable: true,
+                                touchDragZoom: true
+                            });
+                        } catch (err) {
+                            console.warn('[SAT iOS] Fallback cropper init error:', err);
+                        }
+                    }
+                }, 150);
             }
 
             function attachModalWatchdog(modalEl) {
@@ -867,10 +1161,11 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                         var m = mutations[i];
                         if (m.attributeName === 'class' || m.attributeName === 'style') {
                             if (modalEl.classList.contains('in') || modalEl.style.display === 'block') {
-                                setTimeout(function() { dispatchShown(modalEl); }, 60);
-                                setTimeout(function() { dispatchShown(modalEl); }, 150);
-                                setTimeout(function() { dispatchShown(modalEl); }, 300);
+                                modalEl.classList.remove('fade');
+                                checkAndAutoInitCropper();
                                 break;
+                            } else if (modalEl.style.display === 'none' || !modalEl.classList.contains('in')) {
+                                window.satApp.postMessage({ action: 'cropperClosed' });
                             }
                         }
                     }
@@ -882,7 +1177,6 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 var cropModal = document.getElementById('cropModal');
                 if (cropModal) attachModalWatchdog(cropModal);
 
-                // Observe document body for dynamic modal injection
                 if (document.body) {
                     var bodyObs = new MutationObserver(function() {
                         var el = document.getElementById('cropModal');
@@ -894,8 +1188,11 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 if (window.jQuery) {
                     window.jQuery(document).on('show show.bs.modal', '#cropModal', function() {
                         var el = this;
-                        setTimeout(function() { dispatchShown(el); }, 60);
-                        setTimeout(function() { dispatchShown(el); }, 150);
+                        window.jQuery(el).removeClass('fade');
+                        setTimeout(function() { checkAndAutoInitCropper(); }, 60);
+                    });
+                    window.jQuery(document).on('hide hide.bs.modal', '#cropModal', function() {
+                        window.satApp.postMessage({ action: 'cropperClosed' });
                     });
                 }
             }
@@ -1162,6 +1459,22 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '}',
 
             '/* 3. Image Cropping Modal (#cropModal) Specific iOS Mobile Optimization */',
+            '/* Crop Modal Explicit Visibility Controls for iOS */',
+            'html body #cropModal.hide,',
+            'html body div#cropModal.modal.hide,',
+            'html body #cropModal[style*="display: none"],',
+            'html body #cropModal[aria-hidden="true"]:not(.in) {',
+            '    display: none !important;',
+            '    visibility: hidden !important;',
+            '}',
+            'html body #cropModal.in,',
+            'html body div#cropModal.modal.in,',
+            'html body #cropModal[style*="display: block"]:not(.hide),',
+            'html body #cropModal[aria-hidden="false"] {',
+            '    display: block !important;',
+            '    visibility: visible !important;',
+            '    opacity: 1 !important;',
+            '}',
             'html body div#cropModal.modal,',
             'html body #cropModal,',
             'div#cropModal.modal,',
