@@ -789,6 +789,123 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
                 ready: Promise.resolve(mockRegistration)
             };
         }
+
+        // Universal iOS Cropper & cropModal Touch Bridge Helper
+        (function setupCropModalBridge() {
+            // 1. Intercept window.Cropper so PHP views automatically get touch-friendly dragMode and movable crop box on iOS
+            var _rawCropper = window.Cropper;
+            function wrapCropper(Original) {
+                if (!Original || typeof Original !== 'function' || Original._satPatched) return Original;
+                function SatCropper(element, options) {
+                    options = options || {};
+                    // Force touch-friendly options for iOS mobile touchscreens
+                    if (!options.dragMode || options.dragMode === 'none') {
+                        options.dragMode = 'move';
+                    }
+                    options.cropBoxMovable = true;
+                    options.cropBoxResizable = true;
+                    options.toggleDragModeOnDblclick = false;
+                    options.touchDragZoom = true;
+                    return new Original(element, options);
+                }
+                SatCropper.prototype = Original.prototype;
+                for (var prop in Original) {
+                    if (Object.prototype.hasOwnProperty.call(Original, prop)) {
+                        SatCropper[prop] = Original[prop];
+                    }
+                }
+                SatCropper._satPatched = true;
+                return SatCropper;
+            }
+
+            if (_rawCropper) {
+                window.Cropper = wrapCropper(_rawCropper);
+            } else {
+                try {
+                    Object.defineProperty(window, 'Cropper', {
+                        configurable: true,
+                        enumerable: true,
+                        get: function() {
+                            return _rawCropper;
+                        },
+                        set: function(val) {
+                            _rawCropper = wrapCropper(val);
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[SAT iOS] Cropper intercept error:', e);
+                }
+            }
+
+            // 2. Prevent background scrolling while touching inside any cropper element
+            document.addEventListener('touchmove', function(e) {
+                if (e.target.closest('.cropper-container, .img-container, #cropModal .modal-body, .cropper-view-box, .cropper-face, .cropper-point, .cropper-line')) {
+                    e.stopPropagation();
+                }
+            }, { passive: false });
+
+            // 3. Fallback trigger for Bootstrap 2 'shown' and 'shown.bs.modal' events
+            function dispatchShown(modalEl) {
+                if (!modalEl) return;
+                if (window.jQuery) {
+                    var $modal = window.jQuery(modalEl);
+                    $modal.trigger('shown').trigger('shown.bs.modal');
+                } else {
+                    try {
+                        modalEl.dispatchEvent(new Event('shown', { bubbles: true, cancelable: true }));
+                    } catch (err) {}
+                }
+            }
+
+            function attachModalWatchdog(modalEl) {
+                if (!modalEl || modalEl._satCropWatchdogAttached) return;
+                modalEl._satCropWatchdogAttached = true;
+                modalEl.style.touchAction = 'none';
+
+                var observer = new MutationObserver(function(mutations) {
+                    for (var i = 0; i < mutations.length; i++) {
+                        var m = mutations[i];
+                        if (m.attributeName === 'class' || m.attributeName === 'style') {
+                            if (modalEl.classList.contains('in') || modalEl.style.display === 'block') {
+                                setTimeout(function() { dispatchShown(modalEl); }, 60);
+                                setTimeout(function() { dispatchShown(modalEl); }, 150);
+                                setTimeout(function() { dispatchShown(modalEl); }, 300);
+                                break;
+                            }
+                        }
+                    }
+                });
+                observer.observe(modalEl, { attributes: true });
+            }
+
+            function initModalBridge() {
+                var cropModal = document.getElementById('cropModal');
+                if (cropModal) attachModalWatchdog(cropModal);
+
+                // Observe document body for dynamic modal injection
+                if (document.body) {
+                    var bodyObs = new MutationObserver(function() {
+                        var el = document.getElementById('cropModal');
+                        if (el) attachModalWatchdog(el);
+                    });
+                    bodyObs.observe(document.body, { childList: true, subtree: true });
+                }
+
+                if (window.jQuery) {
+                    window.jQuery(document).on('show show.bs.modal', '#cropModal', function() {
+                        var el = this;
+                        setTimeout(function() { dispatchShown(el); }, 60);
+                        setTimeout(function() { dispatchShown(el); }, 150);
+                    });
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initModalBridge);
+            } else {
+                initModalBridge();
+            }
+        })();
     })();
     """
 
@@ -1015,14 +1132,14 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             'html body #ViewModel:not(.ags-modal-responsive),',
             'html body div#ViewModelRole.modal,',
             'html body #ViewModelRole,',
-            'html body div#myModal.modal,',
-            'html body #myModal,',
+            'html body div#myModal.modal:not(:has(.img-container)):not(:has(.cropper-container)),',
+            'html body #myModal:not(:has(.img-container)):not(:has(.cropper-container)),',
             'html body div#viewGI.modal,',
             'html body #viewGI,',
-            'html body div.modal:not(.ags-modal-responsive),',
-            'html body .modal:not(.ags-modal-responsive),',
-            'body div.modal:not(.ags-modal-responsive),',
-            'div.modal:not(.ags-modal-responsive) {',
+            'html body div.modal:not(.ags-modal-responsive):not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)),',
+            'html body .modal:not(.ags-modal-responsive):not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)),',
+            'body div.modal:not(.ags-modal-responsive):not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)),',
+            'div.modal:not(.ags-modal-responsive):not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)) {',
             '    position: fixed !important;',
             '    left: 8px !important;',
             '    right: 8px !important;',
@@ -1042,6 +1159,126 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '    border-radius: 12px !important;',
             '    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45) !important;',
             '    background-color: #FFFFFF !important;',
+            '}',
+
+            '/* 3. Image Cropping Modal (#cropModal) Specific iOS Mobile Optimization */',
+            'html body div#cropModal.modal,',
+            'html body #cropModal,',
+            'div#cropModal.modal,',
+            '#cropModal,',
+            'html body div#myModal:has(.img-container),',
+            'html body div.modal:has(.cropper-container),',
+            'html body div.modal:has(.img-container) {',
+            '    position: fixed !important;',
+            '    top: 50% !important;',
+            '    left: 50% !important;',
+            '    right: auto !important;',
+            '    bottom: auto !important;',
+            '    transform: translate(-50%, -50%) !important;',
+            '    -webkit-transform: translate(-50%, -50%) !important;',
+            '    width: calc(100vw - 16px) !important;',
+            '    max-width: 650px !important;',
+            '    margin: 0 !important;',
+            '    margin-left: 0 !important;',
+            '    margin-top: 0 !important;',
+            '    box-sizing: border-box !important;',
+            '    z-index: 10550 !important;',
+            '    max-height: calc(100vh - 20px) !important;',
+            '    border-radius: 14px !important;',
+            '    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6) !important;',
+            '    background-color: #FFFFFF !important;',
+            '    overflow: hidden !important;',
+            '}',
+            'html body #cropModal .modal-dialog,',
+            'html body #cropModal .modal-content,',
+            'html body div.modal:has(.img-container) .modal-dialog,',
+            'html body div.modal:has(.img-container) .modal-content {',
+            '    margin: 0 !important;',
+            '    width: 100% !important;',
+            '    max-width: 100% !important;',
+            '    border: none !important;',
+            '    box-shadow: none !important;',
+            '    background: transparent !important;',
+            '}',
+            'html body #cropModal .modal-header,',
+            'html body div.modal:has(.img-container) .modal-header {',
+            '    padding: 10px 16px !important;',
+            '    background: #F9FAFB !important;',
+            '    border-bottom: 1px solid #E5E7EB !important;',
+            '}',
+            'html body #cropModal .modal-body,',
+            'html body .modal-body:has(.cropper-container),',
+            'html body .modal-body:has(.img-container) {',
+            '    max-height: calc(100vh - 130px) !important;',
+            '    overflow: hidden !important;',
+            '    -webkit-overflow-scrolling: auto !important;',
+            '    padding: 0 !important;',
+            '    margin: 0 !important;',
+            '    box-sizing: border-box !important;',
+            '    display: flex !important;',
+            '    justify-content: center !important;',
+            '    align-items: center !important;',
+            '    background-color: #1F2937 !important;',
+            '    touch-action: none !important;',
+            '}',
+            'html body #cropModal .img-container,',
+            'html body .img-container:has(.cropper-container) {',
+            '    max-width: 100% !important;',
+            '    max-height: calc(100vh - 140px) !important;',
+            '    overflow: hidden !important;',
+            '    margin: 0 auto !important;',
+            '    background-color: #1F2937 !important;',
+            '}',
+            'html body #cropModal .cropper-container,',
+            'html body .cropper-container {',
+            '    touch-action: none !important;',
+            '    -webkit-touch-callout: none !important;',
+            '    -webkit-user-select: none !important;',
+            '    user-select: none !important;',
+            '    max-width: 100% !important;',
+            '}',
+            'html body #cropModal .cropper-point,',
+            'html body .cropper-point {',
+            '    width: 24px !important;',
+            '    height: 24px !important;',
+            '    opacity: 0.85 !important;',
+            '    background-color: #27A9E3 !important;',
+            '    border: 2px solid #FFFFFF !important;',
+            '    border-radius: 50% !important;',
+            '    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) !important;',
+            '}',
+            'html body #cropModal .cropper-point.point-nw, html body .cropper-point.point-nw { top: -12px !important; left: -12px !important; }',
+            'html body #cropModal .cropper-point.point-ne, html body .cropper-point.point-ne { top: -12px !important; right: -12px !important; }',
+            'html body #cropModal .cropper-point.point-se, html body .cropper-point.point-se { bottom: -12px !important; right: -12px !important; }',
+            'html body #cropModal .cropper-point.point-sw, html body .cropper-point.point-sw { bottom: -12px !important; left: -12px !important; }',
+            'html body #cropModal .cropper-point.point-n,  html body .cropper-point.point-n  { top: -12px !important; margin-left: -12px !important; }',
+            'html body #cropModal .cropper-point.point-e,  html body .cropper-point.point-e  { right: -12px !important; margin-top: -12px !important; }',
+            'html body #cropModal .cropper-point.point-s,  html body .cropper-point.point-s  { bottom: -12px !important; margin-left: -12px !important; }',
+            'html body #cropModal .cropper-point.point-w,  html body .cropper-point.point-w  { left: -12px !important; margin-top: -12px !important; }',
+            'html body #cropModal .cropper-line, html body .cropper-line {',
+            '    background-color: #27A9E3 !important;',
+            '    opacity: 0.75 !important;',
+            '}',
+            'html body #cropModal .cropper-view-box, html body .cropper-view-box {',
+            '    outline: 2px solid #27A9E3 !important;',
+            '    outline-color: rgba(39, 169, 227, 0.95) !important;',
+            '}',
+            'html body #cropModal .modal-footer {',
+            '    padding: 10px 16px !important;',
+            '    background: #F9FAFB !important;',
+            '    border-top: 1px solid #E5E7EB !important;',
+            '    display: flex !important;',
+            '    justify-content: flex-end !important;',
+            '    align-items: center !important;',
+            '    gap: 12px !important;',
+            '    margin: 0 !important;',
+            '}',
+            'html body #cropModal .modal-footer .btn {',
+            '    min-height: 40px !important;',
+            '    padding: 8px 18px !important;',
+            '    font-size: 14px !important;',
+            '    font-weight: 700 !important;',
+            '    border-radius: 8px !important;',
             '}',
 
             '/* 2. Daily Entry Modals (.ags-modal-responsive) Perfectly Centered */',
@@ -1121,8 +1358,8 @@ class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, W
             '}',
 
             '/* Scrollable Body */',
-            'html body .modal-body,',
-            'html body div.modal .modal-body,',
+            'html body .modal:not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)) .modal-body,',
+            'html body div.modal:not(#cropModal):not(:has(.cropper-container)):not(:has(.img-container)) .modal-body,',
             'html body .ags-modal-body,',
             'html body div#myVoucherType .modal-body,',
             'html body div#myVoucherType .ags-modal-body {',
